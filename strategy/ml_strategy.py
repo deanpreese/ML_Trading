@@ -7,7 +7,7 @@ import pandas as pd
 #import random as rand
 #from models import wrapped_models
 
-from common.common_strategy import CommonStrategy
+from strategy.common_strategy import CommonStrategy
 
 class MLStrategy (CommonStrategy):
     def __init__(self, model, col_filter, run_id):

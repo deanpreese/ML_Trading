@@ -8,7 +8,7 @@ import pandas as pd
 from io import BytesIO
 #import time as mytime
 
-from common.model_loader import ModelLoader
+from strategy.model_loader import ModelLoader
 
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
@@ -30,10 +30,11 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        models_one = LoadModels(0, ["42"], 1)
-        models_two = LoadModels(0, ["40"], 1)
+        #models_one = LoadModels(0, ["42"], 1)
+        #models_two = LoadModels(0, ["40"], 1)
        
-       
+       models_one = LoadModels(0, ["125"], 1)
+              
     @app.route('/predict-one', methods=['POST'])
     def predict_one():
         

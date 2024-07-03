@@ -5,10 +5,12 @@ import requests
 import datetime as dt
 import random as rand
 
-from common.ml_strategy import MLStrategy
-from common.composite_strategy import CompositeStrategy
+from strategy.ml_strategy import MLStrategy
+from strategy.composite_strategy import CompositeStrategy
 
-from models import wrapped_models
+import mlflow
+mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
+
 
 class ModelLoader:
 
@@ -38,7 +40,10 @@ class ModelLoader:
             arti_d = mlflow.artifacts.load_dict(art_to_load)
             cols = [x[0] for x in arti_d['data'] if x[0] != 'output']
             self.l_artifacts.append(cols)
+            
+            print("Columns")
             print(cols)
+            print(" ")
             
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -74,6 +79,7 @@ class ModelLoader:
         runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
         self.model_group = group_id
         comp_strategies = []
+
         for i in range(len(runs)):
             self.model_list = []    
             r_id = runs.iloc[i].run_id 
