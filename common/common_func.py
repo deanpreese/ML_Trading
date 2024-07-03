@@ -24,16 +24,6 @@ def simple_split_and_scale(X, y, test_size, random_state):
     return X_train, X_test, y_train, y_test
 
 
-def full_split_and_scale_with_filter(pd_data, col_offset, size_test, random_state, output_col, filter):
-    num_columns = len(pd_data.axes[1])  
-    input_features =  num_columns - col_offset
-    X = pd_data.iloc[:, 0:input_features]  
-    X = X.iloc[:, filter]  
-    y = pd_data[output_col].values
-    X_train, X_test, y_train, y_test,  =  simple_split_and_scale(X, y, size_test, random_state)
-    
-    return X_train, X_test, y_train, y_test, input_features, X.columns
-
 
 def full_split_and_scale(pd_data, col_offset, size_test, random_state, output_col):
     num_columns = len(pd_data.axes[1]) 
@@ -44,46 +34,6 @@ def full_split_and_scale(pd_data, col_offset, size_test, random_state, output_co
     
     return X_train, X_test, y_train, y_test, input_features
 
-
-def write_line_to_file(file, txt):
-    file1 = open(file, "a")  # append mode
-    file1.write(txt + "\n" )
-    file1.close()
-
-
-def calc_mix_max(datax):
-    confidence_level = 0.8
-    mm = []
-    column_parameters = []
-    for column in datax.columns:
-        mean = datax[column].mean()
-        std_dev = datax[column].std()
-        column_parameters.append((mean, std_dev))
-
-    z_score = norm.ppf((1 + confidence_level) / 2)
-    min_max_values = []
-    for (mean, std_dev) in column_parameters:
-        min_value = mean - z_score * (std_dev* 0.75)
-        max_value = mean + z_score * (std_dev* 0.75)
-        min_max_values.append((min_value, max_value))
-
-    for i, column in enumerate(datax.columns):
-        #print(f'Column "{column}": Normal Min={min_max_values[i][0]}, Normal Max={min_max_values[i][1]}')
-        t = [min_max_values[i][0], min_max_values[i][1]]
-        mm.append(t)
-
-    return mm
-
-
-def gen_importances(features, importances, display):
-    features_list = []
-    feature_importance = list(zip(features, importances))
-    sorted_feature_importance = sorted(feature_importance, key=lambda x: x[1], reverse=True)
-    for feature, weight in sorted_feature_importance:
-        txt = f"{feature} {weight}"
-        features_list.append(txt)
-        
-    return features_list
 
 
 def show_stats( DisplayOutput, y_test, predicted_values):
@@ -123,129 +73,6 @@ def calc_MSE(y_test, predicted_values, display):
     
     return (mse, rmse)
 
-
-def calc_class_results_X(all_predictions, models):
-    correctX = 0
-    correctY = 0
-    totalX = 0
-    correctP = 0
-        
-    for index, row in all_predictions.iterrows():
-        key_result = 0
-        weighted_prob = 0
-    
-        for key in models.keys():
-            key_result += row[key]
-            
-            k = f"{key}-proba"
-            prob_data = row[k][0]
-            weighted_prob = key_result * prob_data
-            
-        target_output = row['target']
-        prob_z = weighted_prob/len(models)
-            
-        #print(f"{key_result}  {row['target']} {prob_z}")
-                
-        if(target_output > 0 and (key_result) > 0  ):
-                correctX= correctX + 1 
-        
-        if(target_output == 0 and (key_result) == 0 ):
-                correctX= correctX + 1 
-                
-
-        if(target_output > 0 and ((prob_z > 0.5))  ):
-                correctY= correctY + 1 
-        
-        if(target_output == 0 and ((prob_z < 0.5))  ):
-                correctY= correctY + 1  
-
-
-        if(target_output > 0 and ((key_result > 0)  or (prob_z > 0.5))  ):
-                correctP= correctP + 1 
-        
-        if(target_output == 0 and ((key_result == 0)  or (prob_z < 0.5))  ):
-                correctP= correctP + 1  
-
-        totalX = totalX + 1    
-                
-            
-    cxp = correctX/totalX
-    cyp = correctY/totalX
-    cpp = correctP/totalX
-
-    return correctX, correctY, correctP, totalX, cxp, cyp, cpp
-
-def calc_class_results(all_predictions, estimator_run_ids):
-
-        r_predictions = []
-        r_y_target = []
-        
-        correctX = 0
-        correctY = 0
-        totalX = 0
-        correctP = 0
-        cxp = 0
-        cyp = 0
-        cpp = 0
-        
-        for index, row in all_predictions.iterrows():
-        
-            agg_predict = 0
-            agg_weighted_predict = 0
-        
-            # for each id pull the result and prob data 
-            for id in estimator_run_ids:
-                agg_predict += row[id]
-        
-                k = f"{id}-proba"
-                prob_data = row[k][0]
-                agg_weighted_predict = agg_predict * prob_data
-        
-               
-            target_output = row['target']
-            prob_z = agg_weighted_predict/len(estimator_run_ids)
-            
-            wp_kr = (agg_weighted_predict * agg_predict) 
-            
-            if(target_output > 0 and (agg_predict) > 0  ):
-                    correctX= correctX + 1 
-            
-            if(target_output == 0 and (agg_predict) == 0 ):
-                    correctX= correctX + 1 
-                    
-
-            if(target_output > 0 and ((prob_z > 0.5))  ):
-                    correctY= correctY + 1 
-            
-            if(target_output == 0 and ((prob_z < 0.5))  ):
-                    correctY= correctY + 1  
-
-
-            if(target_output > 0 and ((agg_predict > 0)  or (prob_z > 0.5))  ):
-                    correctP= correctP + 1 
-            
-            if(target_output == 0 and ((agg_predict == 0)  or (prob_z < 0.5))  ):
-                    correctP= correctP + 1  
-
-            totalX = totalX + 1    
-            
-            local_predict = 0
-            if agg_predict > 0 or agg_weighted_predict > 0:
-                local_predict = 1
-            elif agg_predict < 0 or agg_weighted_predict < 0:
-                local_predict = -1
-            else:
-                local_predict = 0                
-            
-
-            r_y_target.append(target_output)
-            r_predictions.append(local_predict)
-        
-        cxp = correctX/totalX
-        cyp = correctY/totalX
-        cpp = correctP/totalX
-        
-        return correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target
 
 
 def calc_reg_results(all_predictions, estimator_run_ids):
