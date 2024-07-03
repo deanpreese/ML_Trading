@@ -1,0 +1,85 @@
+
+from common.model_loader import ModelLoader
+import pandas as pd
+import time
+import threading
+
+import common.common_cli as common_cli
+
+import logging
+logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+logging.getLogger('mlflow.pyfunc').setLevel(logging.ERROR)
+
+broker_cli = common_cli.KafkaProducerCli()
+
+def load_models(exp_id, n_models, group_id, api_url):
+    
+    experiment_id = exp_id
+    num_models = n_models    
+    model_loader = ModelLoader()
+    model_loader.init_api(api_url)
+    
+    # load_top_models(self, experiment_id, num_models, group_id): 
+    return model_loader.load_top_models( experiment_id, num_models, group_id)
+
+def send_data(predict_data, y_d):
+    
+    vals_x = f"{predict_data},{y_d}"
+    
+    broker_cli.send_order_data(vals_x)
+    print(f"Predict {vals_x}")
+
+def run_sim(exp_id, n_models, file, trades, delay, group_id, api_url):
+   
+    
+    data = pd.read_csv(file)   
+    num_columns = len(data.axes[1]) 
+    input_features =  num_columns -2
+    X = data.iloc[:, 0:input_features]  
+    y = data["output"].values
+    
+    models = load_models(exp_id, n_models, group_id, api_url)
+    
+    order_total = 0
+    start = time.time()
+
+    for i in range(len(y)):
+        
+            pre_t = 0
+            
+            for m in range(len(models)):
+                
+                predict = models[m].do_predict(X.iloc[i])
+                
+                pre_t += predict[0]
+                
+                #print(f"         Model {m}    {predict[0]}"    )                
+                
+                order_total += 1
+            
+            
+            post_t = pre_t/len(models)
+            my_thread = threading.Thread(target=send_data, args=(post_t, y[i]))
+            my_thread.start()
+            time.sleep(delay)
+
+
+    end = time.time()
+
+    t = round(end-start,2)
+    print(f"Time {t} seconds to process {order_total} predictions  --  {round(order_total/t,2)}/sec ")
+    print(" ") 
+    
+    
+    
+exp_idx = ["37"]
+group_id = 0
+num_models = 25
+
+trades = 500
+sim_delay = 0.2
+  
+api_u = "http://10.0.0.147:8786/"  
+file = "data/lucky13_oos.csv"    
+run_sim(exp_idx, num_models, file, trades, sim_delay, group_id, api_u)    
+
