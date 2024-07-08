@@ -70,22 +70,7 @@ class CompositeStrategy (CommonStrategy):
             agg_weighted_predict += predict * perf
             agg_predict += predict
             
-        """
-        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_threshold:
-            #return_predict = max(agg_predict, agg_weighted_predict)[0]
-            return_predict = 1
-        elif agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_threshold:
-            #return_predict = min(agg_predict, agg_weighted_predict)[0]
-            return_predict = -1    
-        else:
-            return_predict = 0
-        """      
-        
         return self.do_reg_predict(agg_predict, agg_weighted_predict) 
-    
-    
-
-    
     
     
     
@@ -105,15 +90,10 @@ class CompositeStrategy (CommonStrategy):
         count_u = sum(1 for x in predicts if x > 0)             
         total_items = len(predicts)
         percentage_positive = (count_u / total_items) 
-        
-        return_predict = 0
-        if percentage_positive > 0.69:
-            return_predict = 1
 
-        if percentage_positive < 0.31:
-            return_predict = -1
-                     
-        return return_predict
+        return_predict = sum(predicts)/len(predicts)
+
+        return percentage_positive, return_predict
     
     
     def do_predict_x(self,data):
