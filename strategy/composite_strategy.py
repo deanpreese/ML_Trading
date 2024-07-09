@@ -77,13 +77,10 @@ class CompositeStrategy (CommonStrategy):
     def do_predict_v(self,data):
 
         return_predict = 0
-        
         self.set_predict_data(data) 
-        
         predicts = []
         
         for m in range(len(self.strategy_models)):
-            
             predict = self.strategy_models[m].do_predict(data)
             predicts.append(predict)
             
@@ -93,7 +90,9 @@ class CompositeStrategy (CommonStrategy):
 
         return_predict = sum(predicts)/len(predicts)
 
-        return percentage_positive, return_predict
+        print(total_items  ,  count_u , percentage_positive , sum(predicts), return_predict)
+
+        return percentage_positive, return_predict, sum(predicts)
     
     
     def do_predict_x(self,data):
