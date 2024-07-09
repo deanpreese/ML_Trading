@@ -1,0 +1,38 @@
+For 'data/buildSeqInd_Lucky13_F_3070.csv',
+
+Best XGB parameters
+FrozenTrial(number=28, state=1, values=[1.792555547900979], 
+params={'learning_rate': 0.004023993590803149, 'max_depth': 9, 'subsample': 0.5061891892307074, 
+'colsample_bytree': 0.6646068031525607, 'min_child_weight': 18}
+
+Best LGB parameters
+FrozenTrial(number=22, state=1, values=[1.7609492725016038], 
+params={'learning_rate': 0.006961479110933946, 'num_leaves': 762, 
+'subsample': 0.5909033731294365, 'colsample_bytree': 0.8383929309109572, 
+'min_data_in_leaf': 80}
+
+Best CAT parameters
+FrozenTrial(number=28, state=1, values=[1.7711017261490398], 
+params={'learning_rate': 0.0360944196001379, 'depth': 10, 
+subsample': 0.3523958110464825, 'colsample_bylevel': 0.6176118972551982, 
+'min_data_in_leaf': 46},
+
+
+
+data/buildSeqInd_Lucky13_5M_3070.csv
+
+Best XGB parameters
+FrozenTrial(number=12, state=1, values=[3.310090499145758], 
+params={'learning_rate': 0.00264122394857379, 'max_depth': 8, 
+'subsample': 0.2772844546321145, 'colsample_bytree': 0.8118319429046319, 
+'min_child_weight': 7}
+
+Best LGB parameters
+FrozenTrial(number=24, state=1, values=[3.3243294240792305], 
+params={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample': 0.8313397546109982, 
+'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68}
+
+Best CAT parameters
+FrozenTrial(number=26, state=1, values=[3.329007564622169], 
+params={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
+'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}

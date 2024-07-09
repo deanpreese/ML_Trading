@@ -20,39 +20,26 @@ from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
-def process_model(exp_name, data, models, run_test_size, feature_list_size):
+def process_model(exp_name, data, models, run_test_size, f_list):
         
         run_uuid = str(uuid.uuid1())[:6]
-        
-        features_list = []
         all_predict_data = pd.DataFrame()
         estimator_perf = []
         estimator_run_ids = []     
                 
         for f, e in enumerate(models):
                 
-                fl_out = []
-                
                 model_run_uuid = run_uuid + "-"+ str(uuid.uuid1())[:6]
                 modelname = e.__class__.__name__
                 
-                print(f"Running {modelname} with {feature_list_size} features")
+                print(f"Running {modelname} with {len(f_list)} features")
                 
-                num_columns = len(data.columns)
-                input_features = num_columns - 2
-                X = data.iloc[:, 0:input_features]
+                X = data[f_list]
                 y = data['output'].values
-                
-                idxx = rand.sample(range(1, len(data.axes[1]) -2 ), feature_list_size)
-                features_list.append(idxx)    
-                fl= features_list[f]
-                X = data.iloc[:, fl]  
-                input_features = len(X.axes[1]) 
-                fl_out = fl
               
                 X_train, X_test, y_train, y_test = simple_split_and_scale(X, y, run_test_size, 42)
                 
-                run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
+                run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, f_list, exp_name, True, e, X_train, 
                                                                                   y_train, X_test, y_test, True)  
                 all_predict_data[model_run_uuid] = predictions
                 perf, tot = gen_reg_stats(y_test, predictions)
@@ -68,7 +55,7 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
                 
                 estimator_run_ids.append(model_run_uuid)
                 
-                outputs = [ modelname, perf, tot, mse, rmse, score, fl_out, model_run_uuid, run_id ]        
+                outputs = [ modelname, perf, tot, mse, rmse, score, f_list, model_run_uuid, run_id ]        
                 estimator_perf.append(outputs)  
 
         all_predict_data["target"] = y_test
@@ -83,22 +70,16 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
         score = r2
         mae = float(mean_absolute_error(r_y_target,r_predictions))                
 
-        perf_data_t = [run_uuid, feature_list_size, e_perf.values.tolist(), features_list, 
+        perf_data_t = [run_uuid, len(f_list), e_perf.values.tolist(), f_list, 
                        correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae]
         
         return perf_data_t    
 
 
 
-def run_models(data, estimators, run_test_size, 
-               min_features, max_features, step_features, total_cycles ):
+def run_models(data, estimators, run_test_size, features_list):
         
-        feature_list_size = min_features
         p_df = pd.DataFrame()
-        
-        if len(data.columns) < max_features:
-                max_features = len(data.columns) - 3
-        
         time_stamp = dte_time.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
         exp_name = f"mixer_runs_{time_stamp}"
         
@@ -107,20 +88,19 @@ def run_models(data, estimators, run_test_size,
         except Exception as e:
             print(f"{e}")    
             experiment_id = mlflow.get_experiment_by_name(exp_name).experiment_id        
-       
                 
         perf_data = []
         
-        for q in range(total_cycles):
-                for f in range(min_features, max_features, step_features):
-                        feature_list_size = f                        
-                        perf_data_t = process_model(experiment_id, data, estimators, run_test_size, feature_list_size)
-                        perf_data.append(perf_data_t)
-                
-                p_df = pd.DataFrame(perf_data)    
-                p_df.columns = ["rid", "input_features", "e_perf", "features_list", "correctX", "correctY", 
-                                "correctP", "totalX", "cxp", "cyp", "cpp", "mse", "rmse", "r2", "mae"]
-                p_df.sort_values(by=['cpp'], ascending=False, inplace=True)
+        
+        for f in range(len(features_list)):
+                perf_data_t = process_model(experiment_id, data, estimators, run_test_size, features_list[f])
+                perf_data.append(perf_data_t)
+        
+        p_df = pd.DataFrame(perf_data)    
+        p_df.columns = ["rid", "input_features", "e_perf", "features_list", "correctX", "correctY", 
+                        "correctP", "totalX", "cxp", "cyp", "cpp", "mse", "rmse", "r2", "mae"]
+        p_df.sort_values(by=['cpp'], ascending=False, inplace=True)
+
 
         step = 0
         time_stamp = dte_time.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
@@ -177,6 +157,10 @@ datafile = [
 
 dtx = pd.read_csv(datafile[0])
 
+import lucky13_feature_list as lf
+features_lucky13 = lf.lucky_features()
+
+
 xgr = xgr_param_set()
 lbr = lbr_param_set()
 cbr = cbr_param_set()
@@ -203,52 +187,46 @@ lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample
 cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
 'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
 
-
-#data/buildSeqInd_Lucky13_F_3070.csv
-# 3 - 7 features
-# number 25 in mlflow
-est_list_a = [ XGBRegressor(),  XGBRegressor(**xgr),  
-             XGBRegressor(**xgb_params_F), 
-             XGBRegressor(**xgb_params_M),                
+est_list_a = [ XGBRegressor(),  
+               XGBRegressor(**xgr),  
+               XGBRegressor(**xgb_params_F), 
+               XGBRegressor(**xgb_params_M)                
               ]
 
 
-# 3 - 7 features
-# number 12 in mlflow
-est_list_b = [ CatBoostRegressor(**cbr), LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), LGBMRegressor(),
-              XGBRegressor(), XGBRFRegressor()
-             ]
+
+est_list_b = [ 
+               XGBRegressor(),  
+               XGBRegressor(**xgr),  
+               XGBRegressor(**xgb_params_F), 
+               #XGBRegressor(**xgb_params_M),
+               #XGBRFRegressor(), 
+               XGBRFRegressor(**xg_rf),                
+              ]
 
 
-#data/buildSeqInd_Lucky13_F_3070.csv
-# 3 - 7 features
-# number 23 in mlflow
-est_list_c = [    CatBoostRegressor(), 
+
+est_list_c = [  CatBoostRegressor(), 
+                CatBoostRegressor(**cbr), 
                 CatBoostRegressor(**cat_params_F), 
                 CatBoostRegressor(**cat_params_M), 
-                XGBRegressor(), 
+                XGBRFRegressor(),  
+                XGBRFRegressor(**xg_rf),  
+                XGBRegressor(),  
+                XGBRegressor(**xgr),  
                 XGBRegressor(**xgb_params_F), 
-                XGBRegressor(**xgb_params_M), 
+                XGBRegressor(**xgb_params_M),   
                 LGBMRegressor(), 
+                LGBMRegressor(**lbr), 
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
           ]
 
 
 
-
 split_test_size_value = 0.7          
-min_features_used = 3
-max_features_used = 7
-step_features_used = 1
-total_cycles_used = 50
 
-
-p_df, experiment_id_parent = run_models(dtx, est_list_b, 
-                                        split_test_size_value, min_features_used, max_features_used, 
-                                        step_features_used, total_cycles_used  )
+p_df, experiment_id_parent = run_models(dtx, est_list_c, split_test_size_value, features_lucky13 )
 
 print(" ")
 print(p_df)                

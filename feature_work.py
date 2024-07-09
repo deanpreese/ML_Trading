@@ -52,14 +52,15 @@ def calculate_correlation_summary(df, num_parts, target_col):
 
 def run():
 
-    #file_loaded = pd.read_csv("data/Fractal_ALL_5M_orig.csv")
-    #file_loaded = pd.read_csv("data/CleanReFried_5M_ALL.csv")
-    #file_loaded = pd.read_csv('data/buildSeqInd_Lucky13_5M_ALL.csv')
-    #file_loaded = pd.read_csv('data/buildSeqInd_Lucky13_F.csv')
-    #file_loaded = pd.read_csv('data/Ind_F.csv')
-    file_loaded = pd.read_csv('data/Ind_F_1M.csv')
-    #file_loaded = pd.read_csv("data/IND_LSTM_ALL.csv")
-    #file_loaded = file_loaded.drop(columns=['outputC'])
+    datafile = [ 
+        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
+        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
+        'data/buildSeqInd_Lucky13_F.csv',  #2
+        'data/buildSeqInd_Lucky13_D.csv',  #3
+        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
+    ]
+
+    file_loaded = pd.read_csv(datafile[4])
     file_loaded = file_loaded.drop(columns=['output'])
 
 

@@ -102,6 +102,8 @@ def xgc_param_grid():
     }
     return create_param_list(params)        
 
+# =============================================================================
+
 def cbr_param_set():
     params = {
         "iterations": 800,
@@ -173,6 +175,22 @@ def xgr_param_set():
         "verbosity" : 2
     }
     return params
+
+def xgr_param_set2():
+    params = {
+        #'max_depth': 3,
+        'booster' : 'gbtree', 
+        #'learning_rate': 0.1,
+        'n_estimators':  100, 
+        #'gamma': [0, 20], 
+        #'subsample': [0.8,1], 
+        #'colsample_bytree': [0.8,1], 
+        #'lambda': [0, 0.1, 1],
+        'tree_method': "hist",
+        #'eval_metric': "mae",
+        "verbosity" : 2
+    }
+    return params
         
 def xgr_param_grid():
     params = {
@@ -188,3 +206,18 @@ def xgr_param_grid():
         "verbosity" : [2]
     }
     return create_param_list(params)      
+
+
+
+def xgb_rf_params():
+    params = {
+    "colsample_bynode": 0.8,
+    "learning_rate": 1,
+    "max_depth": 5,
+    "num_parallel_tree": 100,
+    "objective": "reg:squarederror",
+    "subsample": 0.8,
+    "tree_method": "hist",
+    #"device": "cuda",
+    }
+    return params    
