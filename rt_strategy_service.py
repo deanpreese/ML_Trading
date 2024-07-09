@@ -16,10 +16,10 @@ logging.getLogger('mlflow.pyfunc').setLevel(logging.ERROR)
 logging.getLogger('lightgbm').setLevel(logging.ERROR)
 
 import warnings
-#warnings.filterwarnings("ignore", category=DeprecationWarning)
-#warnings.filterwarnings("ignore", category=FutureWarning)
-#warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", module='LightGBM')
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", module='[LightGBM]')
 
 model_loader = ModelLoader()
 models_one = []
@@ -50,12 +50,11 @@ def get_v_prediction(data_df, models):
     
     for m in range(len(models)):
         percent, predict, sum_predicts = models[m].do_predict_v(data_df)
-        print(f"Model V {percent}  {predict}  {sum_predicts}")
+        #print(f"Model V {percent}  {predict}  {sum_predicts}")
         
         loaded_prediction += predict
         loaded_percent += percent
         loaded_sum_predicts += sum_predicts
-        
         
     final_ave_pct = loaded_percent / len(models)
     final_ave_predict = loaded_prediction / len(models)
@@ -71,25 +70,29 @@ def get_v2_prediction(data_df, models):
     loaded_percent = 0
     loaded_sum_predicts = 0
     
+    final_ave_predict = 0
+    
     for m in range(len(models)):
         percent, predict, sum_predicts = models[m].do_predict_v(data_df)
-        print(f"Model V {percent}  {predict}  {sum_predicts}")
+        #print(f"Model V {percent}  {predict}  {sum_predicts}")
         
         loaded_prediction += predict
         loaded_percent += percent
         loaded_sum_predicts += sum_predicts
         
     final_ave_pct = loaded_percent / len(models)
-    final_ave_predict = loaded_prediction / len(models)
+    calc_ave_predict = loaded_prediction / len(models)
     final_ave_sum_predicts = loaded_sum_predicts / len(models)
 
-    if final_ave_predict > 0 and final_ave_pct < 0.76:
+    final_ave_predict = calc_ave_predict[0]
+
+    if final_ave_sum_predicts[0] > 0 and final_ave_pct < 0.5:
         final_ave_predict = 0
 
-    if final_ave_predict < 0 and final_ave_pct < 0.76:
+    if final_ave_sum_predicts[0] < 0 and final_ave_pct > 0.5:
         final_ave_predict = 0
 
-    print(f"Final  V    {final_ave_predict}  {final_ave_sum_predicts}  {final_ave_pct} ")
+    print(f"Final  V2  {final_ave_predict}   {calc_ave_predict[0]}   {final_ave_pct}   {final_ave_sum_predicts[0]} ")
     
     return final_ave_predict
 
@@ -110,10 +113,16 @@ def init_app():
        #models_three = LoadModels(0, ["25"], 9)
        #models_four = LoadModels(0, ["25"], 11)
        
-       models_one = LoadModels(0, ["27"], 1)
-       models_two = LoadModels(0, ["27"], 7)
-       models_three = LoadModels(0, ["27"], 9)
-       models_four = LoadModels(0, ["27"], 11)       
+       #models_one = LoadModels(0, ["27"], 1)
+       #models_two = LoadModels(0, ["27"], 7)
+       #models_three = LoadModels(0, ["27"], 9)
+       #models_four = LoadModels(0, ["27"], 11)       
+
+       models_one = LoadModels(0, ["50"],1 )
+       models_two = LoadModels(0, ["50"], 3)
+       models_three = LoadModels(0, ["50"], 3)
+       models_four = LoadModels(0, ["50"], 5)       
+
               
     @app.route('/predict-one', methods=['POST'])
     def predict_one():
@@ -141,7 +150,7 @@ def init_app():
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
         data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
         
-        final_predict = get_v2_prediction(data_df, models_two)
+        final_predict = get_v_prediction(data_df, models_two)
         
         loaded_prediction = final_predict
         print(f"Predict 2 Model  {loaded_prediction}")            
