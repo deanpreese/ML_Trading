@@ -28,9 +28,12 @@ models_three = []
 models_four = []
 
 
+def LoadModels():
+    strat_runs310 = ['e0b22b6f127348e99e3b4455eccce320', '9b32eacda2174ef0be6548229dc3d372', '0b97535148444f48923807597f6a5a43']      
+    return model_loader.load_models_by_run_ids(strat_runs310)
+
 def LoadModels(group_id, experiment_id, num_models):
-    return model_loader.load_composite_models( experiment_id, num_models, group_id)
-    
+    return model_loader.load_composite_models( experiment_id, num_models, group_id)    
     
 def get_prediction(data_df, models):
     loaded_prediction = 0

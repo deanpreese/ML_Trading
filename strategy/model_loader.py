@@ -71,12 +71,18 @@ class ModelLoader:
         runs = mlflow.search_runs(experiment_id)
         self.load_selected_models(runs)
         return self.model_list    
-            
+
+    def load_models_by_run_ids(self, run_ids):
+        ml = []
+        for rid in run_ids:
+            model, cols, lm = self.add_model(rid, True)
+            ml.append(lm)
+        return ml                 
             
     def load_composite_models(self, experiment_id, num_models, group_id): 
         
         print("Querying Runs ...")
-        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
+        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
         self.model_group = group_id
         comp_strategies = []
 
