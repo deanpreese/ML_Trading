@@ -102,12 +102,15 @@ def init_app():
        #models_three = LoadModels(0, ["23"], 1)
        #models_four = LoadModels(0, ["23"], 6)
        
-       models_one = LoadModels(0, ["25"], 1)
-       models_two = LoadModels(0, ["25"], 7)
-       models_three = LoadModels(0, ["25"], 9)
-       models_four = LoadModels(0, ["25"], 11)
+       #models_one = LoadModels(0, ["25"], 1)
+       #models_two = LoadModels(0, ["25"], 7)
+       #models_three = LoadModels(0, ["25"], 9)
+       #models_four = LoadModels(0, ["25"], 11)
        
-       
+       models_one = LoadModels(0, ["27"], 1)
+       models_two = LoadModels(0, ["27"], 7)
+       models_three = LoadModels(0, ["27"], 9)
+       models_four = LoadModels(0, ["27"], 11)       
               
     @app.route('/predict-one', methods=['POST'])
     def predict_one():
