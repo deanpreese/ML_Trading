@@ -96,7 +96,6 @@ def get_v2_prediction(data_df, models):
     
     return final_ave_predict
 
-    
 
 def init_app():
     app = Flask(__name__)
