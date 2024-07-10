@@ -108,20 +108,25 @@ def init_app():
        #models_three = LoadModels(0, ["23"], 1)
        #models_four = LoadModels(0, ["23"], 6)
        
-       #models_one = LoadModels(0, ["25"], 1)
-       #models_two = LoadModels(0, ["25"], 7)
-       #models_three = LoadModels(0, ["25"], 9)
-       #models_four = LoadModels(0, ["25"], 11)
+       models_one = LoadModels(0, ["25"], 1)
+       models_two = LoadModels(0, ["25"], 3)
+       models_three = LoadModels(0, ["25"], 3)
+       models_four = LoadModels(0, ["25"], 5)
        
        #models_one = LoadModels(0, ["27"], 1)
-       #models_two = LoadModels(0, ["27"], 7)
-       #models_three = LoadModels(0, ["27"], 9)
-       #models_four = LoadModels(0, ["27"], 11)       
+       #models_two = LoadModels(0, ["27"], 3)
+       #models_three = LoadModels(0, ["27"], 3)
+       #models_four = LoadModels(0, ["27"], 5)       
 
-       models_one = LoadModels(0, ["50"],1 )
-       models_two = LoadModels(0, ["50"], 3)
-       models_three = LoadModels(0, ["50"], 3)
-       models_four = LoadModels(0, ["50"], 5)       
+       #models_one = LoadModels(0, ["50"],1 )
+       #models_two = LoadModels(0, ["50"], 3)
+       #models_three = LoadModels(0, ["50"], 3)
+       #models_four = LoadModels(0, ["50"], 5)       
+
+       #models_one = LoadModels(0, ["33"],1 )
+       #models_two = LoadModels(0, ["33"], 3)
+       #models_three = LoadModels(0, ["33"], 3)
+       #models_four = LoadModels(0, ["33"], 5)       
 
               
     @app.route('/predict-one', methods=['POST'])
