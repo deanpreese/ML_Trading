@@ -223,10 +223,23 @@ est_list_c = [  CatBoostRegressor(),
           ]
 
 
+est_list_x = [ CatBoostRegressor(**cbr), 
+              LGBMRegressor(**lbr),  
+              XGBRegressor(**xgr), 
+              XGBRFRegressor(**xg_rf),
+              CatBoostRegressor(), 
+              LGBMRegressor(),
+              XGBRegressor(), 
+              XGBRFRegressor()
+             ]
+
+
+
+
 
 split_test_size_value = 0.7          
 
-p_df, experiment_id_parent = run_models(dtx, est_list_c, split_test_size_value, features_lucky13 )
+p_df, experiment_id_parent = run_models(dtx, est_list_x, split_test_size_value, features_lucky13 )
 
 print(" ")
 print(p_df)                

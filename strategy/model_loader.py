@@ -54,6 +54,9 @@ class ModelLoader:
         lm.trader_group = self.model_group
         lm.run_name = rinfo.info.run_name
         lm.metrics = rinfo.data.metrics
+        
+        print(f"Metrics {lm.metrics}")
+        
         lm.perf = rinfo.data.metrics["Perf"]
         lm.trader_id = 0    
         self.model_list.append(lm)        
@@ -79,9 +82,12 @@ class ModelLoader:
             ml.append(lm)
         return ml                 
             
+            
+            
     def load_composite_models(self, experiment_id, num_models, group_id): 
         
         print("Querying Runs ...")
+        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
         runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
         self.model_group = group_id
         comp_strategies = []

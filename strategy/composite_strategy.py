@@ -31,87 +31,52 @@ class CompositeStrategy (CommonStrategy):
         self.trader_id = 0
         self.trader_group = 0
 
-
-    def do_reg_predict(self, agg_predict, agg_weighted_predict): 
-        
-        return_predict = 0   
-        
-        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_threshold:
-            #return_predict = max(agg_predict, agg_weighted_predict)[0]
-            return_predict = 1
-        elif agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_threshold:
-            #return_predict = min(agg_predict, agg_weighted_predict)[0]
-            return_predict = -1    
-        else:
-            return_predict = 0
-        
-        return return_predict
     
-
-
-    def do_class_predict(self,data):
-        pass
-
-        
-
-    def do_predict(self,data):
+    def do_predict_base(self,data):
 
         agg_predict = 0    
         agg_weighted_predict = 0    
-        return_predict = 0
-        
         self.set_predict_data(data) 
+        
+        predicts = []
         
         for m in range(len(self.strategy_models)):
             
             perf = self.strategy_models[m].metrics["Perf"]
             predict = self.strategy_models[m].do_predict(data)
-            
             agg_weighted_predict += predict * perf
             agg_predict += predict
+            predicts.append(predict)
             
-        return self.do_reg_predict(agg_predict, agg_weighted_predict) 
+        return agg_predict, agg_weighted_predict, predicts
+    
+
+    def do_predict(self,data):
+
+        agg_predict, agg_weighted_predict, predicts = self.do_predict_base(data)
+                    
+        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_threshold:
+            return_predict = 1
+        elif agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_threshold:
+            return_predict = -1    
+        else:
+            return_predict = 0            
+            
+        return return_predict
     
     
     
     def do_predict_v(self,data):
 
         return_predict = 0
-        self.set_predict_data(data) 
-        predicts = []
-        
-        for m in range(len(self.strategy_models)):
-            predict = self.strategy_models[m].do_predict(data)
-            predicts.append(predict)
+        agg_predict, agg_weighted_predict, predicts = self.do_predict_base(data)
             
         count_u = sum(1 for x in predicts if x > 0)             
         total_items = len(predicts)
         percentage_positive = (count_u / total_items) 
+        return_predict = agg_predict/len(predicts)
+        print(total_items  ,  count_u , percentage_positive , agg_predict, return_predict)
 
-        return_predict = sum(predicts)/len(predicts)
-
-        print(total_items  ,  count_u , percentage_positive , sum(predicts), return_predict)
-
-        return percentage_positive, return_predict, sum(predicts)
+        return percentage_positive, return_predict, agg_predict
     
     
-    def do_predict_x(self,data):
-
-        agg_predict = 0    
-        agg_weighted_predict = 0    
-        return_predict = 0
-        
-        self.set_predict_data(data) 
-        
-        for m in range(len(self.strategy_models)):
-            
-            perf = self.strategy_models[m].metrics["Perf"]
-            predict = self.strategy_models[m].do_predict(data)
-            
-            agg_weighted_predict += predict * perf
-            agg_predict += predict
-
-            return_predict = agg_predict
-
-        
-        return return_predict

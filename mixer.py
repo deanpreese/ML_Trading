@@ -207,10 +207,23 @@ cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.
 #data/buildSeqInd_Lucky13_F_3070.csv
 # 3 - 7 features
 # number 25 in mlflow
-est_list_a = [ XGBRegressor(),  XGBRegressor(**xgr),  
-             XGBRegressor(**xgb_params_F), 
-             XGBRegressor(**xgb_params_M),                
+est_list_a = [ XGBRegressor(),  
+              XGBRegressor(**xgr),  
+              XGBRegressor(**xgb_params_F), 
+              XGBRegressor(**xgb_params_M),                
               ]
+
+
+#27 in mlflow
+est_list_b = [ CatBoostRegressor(**cbr), 
+              LGBMRegressor(**lbr),  
+              XGBRegressor(**xgr), 
+              XGBRFRegressor(**xg_rf),
+              CatBoostRegressor(), 
+              LGBMRegressor(),
+              XGBRegressor(), 
+              XGBRFRegressor()
+             ]
 
 
 # 3 - 7 features
@@ -235,7 +248,6 @@ est_list_c = [    CatBoostRegressor(),
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
           ]
-
 
 
 
