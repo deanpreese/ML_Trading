@@ -20,6 +20,9 @@ from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
+
+
+
 def process_model(exp_name, data, models, run_test_size, save_to_mlflow):
         
         run_uuid = str(uuid.uuid1())[:6]
@@ -36,11 +39,10 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow):
                 model_run_uuid = run_uuid + "-"+ str(uuid.uuid1())[:6]
                 modelname = e.__class__.__name__
                 
-                #num_columns = len(data.columns)
-                #input_features = num_columns - 2
-                
                 X = data
                 X = X.drop(columns=['output', 'outputC'])
+                X= X[features_87_FI]
+                                
                 y = data['output'].values
                 fl_out = list(X.columns)
               
@@ -167,7 +169,7 @@ datafile = [
     ]
 
 
-dtx = pd.read_csv(datafile[4])
+dtx = pd.read_csv(datafile[0])
 
 
 xgr = xgr_param_set()
@@ -196,62 +198,39 @@ lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample
 cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
 'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
 
-est_list = [ XGBRFRegressor(), XGBRFRegressor(),  
-            XGBRegressor(**xgr),  CatBoostRegressor(**cbr) ,
-             XGBRegressor(), LGBMRegressor(**lbr)  ]
-
-est_list = [ XGBRFRegressor(), XGBRFRegressor(), 
-            XGBRegressor(**xgr), XGBRegressor(),  
-            CatBoostRegressor(**cbr) ,  CatBoostRegressor(), 
-            LGBMRegressor(**lbr), LGBMRegressor() 
-            ]
-
-est_list = [ XGBRegressor(), XGBRegressor(**xgr), 
-            XGBRFRegressor(), XGBRFRegressor(**xg_rf),  
-            CatBoostRegressor(**cbr) ,  CatBoostRegressor(), 
-            LGBMRegressor(**lbr), LGBMRegressor() 
-            ]
-
-est_list = [ XGBRegressor(**xgr), 
-            XGBRFRegressor(**xg_rf),  
-            CatBoostRegressor(**cbr),
-            LGBMRegressor(**lbr) 
-            ]
-
-est_list = [ XGBRegressor(), 
-            XGBRFRegressor(),  
-            CatBoostRegressor(),
-            LGBMRegressor() 
-            ]
 
 
-est_list = [ XGBRegressor(),  XGBRegressor(**xgr),  
-             XGBRegressor(),  XGBRegressor(**xgr),
-             XGBRegressor(),  XGBRegressor(**xgr)   
-              ]
-
-est_list = [  XGBRegressor(),  XGBRegressor(),  XGBRegressor() ,
-              XGBRegressor(),  XGBRegressor(), XGBRegressor()  ]
-
-
-
-#est_list = [ XGBRegressor(),  XGBRegressor(),  CatBoostRegressor() ,
-#              XGBRegressor(),  XGBRegressor(), LGBMRegressor()  ]
-
-#est_list = [ XGBRFRegressor(), XGBRFRegressor(),  
-#            XGBRegressor(**xgr),  CatBoostRegressor(**cbr) ,
-#             XGBRegressor(), LGBMRegressor(**lbr)  ]
-
-est_list = [ CatBoostRegressor(**cbr), LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), LGBMRegressor(),
-              XGBRegressor(), XGBRFRegressor()
-             ]
+est_list = [ XGBRegressor(),  
+                XGBRegressor(**xgr),  
+                XGBRegressor(**xgb_params_F), 
+                XGBRegressor(**xgb_params_M), 
+                CatBoostRegressor(), 
+                CatBoostRegressor(**cbr),  
+                CatBoostRegressor(**cat_params_F), 
+                CatBoostRegressor(**cat_params_M),
+                LGBMRegressor(), 
+                LGBMRegressor(**lbr), 
+                LGBMRegressor(**lgb_params_F), 
+                LGBMRegressor(**lgb_params_M), 
+                XGBRFRegressor(**xg_rf),
+                XGBRFRegressor(),
+          ]
 
 
+features_87_FI = [
+        'RSI',
+        'STOK1',
+        'SDKC9',
+        'SDLR310',
+        'ATR2',
+        'SDKC91',
+        'SDBB91',
+        'ATR3',
+        'ATR21',
+    ]
 
 split_test_size_value = 0.7          
-save_mlflow = False
+save_mlflow = True
 
 p_df, experiment_id_parent = run_models(dtx, est_list, split_test_size_value, save_mlflow)
 

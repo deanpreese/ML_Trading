@@ -204,65 +204,51 @@ cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.
 'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
 
 
-#data/buildSeqInd_Lucky13_F_3070.csv
-# 3 - 7 features
-# number 25 in mlflow
-est_list_a = [ XGBRegressor(),  
+
+#59 in mlflow
+est_list_59 = [ CatBoostRegressor(**cbr), 
+              LGBMRegressor(**lbr),  
+              XGBRegressor(**xgr), 
+              XGBRFRegressor(**xg_rf),
+              CatBoostRegressor(), 
+              LGBMRegressor(),
+              XGBRegressor(), 
+              XGBRFRegressor()
+             ]
+
+
+est_list_xgb = [ XGBRegressor(),  
               XGBRegressor(**xgr),  
               XGBRegressor(**xgb_params_F), 
               XGBRegressor(**xgb_params_M),                
               ]
 
 
-#27 in mlflow
-est_list_b = [ CatBoostRegressor(**cbr), 
-              LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), 
-              XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), 
-              LGBMRegressor(),
-              XGBRegressor(), 
-              XGBRFRegressor()
-             ]
-
-
-# 3 - 7 features
-# number 29 in mlflow
-est_list_b = [ CatBoostRegressor(**cbr), 
-              LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), 
-              XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), 
-              LGBMRegressor(),
-              XGBRegressor(), 
-              XGBRFRegressor()
-             ]
-
-
-#data/buildSeqInd_Lucky13_F_3070.csv
-# 3 - 7 features
-# number 23 in mlflow
-est_list_c = [  CatBoostRegressor(), 
+est_list_cat = [  CatBoostRegressor(), 
+                CatBoostRegressor(**cbr),  
                 CatBoostRegressor(**cat_params_F), 
-                CatBoostRegressor(**cat_params_M), 
-                XGBRegressor(), 
-                XGBRegressor(**xgb_params_F), 
-                XGBRegressor(**xgb_params_M), 
-                LGBMRegressor(), 
+                CatBoostRegressor(**cat_params_M),
+          ]
+
+
+est_list_lgb = [LGBMRegressor(), 
+                LGBMRegressor(**lbr), 
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
           ]
 
 
 
+
+
 split_test_size_value = 0.7          
-min_features_used = 3
-max_features_used = 7
+min_features_used = 5
+max_features_used = 10
 step_features_used = 1
 total_cycles_used = 50
 
 
-p_df, experiment_id_parent = run_models(dtx, est_list_b, 
+p_df, experiment_id_parent = run_models(dtx, est_list_xgb, 
                                         split_test_size_value, min_features_used, max_features_used, 
                                         step_features_used, total_cycles_used  )
 

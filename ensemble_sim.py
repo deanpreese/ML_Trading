@@ -136,13 +136,13 @@ def run_test():
     model_loader = ModelLoader()
     
     #run_list = mrd.fetch_r2()
-    run_list = mrd.fetch_perf()
-    print(run_list)
+    #run_list = mrd.fetch_perf()
+    #print(run_list)
         
     #models = model_loader.load_virtual_composite_model(run_list)            
         
-    exp_idx = ["59"]
-    num_models = 3
+    exp_idx = ["66"]
+    num_models = 1
     models = model_loader.load_composite_models(exp_idx, num_models, 0)        
     
     file = "data/lucky13_oos.csv"    

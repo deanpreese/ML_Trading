@@ -90,19 +90,23 @@ def track_regressor_model(model_name, features_used, experiment_id, nested, mode
                 mlflow.xgboost.log_model(model, "model") 
                 p2 = model.get_xgb_params()
                 mlflow.log_params(p2)
+                mlflow.log_param("ModelName" , "XGB")
                 
             if "LGB" in model_name :
                 mlflow.lightgbm.log_model(model, "model")
                 p = model.get_params()
                 mlflow.log_params(p)
+                mlflow.log_param("ModelName" , "LGB")
                 
             if "Cat" in model_name :
                 mlflow.catboost.log_model(model, "model")
                 p = model.get_all_params()
                 mlflow.log_params(p)
+                mlflow.log_param("ModelName" , "CAT")
             
             mlflow.log_table(data=pd.DataFrame(features_used), artifact_file="features_used.json")  
             mlflow.log_param("FeatureCount" , (X_train.shape[1]))
+            
             mlflow.log_metric('MSE', mse)
             mlflow.log_metric('RMSE', rmse)
             mlflow.log_metric('R2', r2)

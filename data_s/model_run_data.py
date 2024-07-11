@@ -21,7 +21,7 @@ WHERE exp.experiment_id > 0
   AND exp.lifecycle_stage = 'active'
   AND m.key LIKE 'Perf'
 ORDER BY m.value DESC
-LIMIT 5;
+LIMIT 2;
 """
 
 query_perf = """
@@ -34,7 +34,7 @@ WHERE exp.experiment_id > 0
   AND exp.lifecycle_stage = 'active'
   AND m.key LIKE 'Perf'
 ORDER BY m.value DESC
-LIMIT 5;
+LIMIT 2;
 """
 
 
