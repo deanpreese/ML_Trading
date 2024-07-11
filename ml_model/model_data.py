@@ -2,7 +2,7 @@ import psycopg2
 
 # Database connection parameters
 db_params = {
-    'dbname': 'mlfow2',
+    'dbname': 'mlflow2',
     'user': 'mlflow',
     'password': 'abc',
     'host': '10.0.0.50',  # e.g., 'localhost' or IP address
@@ -43,14 +43,14 @@ def fetch_data():
         for row in results:
             print(row)
 
+        cursor.close()
+        connection.close()
+
+
     except Exception as error:
         print(f"Error: {error}")
     
-    finally:
-        # Close the database connection
-        if connection:
-            cursor.close()
-            connection.close()
 
+           
 if __name__ == '__main__':
     fetch_data()
