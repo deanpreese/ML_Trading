@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from io import BytesIO
 import time 
+import data_s.model_run_data as mrd
 
 from strategy.model_loader import ModelLoader
 
@@ -133,23 +134,16 @@ def run_sim(file, models):
 def run_test():
 
     model_loader = ModelLoader()
-    model_list = ["41d0299347254101b98be906d65716f7",
-                "f39fc990a7a0461fac656af6d0063501",
-                "1926a0afb873472a9a4de6478e7a433d",
-                "83d5e4c1bc434cc6b4ea896c5a04f5a4",
-                "a91b753bf63e46bebdbd6f0bcc0d4160"]        
+    
+    #run_list = mrd.fetch_r2()
+    run_list = mrd.fetch_perf()
+    print(run_list)
         
-    #model_list =  ["962535dfcc2941078bdf6e39e37817d7",
-    #                "7be92bc697ab479fa6217ff2d6ef297a",
-    #                    "d69dbe691f054905a27f682eab013e6d",
-    #                        "90959c691693409aa4163da1fe542b6d",
-    #                            "4e27fea39ee64162975862726b7529e7"]
+    #models = model_loader.load_virtual_composite_model(run_list)            
         
-    models = model_loader.load_virtual_composite_model(model_list)            
-        
-    exp_idx = ["23"]
-    num_models = 1
-    #models = model_loader.load_composite_models(exp_idx, num_models, 0)        
+    exp_idx = ["59"]
+    num_models = 3
+    models = model_loader.load_composite_models(exp_idx, num_models, 0)        
     
     file = "data/lucky13_oos.csv"    
     
