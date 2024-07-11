@@ -104,40 +104,19 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-       
-       #models_one = LoadModels(0, ["12"], 1)
-       #models_two = LoadModels(0, ["12"], 10)
-       #models_three = LoadModels(0, ["23"], 1)
-       #models_four = LoadModels(0, ["23"], 6)
-       
-       models_one = LoadModels(0, ["25"], 1)
-       models_two = LoadModels(0, ["25"], 3)
-       models_three = LoadModels(0, ["25"], 3)
-       models_four = LoadModels(0, ["25"], 5)
-       
-       #models_one = LoadModels(0, ["27"], 1)
-       #models_two = LoadModels(0, ["27"], 3)
-       #models_three = LoadModels(0, ["27"], 3)
-       #models_four = LoadModels(0, ["27"], 5)       
 
-       #models_one = LoadModels(0, ["50"],1 )
-       #models_two = LoadModels(0, ["50"], 3)
-       #models_three = LoadModels(0, ["50"], 3)
-       #models_four = LoadModels(0, ["50"], 5)       
-
-       #models_one = LoadModels(0, ["33"],1 )
-       #models_two = LoadModels(0, ["33"], 3)
-       #models_three = LoadModels(0, ["33"], 3)
-       #models_four = LoadModels(0, ["33"], 5)       
+       models_one = LoadModels(0, ["59"], 1)
+       models_two = LoadModels(0, ["59"], 3)
+       models_three = LoadModels(0, ["59"], 3)
+       models_four = LoadModels(0, ["59"], 5)
+       
 
               
     @app.route('/predict-one', methods=['POST'])
     def predict_one():
         
         csv_data = BytesIO(request.data)
-        #column_names = ['time', 'SDLR310', 'SDBB91', 'SDKC91', 'SDKC9', 'ROC', 'ATR34', 'ATR32', 'ATR31', 'ATR3', 'ATR21', 'ATR2', 'RSI', 'STOK1', 'output', 'outputC', 'actual']
-        column_names = ['time', 'SDLR310', 'SDBB91', 'SDKC91', 'SDKC9', 'ROC', 'ATR33', 'ATR32', 'ATR31', 'ATR3', 'ATR21', 'ATR2', 'RSI', 'STOK1', 'output', 'outputC', 'actual']
-
+        column_names = ['time', 'SDLR310', 'SDBB91', 'SDKC91', 'SDKC9', 'ROC', 'ATR34', 'ATR32', 'ATR31', 'ATR3', 'ATR21', 'ATR2', 'RSI', 'STOK1', 'output', 'outputC', 'actual']
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
         data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
 
