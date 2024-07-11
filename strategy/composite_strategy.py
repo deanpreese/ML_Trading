@@ -74,9 +74,15 @@ class CompositeStrategy (CommonStrategy):
         count_u = sum(1 for x in predicts if x > 0)             
         total_items = len(predicts)
         percentage_positive = (count_u / total_items) 
-        return_predict = agg_predict/len(predicts)
-        print(total_items  ,  count_u , percentage_positive , agg_predict, return_predict)
+        
+        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_threshold:
+            return_predict = 1
+        else:
+            agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_threshold
+            return_predict = -1         
+                
+        #print(total_items  ,  count_u , percentage_positive , agg_predict, agg_weighted_predict, return_predict  )
 
-        return percentage_positive, return_predict, agg_predict
+        return percentage_positive, return_predict, agg_predict, agg_weighted_predict
     
     

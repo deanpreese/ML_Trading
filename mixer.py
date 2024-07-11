@@ -227,18 +227,22 @@ est_list_b = [ CatBoostRegressor(**cbr),
 
 
 # 3 - 7 features
-# number 12 in mlflow
-est_list_b = [ CatBoostRegressor(**cbr), LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), LGBMRegressor(),
-              XGBRegressor(), XGBRFRegressor()
+# number 29 in mlflow
+est_list_b = [ CatBoostRegressor(**cbr), 
+              LGBMRegressor(**lbr),  
+              XGBRegressor(**xgr), 
+              XGBRFRegressor(**xg_rf),
+              CatBoostRegressor(), 
+              LGBMRegressor(),
+              XGBRegressor(), 
+              XGBRFRegressor()
              ]
 
 
 #data/buildSeqInd_Lucky13_F_3070.csv
 # 3 - 7 features
 # number 23 in mlflow
-est_list_c = [    CatBoostRegressor(), 
+est_list_c = [  CatBoostRegressor(), 
                 CatBoostRegressor(**cat_params_F), 
                 CatBoostRegressor(**cat_params_M), 
                 XGBRegressor(), 

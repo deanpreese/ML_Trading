@@ -169,12 +169,32 @@ datafile = [
 
 dtx = pd.read_csv(datafile[4])
 
-#xgr_param_set, lbr_param_set, cbr_param_set
+
 xgr = xgr_param_set()
 lbr = lbr_param_set()
 cbr = cbr_param_set()
 xg_rf = xgb_rf_params()
 
+cat_params_F={'learning_rate': 0.0360944196001379, 'depth': 10, 
+        'subsample': 0.3523958110464825, 'colsample_bylevel': 0.6176118972551982, 
+                'min_data_in_leaf': 46 }
+
+xgb_params_F={'learning_rate': 0.004023993590803149, 'max_depth': 9, 'subsample': 0.5061891892307074, 
+'colsample_bytree': 0.6646068031525607, 'min_child_weight': 18}
+
+lgb_params_F={'learning_rate': 0.006961479110933946, 'num_leaves': 762, 
+'subsample': 0.5909033731294365, 'colsample_bytree': 0.8383929309109572, 
+'min_data_in_leaf': 80}
+
+xgb_params_M={'learning_rate': 0.00264122394857379, 'max_depth': 8, 
+'subsample': 0.2772844546321145, 'colsample_bytree': 0.8118319429046319, 
+'min_child_weight': 7}
+
+lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample': 0.8313397546109982, 
+'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68}
+
+cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
+'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
 
 est_list = [ XGBRFRegressor(), XGBRFRegressor(),  
             XGBRegressor(**xgr),  CatBoostRegressor(**cbr) ,

@@ -82,13 +82,42 @@ class ModelLoader:
             ml.append(lm)
         return ml                 
             
+
+    def load_virtual_composite_model(self, run_list):
+        
+        self.model_group = 0
+        comp_strategies = []
+
+        comp_strat = CompositeStrategy()
+        comp_strat.run_id = 0
+        comp_strat.run_name = "virtual_strategy"
+        comp_strat.trader_group = 0     
+
+        t_id = 1
+        comp_strat.trader_id = t_id
+
+        try:
+            
+            for i in range(len(run_list)):
+                r_id = run_list[i]
+                print(f"Run Id     {r_id}")
+                self.add_model(r_id, False)
+                        
+            comp_strat.strategy_models = self.model_list    
+            comp_strategies.append(comp_strat)
+                                
+        except Exception as e:
+            print(f"An error occurred: {e}")            
+            
+        return comp_strategies    
+        
             
             
     def load_composite_models(self, experiment_id, num_models, group_id): 
         
         print("Querying Runs ...")
-        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
-        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
+        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
+        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
         self.model_group = group_id
         comp_strategies = []
 
