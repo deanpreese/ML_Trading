@@ -8,8 +8,8 @@ import pandas as pd
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import logging
 
-from ml_model.model_tracking import track_regressor_model
-from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
+from ml_model.model_tracking import track_regressor_model, track_classifier_model
+from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results, gen_class_stats, calc_class_ens_results
 from ml_model.data_func import simple_split_and_scale
 from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params
 
@@ -41,7 +41,7 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
                 num_columns = len(data.columns)
                 input_features = num_columns - 2
                 X = data.iloc[:, 0:input_features]
-                y = data['output'].values
+                y = data['outputC'].values
                 
                 idxx = rand.sample(range(1, len(data.axes[1]) -2 ), feature_list_size)
                 features_list.append(idxx)    
@@ -51,15 +51,13 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
                 fl_out = fl
               
                 X_train, X_test, y_train, y_test = simple_split_and_scale(X, y, run_test_size, 42)
+                run_id, accuracy, precision, recall, TN, FP, FN, TP, tot, predictions, pred_proba = track_classifier_model(modelname, X_train.columns, exp_name, True, e, X_train, y_train, X_test, y_test, True)
                 
-                run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
-                                                                                  y_train, X_test, y_test, True)  
                 all_predict_data[model_run_uuid] = predictions
-                perf, tot = gen_reg_stats(y_test, predictions)
+                perf, tot = gen_class_stats(y_test, predictions)
                 
                 mse = mean_squared_error(y_test, predictions)
                 rmse =  rmse = mse**.5
-                
                 score = e.score(X_test, y_test)
                 
                 combined_prod_perf = predictions * perf
@@ -74,8 +72,8 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
         all_predict_data["target"] = y_test
         e_perf = pd.DataFrame(estimator_perf)        
         e_perf.columns = ["Estimator", "Perf", "Total", "MSE", "RMSE", "Score", "Features", "UUID", "RUN_ID" ]
-        
-        correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_reg_ens_results(all_predict_data, estimator_run_ids)
+
+        correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_class_ens_results(all_predict_data, estimator_run_ids)
 
         mse = mean_squared_error(r_y_target, r_predictions, squared=True)
         rmse =mean_squared_error(r_y_target, r_predictions, squared=False)
@@ -213,42 +211,42 @@ xgb_rf_D={'learning_rate': 0.09959861108872929, 'max_depth': 8, 'subsample': 0.2
         'colsample_bytree': 0.4775583435702645, 'min_child_weight': 15}
 
 #59 in mlflow
-est_list_59 = [ CatBoostRegressor(**cbr), 
-              LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), 
-              XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), 
-              LGBMRegressor(),
-              XGBRegressor(), 
-              XGBRFRegressor()
+est_list_59 = [ CatBoostClassifier(**cbr), 
+              LGBMClassifier(**lbr),  
+              XGBClassifier(**xgr), 
+              XGBRFClassifier(**xg_rf),
+              CatBoostClassifier(), 
+              LGBMClassifier(),
+              XGBClassifier(), 
+              XGBRFClassifier()
              ]
 
-est_list_xgrf = [ XGBRFRegressor(),  
-              XGBRFRegressor(**xgr),  
-              XGBRFRegressor(**xgb_rf_t),  
-              XGBRFRegressor(**xgb_rf_F), 
-              XGBRFRegressor(**xgb_rf_D),                
+est_list_xgrf = [ XGBRFClassifier(),  
+              XGBRFClassifier(**xgr),  
+              XGBRFClassifier(**xgb_rf_t),  
+              XGBRFClassifier(**xgb_rf_F), 
+              XGBRFClassifier(**xgb_rf_D),                
               ]
 
 
-est_list_xgb = [ XGBRegressor(),  
-              XGBRegressor(**xgr),  
-              XGBRegressor(**xgb_params_F), 
-              XGBRegressor(**xgb_params_M),                
+est_list_xgb = [ XGBClassifier(),  
+              XGBClassifier(**xgr),  
+              XGBClassifier(**xgb_params_F), 
+              XGBClassifier(**xgb_params_M),                
               ]
 
 
-est_list_cat = [  CatBoostRegressor(), 
-                CatBoostRegressor(**cbr),  
-                CatBoostRegressor(**cat_params_F), 
-                CatBoostRegressor(**cat_params_M),
+est_list_cat = [  CatBoostClassifier(), 
+                CatBoostClassifier(**cbr),  
+                CatBoostClassifier(**cat_params_F), 
+                CatBoostClassifier(**cat_params_M),
           ]
 
 
-est_list_lgb = [LGBMRegressor(), 
-                LGBMRegressor(**lbr), 
-                LGBMRegressor(**lgb_params_F), 
-                LGBMRegressor(**lgb_params_M), 
+est_list_lgb = [LGBMClassifier(), 
+                LGBMClassifier(**lbr), 
+                LGBMClassifier(**lgb_params_F), 
+                LGBMClassifier(**lgb_params_M), 
           ]
 
 
@@ -262,7 +260,7 @@ step_features_used = 1
 total_cycles_used = 100
 
 
-p_df, experiment_id_parent = run_models(dtx, est_list_xgrf, 
+p_df, experiment_id_parent = run_models(dtx, est_list_xgb, 
                                         split_test_size_value, min_features_used, max_features_used, 
                                         step_features_used, total_cycles_used  )
 

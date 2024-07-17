@@ -4,6 +4,7 @@ import pandas as pd
 from io import BytesIO
 import time 
 import data_s.model_run_data as mrd
+import itertools
 
 from strategy.model_loader import ModelLoader
 
@@ -38,6 +39,7 @@ def run_sim(file, models):
     p_ens = 0
     p_cc = 0
 
+    print("Calculating Predictions")
 
     for i in range(len(y)):
         
@@ -130,24 +132,135 @@ def run_sim(file, models):
     print(f"Time {t} seconds to process {len(y)} predictions  --  {round(len(y)/t,2)}/sec ")
     print(" ") 
     
+    return round(p_rtn/len(y),4), round(p_pct/len(y),4)
 
-def run_test():
 
+def run_combos(model_list, file):
+    
+    combo_perf = []
+    
     model_loader = ModelLoader()
     
-    #run_list = mrd.fetch_r2()
-    #run_list = mrd.fetch_perf()
-    #print(run_list)
-        
-    #models = model_loader.load_virtual_composite_model(run_list)            
-        
-    exp_idx = ["66"]
-    num_models = 1
-    models = model_loader.load_composite_models(exp_idx, num_models, 0)        
+    all_combinations = []
+    for r in range(2,len(model_list)):
+        combinations = list(itertools.combinations(model_list, r))
+        all_combinations.extend(combinations)
     
+    for m in range(len(all_combinations)):
+        models = model_loader.load_virtual_composite_model(all_combinations[m])  
+        p_rtn, p_pct = run_sim(file, models)
+        perf_t = [all_combinations[m], p_rtn , p_pct]
+        combo_perf.append(perf_t)
+    
+    return combo_perf
+
+
+def run_single(model_list, file):
+    model_loader = ModelLoader()
+    models = model_loader.load_virtual_composite_model(model_list)  
+    run_sim(file, models)    
+
+
+def run_test():
     file = "data/lucky13_oos.csv"    
     
-    run_sim(file, models)    
+    #7601
+    list_a = mrd.fetch_data(3, "DESC", "=100", 0, "'R2'")
+    list_a = list_a + mrd.fetch_data(1, "DESC", "=100", 5, "'R2'")
+    list_a = list_a + mrd.fetch_data(1, "ASC", "=100", 1, "'R2'")
+    
+    
+    x_mc = 4
+    x_ad = "DESC"
+    x_exp = "= 109"
+    x_feat = 2
+    list_x= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
+
+    x_mc =  2 #0
+    x_ad = "DESC"
+    x_exp = "= 109"
+    x_feat = 5
+    list_x_2= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
+
+    x_mc = 1 #0
+    x_ad = "ASC"
+    x_exp = "= 109"
+    x_feat = 1
+    list_x_3= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
+    list_x = list_x + list_x_2 + list_x_3
+    
+    c_mc =  2 #2
+    c_ad = "DESC"
+    c_exp = "= 111"
+    c_feat = 6
+    list_c = mrd.fetch_data(c_mc, c_ad, c_exp, c_feat, "'R2'")
+
+    c_mc =  3 #1
+    c_ad = "DESC"
+    c_exp = "= 111"
+    c_feat = 6
+    list_c_2 = mrd.fetch_data(c_mc, c_ad, c_exp, c_feat, "'R2'")
+    list_c = list_c + list_c_2
+
+    lg_mc = 0
+    lg_ad = "DESC"
+    lg_exp = "= 113"
+    lg_feat = 1
+    list_lg = mrd.fetch_data(lg_mc, lg_ad, lg_exp, lg_feat, "'R2'")
+
+    lg_mc = 0
+    lg_ad = "ASC"
+    lg_exp = "= 113"
+    lg_feat = 5
+    list_lg_2 = mrd.fetch_data(lg_mc, lg_ad, lg_exp, lg_feat, "'R2'")
+    list_lg = list_lg + list_lg_2    
+
+    rf_mc = 0
+    rf_ad = "DESC"
+    rf_exp = "= 115"
+    rf_feat = 0
+    list_rf = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
+    
+    rf_mc = 0
+    rf_ad = "ASC"
+    rf_exp = "= 115"
+    rf_feat = 4
+    list_rf_2 = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
+    
+        
+    l13_mc = 1
+    l13_ad = "DESC"
+    l13_exp = "= 63"
+    l13_feat = 0
+    list_13= mrd.fetch_data(l13_mc, l13_ad, l13_exp, l13_feat, "'R2'")
+    
+    
+    list_rf = list_rf + list_rf_2 
+    
+    model_list = list(set(list_x + list_c + list_lg + list_rf+ list_13))
+    
+    
+    print(" ")
+    print(f"Models {len(model_list)}")
+    print(model_list)
+    print(" ")
+        
+    #combo_p = run_combos(model_list, file)
+    #df = pd.DataFrame(combo_p)
+    #print(df)
+    
+    #run_single(model_list, file)
+      
+    model_loader = ModelLoader()
+    models = model_loader.load_composite_models(["66"], 2, 0)        
+    models = models + model_loader.load_composite_models(["108"], 2, 0)        
+    models = models + model_loader.load_composite_models(["116"], 2, 0)        
+    models = models + model_loader.load_composite_models(["68"], 2, 0)        
+    run_sim( file, models)
+
+
+
+
 
 if __name__ == "__main__":
     run_test()

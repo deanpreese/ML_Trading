@@ -2,6 +2,7 @@ import pandas as pd
 import lightgbm as lgb
 import xgboost as xgb
 import catboost as cb
+
 from sklearn.metrics import mean_squared_error
 from ml_model.data_func import simple_split_and_scale
 import optuna
@@ -16,7 +17,7 @@ datafile = [
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
     ]
 
-dtx = pd.read_csv(datafile[0])
+dtx = pd.read_csv(datafile[3])
 X = dtx
 X = X.drop(columns=['output', 'outputC'])
 y = dtx['output'].values
@@ -37,7 +38,8 @@ def objective_xgb(trial):
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 20),
     }
 
-    model = xgb.XGBRegressor(**params)
+    #model = xgb.XGBRegressor(**params)
+    model = xgb.XGBRFRegressor(**params)
     model.fit(X_train, y_train, verbose=False)
     predictions = model.predict(X_val)
     rmse = mean_squared_error(y_val, predictions, squared=False)
@@ -87,28 +89,28 @@ def main():
     print(" ")
     print("XGBoost Tuning")
     study_xgb = optuna.create_study(direction='minimize')
-    study_xgb.optimize(objective_xgb, n_trials=30)
+    study_xgb.optimize(objective_xgb, n_trials=50)
 
-    print(" ")
-    print("Lightgbm Tuning")
-    study_lgb = optuna.create_study(direction='minimize')
-    study_lgb.optimize(objective_lgb, n_trials=30)
+    #print(" ")
+    #print("Lightgbm Tuning")
+    #study_lgb = optuna.create_study(direction='minimize')
+    #study_lgb.optimize(objective_lgb, n_trials=30)
 
-    print(" ")
-    print("CatBoost Tuning")
-    study_cat = optuna.create_study(direction='minimize')
-    study_cat.optimize(objective_cat, n_trials=30)
+    #print(" ")
+    #print("CatBoost Tuning")
+    #study_cat = optuna.create_study(direction='minimize')
+    #study_cat.optimize(objective_cat, n_trials=30)
     
     
     print(" ")
     print("Best XGB parameters")
     print(study_xgb.best_trial)
     print(" ")
-    print("Best LGB parameters")
-    print(study_lgb.best_trial)
+    #print("Best LGB parameters")
+    #print(study_lgb.best_trial)
     print(" ")
-    print("Best CAT parameters")
-    print(study_cat.best_trial)
+    #print("Best CAT parameters")
+    #print(study_cat.best_trial)
     print(" ")
 
 

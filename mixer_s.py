@@ -41,7 +41,7 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow):
                 
                 X = data
                 X = X.drop(columns=['output', 'outputC'])
-                X= X[features_87_FI]
+                X= X[feat_80]
                                 
                 y = data['output'].values
                 fl_out = list(X.columns)
@@ -166,6 +166,7 @@ datafile = [
         'data/buildSeqInd_Lucky13_F.csv',  #2
         'data/buildSeqInd_Lucky13_D.csv',  #3
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
+        'data/Expanded_Lucky13_3070.csv',  #5
     ]
 
 
@@ -217,6 +218,7 @@ est_list = [ XGBRegressor(),
           ]
 
 
+# for 'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
 features_87_FI = [
         'RSI',
         'STOK1',
@@ -228,6 +230,31 @@ features_87_FI = [
         'ATR3',
         'ATR21',
     ]
+
+
+feat_777 = ['RSI', 'ATR21', 'ATR2', 'ATR3', 'SDKC91']
+
+# ---------------------------
+# for this file  'data/Expanded_Lucky13_3070.csv',  #5
+
+#dtx = dtx.drop(columns=['dtnow'])
+
+f_comp = ['bandhigh','high1', 'low3','sdbb9', 'sdlr3102', 'atr2', 'atr3', 'atr33', 'close2', 'close5', 'high2', 'high5','low1',
+        'low5', 'sdlr310', 'sdlr3101', 'close1', 'high3', 'rsi9','sdbb91', 'stok7', 'stok71']
+f_comp_x = ['bandhigh', 'high1','low3','sdbb9','sdlr3102','atr2','atr3','atr33','close2','close5','high2','high5','low1','low5',
+'sdlr310','sdlr3101','close1','high3','rsi9','sdbb91','stok7','stok71','atr21','bandlow','sdkc9','close3','low2','roc9','roc91',
+'roc92','rsi91']
+f_1 = ['close3', 'sdlr3101', 'low5', 'low3', 'sdlr3102', 'high5', 'high2', 'close2', 'high1', 'low1', 'close5', 'bandhigh', 'sdbb9', 'atr3', 'atr33', 'sdlr310']
+f_2 = ['rsi9', 'atr33', 'bandhigh', 'low1', 'sdlr3101', 'stok7', 'low3', 'close5', 'high3', 'high2', 'sdbb91', 'atr2', 'close1', 'atr3', 'high5', 'sdlr3102', 'stok71', 'low5', 'high1', 'sdbb9']
+f_3 = ['close3', 'sdlr3101', 'low5', 'low3', 'sdlr3102', 'high5', 'high2', 'close2', 'high1', 'low1', 'close5', 'bandhigh', 'sdbb9', 'atr3', 'atr33', 'sdlr310']
+f_4 = ['rsi9', 'atr33', 'bandhigh', 'low1', 'sdlr3101', 'stok7', 'low3', 'close5', 'high3', 'high2', 'sdbb91', 'atr2', 'close1', 'atr3', 'high5', 'sdlr3102', 'stok71', 'low5', 'high1', 'sdbb9']
+f_5 = ['atr2','roc91','high1', 'sdbb9', 'bandhigh', 'sdbb91', 'low3', 'sdlr310', 'low2', 'close2', 'close1', 'high3','roc92', 'atr21','sdkc9','sdlr3102','stok71', 'bandlow']
+f_6 = ['rsi9', 'rsi91', 'roc9', 'bandhigh', 'stok7', 'bandlow', 'atr21', 'atr2', 'sdkc9', 'sdlr310', 'close2']
+f_xg = ['rsi9', 'atr3', 'atr2', 'stok7', 'atr21', 'atr52', 'ebandlow2', 'roc92', 'hour', 'ebandlow', 'atr53', 'atr51', 'roc9', 'roc91', 'stok71', 'atr32', 'atr33', 'ebandhigh']
+# ---------------------------
+
+
+feat_80 = feat_777
 
 split_test_size_value = 0.7          
 save_mlflow = True

@@ -11,29 +11,6 @@ from ml_model.model_stats import gen_reg_stats
 import mlflow
 mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 
-# -----------------------------------------------------
-def gen_classifier_data(model, X_train, y_train, X_test, y_test, y_pred, save_to_mlflow):
-        
-        TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
-        accuracy = accuracy_score(y_pred, y_test)
-        precision = precision_score(y_pred, y_test)
-        recall = recall_score(y_pred, y_test)
-
-        if save_to_mlflow :
-            mlflow.log_param("FeatureCount" , (X_train.shape[1]))
-            mlflow.log_metric('Accuracy', accuracy)
-            mlflow.log_metric('Precision', precision)
-            mlflow.log_metric('Recall', recall)
-            mlflow.log_metric('TrueNeg', TN)
-            mlflow.log_metric("FalsePos", FP)
-            mlflow.log_metric("FalseNeg", FN)
-            mlflow.log_metric("TruePos", TP)
-            mlflow.log_metric("Perf", accuracy)
-
-        tot = TN + FP + FN + TP
-        return accuracy, precision, recall, TN/tot, FP/tot, FN/tot, TP/tot, tot
-
-
 def track_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
         
     with mlflow.start_run(experiment_id = experiment_id, nested=nested):
@@ -43,6 +20,12 @@ def track_classifier_model(model_name, features_used, experiment_id, nested, mod
         y_pred = model.predict(X_test)
         pred_proba = model.predict_proba(X_test)
         
+        TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
+        accuracy = accuracy_score(y_pred, y_test)
+        precision = precision_score(y_pred, y_test)
+        recall = recall_score(y_pred, y_test)
+        tot = TN + FP + FN + TP
+                
         if save_to_mlflow :
             if "XGB" in model_name :
                 mlflow.xgboost.log_model(model, "model") 
@@ -61,10 +44,18 @@ def track_classifier_model(model_name, features_used, experiment_id, nested, mod
                 p = model.get_all_params()
                 mlflow.log_params(p)
             
-            mlflow.log_table(data=pd.DataFrame(features_used), artifact_file="features_used.json")                 
-        accuracy, precision, recall, TN, FP, FN, TP, tot = gen_classifier_data(model, X_train, y_train, X_test, y_test, y_pred)
+            mlflow.log_table(data=pd.DataFrame(features_used), artifact_file="features_used.json") 
+            mlflow.log_param("FeatureCount" , (X_train.shape[1]))
+            mlflow.log_metric('Accuracy', accuracy)
+            mlflow.log_metric('Precision', precision)
+            mlflow.log_metric('Recall', recall)
+            mlflow.log_metric('TrueNeg', TN)
+            mlflow.log_metric("FalsePos", FP)
+            mlflow.log_metric("FalseNeg", FN)
+            mlflow.log_metric("TruePos", TP)
+            mlflow.log_metric("Perf", accuracy)
         
-    return run_id, accuracy, precision, recall, TN, FP, FN, TP, tot, y_pred, pred_proba      
+    return run_id, accuracy, precision, recall, TN/tot, FP/tot, FN/tot, TP/tot, tot, y_pred, pred_proba      
     
 
 # -----------------------------------------------------

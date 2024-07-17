@@ -41,9 +41,9 @@ class ModelLoader:
             cols = [x[0] for x in arti_d['data'] if x[0] != 'output']
             self.l_artifacts.append(cols)
             
-            print("Columns")
-            print(cols)
-            print(" ")
+            #print("Columns")
+            #print(cols)
+            #print(" ")
             
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -55,7 +55,7 @@ class ModelLoader:
         lm.run_name = rinfo.info.run_name
         lm.metrics = rinfo.data.metrics
         
-        print(f"Metrics {lm.metrics}")
+        #print(f"Metrics {lm.metrics}")
         
         lm.perf = rinfo.data.metrics["Perf"]
         lm.trader_id = 0    

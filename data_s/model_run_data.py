@@ -10,40 +10,27 @@ db_params = {
     'port': '5432'           # replace with your port, e.g., '5432'
 }
 
-# PostgreSQL query
-query_r2 = """
-SELECT m.run_uuid
-FROM metrics AS m
-JOIN public.runs AS r ON r.run_uuid = m.run_uuid
-JOIN public.experiments AS exp ON r.experiment_id = exp.experiment_id
-WHERE exp.experiment_id > 0
-  AND exp.name NOT LIKE '%output%'
-  AND exp.lifecycle_stage = 'active'
-  AND m.key LIKE 'Perf'
-ORDER BY m.value DESC
-LIMIT 2;
-"""
+def fetch_data(num_models, asc_desc, exp_query, features, perf_r2):
+    
+    query = f"""
+    select  
+    	m.run_uuid 
+	from metrics as m
+	JOIN public.params as pm on pm.run_uuid = m.run_uuid
+	JOIN public.runs AS r ON r.run_uuid = m.run_uuid	
+	JOIN public.experiments AS exp ON r.experiment_id = exp.experiment_id
 
-query_perf = """
-SELECT m.run_uuid
-FROM metrics AS m
-JOIN public.runs AS r ON r.run_uuid = m.run_uuid
-JOIN public.experiments AS exp ON r.experiment_id = exp.experiment_id
-WHERE exp.experiment_id > 0
-  AND exp.name NOT LIKE '%output%'
-  AND exp.lifecycle_stage = 'active'
-  AND m.key LIKE 'Perf'
-ORDER BY m.value DESC
-LIMIT 2;
-"""
+	WHERE exp.experiment_id {exp_query}
+		AND exp.name NOT LIKE '%output%' 
+	    AND exp.lifecycle_stage = 'active'
+		and ( m.key like {perf_r2})
+		and ( pm.key like 'FeatureCount')
+		and CAST(pm.value as INTEGER) > {features}
+		ORDER BY m.value {asc_desc}
+		LIMIT {num_models};
+    """
 
-
-def fetch_r2():
-    return fetch_run_uuid_data(query_r2)
-
-def fetch_perf():
-    return fetch_run_uuid_data(query_perf)
-
+    return fetch_run_uuid_data(query)
 
 def fetch_run_uuid_data(query_name):
     
@@ -55,7 +42,6 @@ def fetch_run_uuid_data(query_name):
             with connection.cursor() as cursor:
                 cursor.execute(query_name)
                 results = cursor.fetchall()
-
                 for row in results:
                     run_data.append(row[0])   
 
