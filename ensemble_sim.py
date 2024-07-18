@@ -21,14 +21,12 @@ warnings.filterwarnings("ignore", module='[LightGBM]')
 
 
 
-def run_sim(file, models):
+def run_sim(file, models, target):
 
     data = pd.read_csv(file)                   
     X = data
     X = X.drop(columns=['output', 'outputC'])
-    #X.columns = ['SDLR310', 'SDBB91', 'SDKC91', 'SDKC9', 'ROC', 'ATR33', 'ATR32', 'ATR31', 'ATR3', 'ATR21', 'ATR2', 'RSI', 'STOK1']
-
-    y = data['output'].values
+    y = data[target].values
     fl_out = list(X.columns)
     start = time.time()
 
@@ -155,10 +153,10 @@ def run_combos(model_list, file):
     return combo_perf
 
 
-def run_single(model_list, file):
+def run_single(model_list, file, target):
     model_loader = ModelLoader()
     models = model_loader.load_virtual_composite_model(model_list)  
-    run_sim(file, models)    
+    run_sim(file, models, target)    
 
 
 def run_test():
@@ -220,23 +218,21 @@ def run_test():
     rf_exp = "= 115"
     rf_feat = 0
     list_rf = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
-    
+
     rf_mc = 0
     rf_ad = "ASC"
     rf_exp = "= 115"
     rf_feat = 4
     list_rf_2 = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
     
-        
     l13_mc = 1
     l13_ad = "DESC"
     l13_exp = "= 63"
     l13_feat = 0
     list_13= mrd.fetch_data(l13_mc, l13_ad, l13_exp, l13_feat, "'R2'")
-    
-    
+
+
     list_rf = list_rf + list_rf_2 
-    
     model_list = list(set(list_x + list_c + list_lg + list_rf+ list_13))
     
     
@@ -249,17 +245,15 @@ def run_test():
     #df = pd.DataFrame(combo_p)
     #print(df)
     
-    #run_single(model_list, file)
+    target = 'output'
+    #run_single(model_list, file, target)
       
     model_loader = ModelLoader()
     models = model_loader.load_composite_models(["66"], 2, 0)        
     models = models + model_loader.load_composite_models(["108"], 2, 0)        
     models = models + model_loader.load_composite_models(["116"], 2, 0)        
     models = models + model_loader.load_composite_models(["68"], 2, 0)        
-    run_sim( file, models)
-
-
-
+    run_sim( file, models, target)
 
 
 if __name__ == "__main__":
