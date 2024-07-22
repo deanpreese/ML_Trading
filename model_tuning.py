@@ -17,7 +17,7 @@ datafile = [
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
     ]
 
-dtx = pd.read_csv(datafile[3])
+dtx = pd.read_csv(datafile[0])
 X = dtx
 X = X.drop(columns=['output', 'outputC'])
 y = dtx['output'].values
@@ -32,14 +32,14 @@ def objective_xgb(trial):
         "n_estimators": 1000,
         "verbosity": 0,
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-        "max_depth": trial.suggest_int("max_depth", 1, 10),
+        "max_depth": trial.suggest_int("max_depth", 1, 50),
         "subsample": trial.suggest_float("subsample", 0.05, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.05, 1.0),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 20),
     }
 
-    #model = xgb.XGBRegressor(**params)
-    model = xgb.XGBRFRegressor(**params)
+    model = xgb.XGBRegressor(**params)
+    #model = xgb.XGBRFRegressor(**params)
     model.fit(X_train, y_train, verbose=False)
     predictions = model.predict(X_val)
     rmse = mean_squared_error(y_val, predictions, squared=False)
@@ -50,7 +50,7 @@ def objective_cat(trial):
     params = {
         "iterations": 1000,
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-        "depth": trial.suggest_int("depth", 1, 10),
+        "depth": trial.suggest_int("depth", 1, 15),
         "subsample": trial.suggest_float("subsample", 0.05, 1.0),
         "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
         "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
@@ -86,31 +86,31 @@ def objective_lgb(trial):
 
 def main():
     
-    print(" ")
-    print("XGBoost Tuning")
-    study_xgb = optuna.create_study(direction='minimize')
-    study_xgb.optimize(objective_xgb, n_trials=50)
+    #print(" ")
+    #print("XGBoost Tuning")
+    #study_xgb = optuna.create_study(direction='minimize')
+    #study_xgb.optimize(objective_xgb, n_trials=20)
 
     #print(" ")
     #print("Lightgbm Tuning")
     #study_lgb = optuna.create_study(direction='minimize')
-    #study_lgb.optimize(objective_lgb, n_trials=30)
+    #study_lgb.optimize(objective_lgb, n_trials=20)
 
+    print(" ")
+    print("CatBoost Tuning")
+    study_cat = optuna.create_study(direction='minimize')
+    study_cat.optimize(objective_cat, n_trials=50)
+    
+    
     #print(" ")
-    #print("CatBoost Tuning")
-    #study_cat = optuna.create_study(direction='minimize')
-    #study_cat.optimize(objective_cat, n_trials=30)
-    
-    
-    print(" ")
-    print("Best XGB parameters")
-    print(study_xgb.best_trial)
-    print(" ")
+    #print("Best XGB parameters")
+    #print(study_xgb.best_trial)
+    #print(" ")
     #print("Best LGB parameters")
     #print(study_lgb.best_trial)
-    print(" ")
-    #print("Best CAT parameters")
-    #print(study_cat.best_trial)
+    #print(" ")
+    print("Best CAT parameters")
+    print(study_cat.best_trial)
     print(" ")
 
 
