@@ -89,10 +89,11 @@ def init_app():
 
     with app.app_context():
 
-       models_one = LoadModels(0, ["59"], 1)
-       models_two = LoadModels(0, ["59"], 3)
-       models_three = LoadModels(0, ["59"], 3)
-       models_four = LoadModels(0, ["59"], 5)
+       models_one = LoadModels(0, ["68"], 2)
+       models_two = LoadModels(0, ["126"], 2)
+       
+       models_three = LoadModels(0, ["116"], 1)
+       models_four = LoadModels(0, ["66"], 2)
 
               
     @app.route('/predict-one', methods=['POST'])
@@ -139,7 +140,7 @@ def init_app():
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
         data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
 
-        rtn, pct, agg, agg_w, t_ens, comp_predict = get_v_prediction(data_df, models_two)
+        rtn, pct, agg, agg_w, t_ens, comp_predict = get_v_prediction(data_df, models_three)
            
         print(f"Predict agg_w Model  {agg}")            
         return str(agg)
@@ -153,7 +154,7 @@ def init_app():
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
         data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
 
-        rtn, pct, agg, agg_w, t_ens, comp_predict = get_v_prediction(data_df, models_two)
+        rtn, pct, agg, agg_w, t_ens, comp_predict = get_v_prediction(data_df, models_four)
         print(f"Predict comp_predict Model  {comp_predict}")            
         return str(comp_predict)    
             
