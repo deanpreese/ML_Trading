@@ -118,6 +118,8 @@ if __name__ == "__main__":
     merged_data = merge_data(ind_data, nt_data)
     full_data = process_data(merged_data)
     
+    full_data.to_csv("full_data.csv", index=False)
+    
     indicators = ['sdlr310', 'sdbb91', 'sdkc91', 'sdkc9', 'roc', 'atr34', 'atr32', 'atr31', 'atr3', 'atr21', 'atr2', 'rsi', 'stok1']
     
     # 1. Calculate distribution statistics
