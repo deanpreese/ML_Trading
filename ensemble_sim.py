@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from io import BytesIO
 import time 
-import data_s.model_run_data as mrd
+import ml_model.model_run_data as mrd
 import itertools
 
 from strategy.model_loader import ModelLoader

@@ -18,8 +18,10 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.initializers import RandomNormal
 from keras.optimizers import Adam
 
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
+from xgboost import XGBRegressor, XGBClassifier
+from lightgbm import LGBMRegressor, LGBMClassifier
+from catboost import CatBoostRegressor, CatBoostClassifier
+
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score
 from math import sqrt
@@ -41,6 +43,10 @@ def gen_cond_data(gb_data, split):
     
     print(X_train_xgb.shape, y_train_xgb.shape)
 
+    cat_cond = CatBoostRegressor()
+    cat_cond.fit(X_train_xgb,y_train_xgb)
+    cat_pred = cat_cond.predict(X_train_xgb)
+
     lgb_cond = LGBMRegressor()    
     lgb_cond.fit(X_train_xgb, y_train_xgb)
     lgb_pred_v = lgb_cond.predict(X_train_xgb)
@@ -49,7 +55,7 @@ def gen_cond_data(gb_data, split):
     xgb_model.fit(X_train_xgb, y_train_xgb)
     y_pred_v = xgb_model.predict(X_train_xgb)
     
-    y_pred = (lgb_pred_v + y_pred_v + y_pred_v)/3
+    y_pred = (lgb_pred_v + cat_pred + y_pred_v)/3
     y_pred = y_pred_v.reshape(-1, 1).astype(np.float32)
         
     y_pred[y_pred > 0] = 1
@@ -59,6 +65,7 @@ def gen_cond_data(gb_data, split):
 
 
 def train_final_model(X_train, y_train):
+    
     lgb_params = {
         'n_estimators': 250,
         'objective': 'regression',
@@ -72,9 +79,14 @@ def train_final_model(X_train, y_train):
         'verbose': 1,
     }
 
-    lgb_model = LGBMRegressor(**lgb_params)
-    lgb_model.fit(X_train, y_train)    
-    return lgb_model
+    #final_model = LGBMRegressor(**lgb_params)
+    #final_model = CatBoostRegressor()
+    #final_model = XGBRegressor()
+    final_model = CatBoostClassifier()
+    final_model.fit(X_train, y_train)    
+        
+    
+    return final_model
 
 
 # Function to create generator model
@@ -322,8 +334,16 @@ def plot_results(history_in, model_predictions, y_test, last_x_rows ):
 def run():
     set_seeds(42)
 
-    #raw_data = pd.read_csv("data/IND_LSTM_ALL.csv")    
-    data = pd.read_csv("data/buildSeqInd_Lucky13_5M_ALL.csv")
+    datafile = [ 
+        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
+        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
+        'data/buildSeqInd_Lucky13_F.csv',  #2
+        'data/buildSeqInd_Lucky13_D.csv',  #3
+        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
+    ]
+
+    dfile = datafile[4]
+    data = pd.read_csv(dfile)
     data = data.drop(columns=['outputC'])    
     
     drop_cols = [
@@ -358,11 +378,11 @@ def run():
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
 
-    pca = PCA(n_components=6)
-    X_train = pca.fit_transform(X_train)
-    X_val = pca.transform(X_val)
+    #pca = PCA(n_components=6)
+    #X_train = pca.fit_transform(X_train)
+    #X_val = pca.transform(X_val)
     
-    lgb_model = train_final_model(X_train, y_train)
+    final_model = train_final_model(X_train, y_train)
     y_pred = gen_cond_data(data, split)    
     input_dim = X_train.shape[1]
     conditioning_dim = y_pred.shape[1]
@@ -371,11 +391,11 @@ def run():
     #generator = create_generator(input_dim, conditioning_dim, 16, 32, 128)
     #generator = create_generator(input_dim, conditioning_dim, 8, 32, 64)
     #generator = create_generator(input_dim, conditioning_dim, 32, 64, 128)
-    generator = create_generator(input_dim, conditioning_dim, 64, 128, 256)
+    generator = create_generator(input_dim, conditioning_dim, 8, 128, 256)
     
-    discriminator = create_discriminator(input_dim, conditioning_dim, 256, 64, 16)    
+    discriminator = create_discriminator(input_dim, conditioning_dim, 512, 64, 16)    
     #discriminator = create_discriminator(input_dim, conditioning_dim, 64, 16, 4)
-    #discriminator = create_discriminator(input_dim, conditioning_dim, 256, 128, 64)    
+    discriminator = create_discriminator(input_dim, conditioning_dim, 256, 128, 64)    
     
     discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.00001, 0.5), metrics=['accuracy'])
     discriminator.summary()
@@ -393,10 +413,10 @@ def run():
     generated_data = generator.predict(gen_input) 
     #generated_data = scaler.inverse_transform(generated_data)  
     
-    model_preds = evaluate_features( generated_data, lgb_model, y_val)
+    model_preds = evaluate_features( generated_data, final_model, y_val)
     
     #evaluate_results(model_preds, y_val)
-    plot_results(history, np.array(model_preds), y_val, 500)            
+    #plot_results(history, np.array(model_preds), y_val, 500)            
     
     
     exit()

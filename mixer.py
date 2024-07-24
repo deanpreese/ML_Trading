@@ -175,7 +175,7 @@ datafile = [
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
     ]
 
-dtx = pd.read_csv(datafile[0])
+dtx = pd.read_csv(datafile[1])
 
 xgr = xgr_param_set()
 lbr = lbr_param_set()

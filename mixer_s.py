@@ -41,7 +41,7 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow):
                 
                 X = data
                 X = X.drop(columns=['output', 'outputC'])
-                X= X[feat_80]
+                #X= X[feat_80]
                                 
                 y = data['output'].values
                 fl_out = list(X.columns)
@@ -170,8 +170,17 @@ datafile = [
     ]
 
 
-dtx = pd.read_csv(datafile[0])
+dtx = pd.read_csv(datafile[1])
 
+
+xgb_3070 = {'learning_rate': 0.003170080749254201, 'max_depth': 32, 'subsample': 0.2957816844532192, 
+ 'colsample_bytree': 0.6594664699872866, 'min_child_weight': 8}
+
+lgb_3070 = {'learning_rate': 0.00297158669016989, 'num_leaves': 32, 'subsample': 0.5457131060645429, 
+                 'colsample_bytree': 0.6206074333400939, 'min_data_in_leaf': 31,  'verbosity':-1 }
+
+cat_3070 = {'learning_rate': 0.012872913108877197, 'depth': 5, 'subsample': 0.9491103714261131, 
+        'colsample_bylevel': 0.9771468169920741, 'min_data_in_leaf': 21}
 
 xgr = xgr_param_set()
 lbr = lbr_param_set()
@@ -187,34 +196,46 @@ xgb_params_F={'learning_rate': 0.004023993590803149, 'max_depth': 9, 'subsample'
 
 lgb_params_F={'learning_rate': 0.006961479110933946, 'num_leaves': 762, 
 'subsample': 0.5909033731294365, 'colsample_bytree': 0.8383929309109572, 
-'min_data_in_leaf': 80}
+'min_data_in_leaf': 80, 'verbosity':-1 }
 
 xgb_params_M={'learning_rate': 0.00264122394857379, 'max_depth': 8, 
 'subsample': 0.2772844546321145, 'colsample_bytree': 0.8118319429046319, 
 'min_child_weight': 7}
 
 lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample': 0.8313397546109982, 
-'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68}
+'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68, 'verbosity': -1 }
 
 cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
 'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
 
+xgb_rf_t={'learning_rate': 0.09992558454567729, 'max_depth': 4, 'subsample': 0.6295085012732937, 
+                    'colsample_bytree': 0.507405257238443, 'min_child_weight': 12}
+
+xgb_rf_F={'learning_rate': 0.09947887382378602, 'max_depth': 6, 'subsample': 0.4532548971709517, 
+         'colsample_bytree': 0.26550838751481926, 'min_child_weight': 10}
+
+xgb_rf_D={'learning_rate': 0.09959861108872929, 'max_depth': 8, 'subsample': 0.22688490349547857, 
+        'colsample_bytree': 0.4775583435702645, 'min_child_weight': 15}
 
 
-est_list = [ XGBRegressor(),  
+est_list = [ 
+                XGBRegressor(),   
+                XGBRegressor(**xgb_3070),  
                 XGBRegressor(**xgr),  
                 XGBRegressor(**xgb_params_F), 
                 XGBRegressor(**xgb_params_M), 
-                CatBoostRegressor(), 
+                CatBoostRegressor(),  
+                CatBoostRegressor(**cat_3070), 
                 CatBoostRegressor(**cbr),  
                 CatBoostRegressor(**cat_params_F), 
                 CatBoostRegressor(**cat_params_M),
-                LGBMRegressor(), 
+                LGBMRegressor(**lbr), 
+                LGBMRegressor(**lgb_3070), 
                 LGBMRegressor(**lbr), 
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
                 XGBRFRegressor(**xg_rf),
-                XGBRFRegressor(),
+                XGBRFRegressor()  
           ]
 
 
@@ -231,30 +252,8 @@ features_87_FI = [
         'ATR21',
     ]
 
-
 feat_777 = ['RSI', 'ATR21', 'ATR2', 'ATR3', 'SDKC91']
-
-# ---------------------------
-# for this file  'data/Expanded_Lucky13_3070.csv',  #5
-
-#dtx = dtx.drop(columns=['dtnow'])
-
-f_comp = ['bandhigh','high1', 'low3','sdbb9', 'sdlr3102', 'atr2', 'atr3', 'atr33', 'close2', 'close5', 'high2', 'high5','low1',
-        'low5', 'sdlr310', 'sdlr3101', 'close1', 'high3', 'rsi9','sdbb91', 'stok7', 'stok71']
-f_comp_x = ['bandhigh', 'high1','low3','sdbb9','sdlr3102','atr2','atr3','atr33','close2','close5','high2','high5','low1','low5',
-'sdlr310','sdlr3101','close1','high3','rsi9','sdbb91','stok7','stok71','atr21','bandlow','sdkc9','close3','low2','roc9','roc91',
-'roc92','rsi91']
-f_1 = ['close3', 'sdlr3101', 'low5', 'low3', 'sdlr3102', 'high5', 'high2', 'close2', 'high1', 'low1', 'close5', 'bandhigh', 'sdbb9', 'atr3', 'atr33', 'sdlr310']
-f_2 = ['rsi9', 'atr33', 'bandhigh', 'low1', 'sdlr3101', 'stok7', 'low3', 'close5', 'high3', 'high2', 'sdbb91', 'atr2', 'close1', 'atr3', 'high5', 'sdlr3102', 'stok71', 'low5', 'high1', 'sdbb9']
-f_3 = ['close3', 'sdlr3101', 'low5', 'low3', 'sdlr3102', 'high5', 'high2', 'close2', 'high1', 'low1', 'close5', 'bandhigh', 'sdbb9', 'atr3', 'atr33', 'sdlr310']
-f_4 = ['rsi9', 'atr33', 'bandhigh', 'low1', 'sdlr3101', 'stok7', 'low3', 'close5', 'high3', 'high2', 'sdbb91', 'atr2', 'close1', 'atr3', 'high5', 'sdlr3102', 'stok71', 'low5', 'high1', 'sdbb9']
-f_5 = ['atr2','roc91','high1', 'sdbb9', 'bandhigh', 'sdbb91', 'low3', 'sdlr310', 'low2', 'close2', 'close1', 'high3','roc92', 'atr21','sdkc9','sdlr3102','stok71', 'bandlow']
-f_6 = ['rsi9', 'rsi91', 'roc9', 'bandhigh', 'stok7', 'bandlow', 'atr21', 'atr2', 'sdkc9', 'sdlr310', 'close2']
-f_xg = ['rsi9', 'atr3', 'atr2', 'stok7', 'atr21', 'atr52', 'ebandlow2', 'roc92', 'hour', 'ebandlow', 'atr53', 'atr51', 'roc9', 'roc91', 'stok71', 'atr32', 'atr33', 'ebandhigh']
-# ---------------------------
-
-
-feat_80 = feat_777
+feat_80 = features_87_FI
 
 split_test_size_value = 0.7          
 save_mlflow = True
