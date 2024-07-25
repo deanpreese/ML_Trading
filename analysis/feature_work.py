@@ -86,17 +86,17 @@ def run():
     #mod_sel = XGBRegressor()
     #post_sel = XGBRegressor()
     
-    #base_model = XGBClassifier()
-    #mod_sel = XGBClassifier()
-    #post_sel = XGBClassifier() 
+    base_model = XGBClassifier()
+    mod_sel = XGBClassifier()
+    post_sel = XGBClassifier() 
 
     #base_model = LGBMClassifier()
     #mod_sel = LGBMClassifier()
     #post_sel = LGBMClassifier() 
     
-    base_model = CatBoostClassifier()
-    mod_sel = CatBoostClassifier()
-    post_sel = CatBoostClassifier()
+    #base_model = CatBoostClassifier()
+    #mod_sel = CatBoostClassifier()
+    #post_sel = CatBoostClassifier()
     
     #select1 = SelectFromModel(CatBoostClassifier(), threshold="median")
     #select1.fit(X_train, y_train)
@@ -105,7 +105,7 @@ def run():
     
     rf = RandomForestClassifier(n_jobs=-1, class_weight='balanced', max_depth=15, verbose=2)
         
-    select = SelectFromModel(rf, threshold="median")
+    select = SelectFromModel(rf, threshold="median", max_features=9)
     select.fit(X_train, y_train)
     X_train_rf = select.transform(X_train)
     X_test_rf = select.transform(X_test)
