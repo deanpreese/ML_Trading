@@ -175,7 +175,7 @@ datafile = [
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
     ]
 
-dtx = pd.read_csv(datafile[1])
+dtx = pd.read_csv(datafile[0])
 
 xgr = xgr_param_set()
 lbr = lbr_param_set()
@@ -238,14 +238,14 @@ est_list_xgb = [ XGBRegressor(),
               ]
 
 
-est_list_cat = [  CatBoostRegressor(), 
+est_list_cat = [ CatBoostRegressor(), 
                 CatBoostRegressor(**cbr),  
                 CatBoostRegressor(**cat_params_F), 
                 CatBoostRegressor(**cat_params_M),
           ]
 
 
-est_list_lgb = [LGBMRegressor(), 
+est_list_lgb = [ LGBMRegressor(), 
                 LGBMRegressor(**lbr), 
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
@@ -254,15 +254,30 @@ est_list_lgb = [LGBMRegressor(),
 
 
 
+est_list_comb = [ XGBRegressor(),  
+                XGBRegressor(**xgr),  
+                XGBRegressor(**xgb_params_F), 
+                XGBRegressor(**xgb_params_M),                
+                CatBoostRegressor(), 
+                CatBoostRegressor(**cbr),  
+                CatBoostRegressor(**cat_params_F), 
+                CatBoostRegressor(**cat_params_M),
+          ]
+
+
+
+
+
+
 
 split_test_size_value = 0.7          
-min_features_used = 2
-max_features_used = 7
+min_features_used = 6
+max_features_used = 11
 step_features_used = 1
 total_cycles_used = 100
 
 
-p_df, experiment_id_parent = run_models(dtx, est_list_xgrf, 
+p_df, experiment_id_parent = run_models(dtx, est_list_comb, 
                                         split_test_size_value, min_features_used, max_features_used, 
                                         step_features_used, total_cycles_used  )
 
