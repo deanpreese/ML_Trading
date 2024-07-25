@@ -105,19 +105,6 @@ def run():
     
     rf = RandomForestClassifier(n_jobs=-1, class_weight='balanced', max_depth=15, verbose=2)
         
-    tic_fwd = time()        
-    sfs_forward = SequentialFeatureSelector(
-        rf, n_features_to_select=15, direction="forward", n_jobs=-1
-    ).fit(X, y)
-    toc_fwd = time()
-
-    tic_bwd = time()
-    sfs_backward = SequentialFeatureSelector(
-        rf, n_features_to_select=15, direction="backward", n_jobs=-1
-    ).fit(X, y)
-    toc_bwd = time()
-
-        
     select = SelectFromModel(rf, threshold="median")
     select.fit(X_train, y_train)
     X_train_rf = select.transform(X_train)
@@ -189,18 +176,6 @@ def run():
     print(f"Selected features: {X.columns[select.get_support()]}")
     print("")
   
-    print(
-        "Features selected by forward sequential selection: "
-        f"{feature_names[sfs_forward.get_support()]}"
-    )
-    print(f"Done in {toc_fwd - tic_fwd:.3f}s")
-    print(
-        "Features selected by backward sequential selection: "
-        f"{feature_names[sfs_backward.get_support()]}"
-    )
-    print(f"Done in {toc_bwd - tic_bwd:.3f}s")        
-        
-
 if __name__ == "__main__":
     run()
 
