@@ -42,17 +42,18 @@ def run():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    rf = RandomForestClassifier(n_jobs=-1, class_weight='balanced', max_depth=15, verbose=2)
+    rf = RandomForestClassifier(n_jobs=-1, class_weight='balanced', max_depth=5, verbose=2)
+    #rf = LGBMClassifier(n_jobs=-1,verbose=2)
         
     tic_fwd = time()        
     sfs_forward = SequentialFeatureSelector(
-        rf, n_features_to_select=15, direction="forward", n_jobs=-1
+        rf, n_features_to_select=9, direction="forward", n_jobs=-1
     ).fit(X, y)
     toc_fwd = time()
 
     tic_bwd = time()
     sfs_backward = SequentialFeatureSelector(
-        rf, n_features_to_select=15, direction="backward", n_jobs=-1
+        rf, n_features_to_select=9, direction="backward", n_jobs=-1
     ).fit(X, y)
     toc_bwd = time()
 
