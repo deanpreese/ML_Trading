@@ -53,7 +53,7 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow, feat_da
                 run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                   y_train, X_test, y_test, save_to_mlflow)  
                 all_predict_data[model_run_uuid] = predictions
-                perf, tot = gen_reg_stats(y_test, predictions)
+                perf, total, mse, rmse, mae = gen_reg_stats(y_test, predictions)
                 
                 mse = mean_squared_error(y_test, predictions)
                 rmse =  rmse = mse**.5

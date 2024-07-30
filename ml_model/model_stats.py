@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
-
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 
 def gen_class_stats( y_test, predicted_values):
@@ -45,10 +45,18 @@ def gen_reg_stats( y_test, predicted_values):
 
         total = total + 1    
 
+    mse, rmse, mae =  calc_mse_rmse_mae( y_test, predicted_values)
+    
     per1 = round((correct1)/total,4)
-    return(per1, total)
+    return per1, total, mse, rmse, mae
 
 
+def calc_mse_rmse_mae( y_test, predicted_values):
+    mse = mean_squared_error(y_test, predicted_values)
+    rmse =  rmse = mse**.5
+    mae = float(mean_absolute_error(y_test,predicted_values))          
+
+    return mse, rmse, mae
 
 def calc_class_ens_results(all_predictions, estimator_run_ids):
 

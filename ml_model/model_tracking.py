@@ -69,8 +69,7 @@ def track_regressor_model(model_name, features_used, experiment_id, nested, mode
     r2 =r2_score(y_test, y_pred)
     score = model.score(X_test, y_test)
     mae = float(mean_absolute_error(y_test,y_pred))                
-    perf, tot = gen_reg_stats(y_test, y_pred)        
-    
+    perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred)        
     
     if save_to_mlflow :
         with mlflow.start_run(experiment_id = experiment_id, nested=nested):
@@ -104,7 +103,7 @@ def track_regressor_model(model_name, features_used, experiment_id, nested, mode
             mlflow.log_metric('Score', score)
             mlflow.log_metric("MAE", mae)
             mlflow.log_metric("Perf", perf)
-            mlflow.log_metric("Total", tot)
+            mlflow.log_metric("Total", total)
                
         
-    return run_id, perf, tot, mse, rmse, r2, score, mae, y_pred    
+    return run_id, perf, total, mse, rmse, r2, score, mae, y_pred    

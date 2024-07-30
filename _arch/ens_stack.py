@@ -159,7 +159,7 @@ for m in regressor.named_estimators_:
         r2 =r2_score(y_test, r_pred)
         score = regressor.score(X_test, r_pred)
         mae = float(mean_absolute_error(y_test,r_pred))                
-        perf, tot = gen_reg_stats(y_test, r_pred)        
+        perf, total, mse, rmse = gen_reg_stats(y_test, r_pred)        
 
         print(f"{m}  MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
 

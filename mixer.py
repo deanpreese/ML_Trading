@@ -9,7 +9,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import logging
 
 from ml_model.model_tracking import track_regressor_model
-from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
+from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results, calc_mse_rmse_mae
 from ml_model.data_func import simple_split_and_scale
 from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params
 
@@ -34,7 +34,6 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
         for f, e in enumerate(models):
                 
                 fl_out = []
-                
                 model_run_uuid = run_uuid + "-"+ str(uuid.uuid1())[:6]
                 modelname = e.__class__.__name__
                 
@@ -57,10 +56,8 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
                 run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                   y_train, X_test, y_test, True)  
                 all_predict_data[model_run_uuid] = predictions
-                perf, tot = gen_reg_stats(y_test, predictions)
+                perf, total, mse, rmse, mae = gen_reg_stats(y_test, predictions)
                 
-                mse = mean_squared_error(y_test, predictions)
-                rmse =  rmse = mse**.5
                 score = e.score(X_test, y_test)
                 
                 combined_prod_perf = predictions * perf
@@ -78,11 +75,8 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
         
         correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_reg_ens_results(all_predict_data, estimator_run_ids)
 
-        mse = mean_squared_error(r_y_target, r_predictions, squared=True)
-        rmse =mean_squared_error(r_y_target, r_predictions, squared=False)
-        r2 =r2_score(r_y_target, r_predictions)
-        score = r2
-        mae = float(mean_absolute_error(r_y_target,r_predictions))                
+        mse, rmse, mae = calc_mse_rmse_mae( r_y_target, r_predictions)                
+        score =r2_score(r_y_target, r_predictions)
 
         perf_data_t = [run_uuid, feature_list_size, e_perf.values.tolist(), features_list, 
                        correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae]
