@@ -7,23 +7,24 @@ from sklearn.metrics import mean_squared_error
 from ml_model.data_func import simple_split_and_scale
 import optuna
 
-
-
 datafile = [ 
         'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
         'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
         'data/buildSeqInd_Lucky13_F.csv',  #2
         'data/buildSeqInd_Lucky13_D.csv',  #3
         'data/buildSeqInd_Lucky13_F_3070.csv',  #4
-    ]
+        'data/Expanded_Lucky13_3070.csv',  #5
+        'data/ndata_3070.csv', #6
+        'data/ndata_3070_alt.csv', #7
+        'data/ym_ndata_3070_alt.csv', #8                        
+]
 
-dtx = pd.read_csv(datafile[0])
+dtx = pd.read_csv(datafile[6])
 X = dtx
 X = X.drop(columns=['output', 'outputC'])
 y = dtx['output'].values
 fl_out = list(X.columns)
 X_train, X_val, y_train, y_val = simple_split_and_scale(X, y, 0.7, 42)
-
 
 
 def objective_xgb(trial):
@@ -39,7 +40,6 @@ def objective_xgb(trial):
     }
 
     model = xgb.XGBRegressor(**params)
-    #model = xgb.XGBRFRegressor(**params)
     model.fit(X_train, y_train, verbose=False)
     predictions = model.predict(X_val)
     rmse = mean_squared_error(y_val, predictions, squared=False)
@@ -85,6 +85,7 @@ def objective_lgb(trial):
 
 
 def main():
+    
     
     #print(" ")
     #print("XGBoost Tuning")

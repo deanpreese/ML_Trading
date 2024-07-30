@@ -193,14 +193,14 @@ def calc_reg_ens_results(all_predictions, estimator_run_ids):
             
             local_predict = 0
             if agg_predict > 0 or agg_weighted_predict > 0:
-                local_predict = 1
+                local_predict = max(agg_predict, agg_weighted_predict)
             elif agg_predict < 0 or agg_weighted_predict < 0:
-                local_predict = -1
+                local_predict = min(agg_predict,agg_weighted_predict)
             else:
                 local_predict = 0
 
-            r_y_target.append(target_output)
-            r_predictions.append(local_predict)
+            r_y_target.append(target_output/len(all_predictions))
+            r_predictions.append(local_predict/len(all_predictions))
         
         cxp = correctX/totalX
         cyp = correctY/totalX

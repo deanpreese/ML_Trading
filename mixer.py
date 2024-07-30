@@ -59,7 +59,6 @@ def process_model(exp_name, data, models, run_test_size, feature_list_size):
                 
                 mse = mean_squared_error(y_test, predictions)
                 rmse =  rmse = mse**.5
-                
                 score = e.score(X_test, y_test)
                 
                 combined_prod_perf = predictions * perf
@@ -167,15 +166,16 @@ def run_models(data, estimators, run_test_size,
 #
 # ---------------------------
 
-datafile = [ 
-        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
-        'data/buildSeqInd_Lucky13_F.csv',  #2
-        'data/buildSeqInd_Lucky13_D.csv',  #3
-        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
-    ]
 
-dtx = pd.read_csv(datafile[0])
+
+xgb_3070 = {'learning_rate': 0.003170080749254201, 'max_depth': 32, 'subsample': 0.2957816844532192, 
+ 'colsample_bytree': 0.6594664699872866, 'min_child_weight': 8}
+
+lgb_3070 = {'learning_rate': 0.00297158669016989, 'num_leaves': 32, 'subsample': 0.5457131060645429, 
+                 'colsample_bytree': 0.6206074333400939, 'min_data_in_leaf': 31,  'verbosity':-1 }
+
+cat_3070 = {'learning_rate': 0.012872913108877197, 'depth': 5, 'subsample': 0.9491103714261131, 
+        'colsample_bylevel': 0.9771468169920741, 'min_data_in_leaf': 21}
 
 xgr = xgr_param_set()
 lbr = lbr_param_set()
@@ -191,14 +191,14 @@ xgb_params_F={'learning_rate': 0.004023993590803149, 'max_depth': 9, 'subsample'
 
 lgb_params_F={'learning_rate': 0.006961479110933946, 'num_leaves': 762, 
 'subsample': 0.5909033731294365, 'colsample_bytree': 0.8383929309109572, 
-'min_data_in_leaf': 80}
+'min_data_in_leaf': 80, 'verbosity':-1 }
 
 xgb_params_M={'learning_rate': 0.00264122394857379, 'max_depth': 8, 
 'subsample': 0.2772844546321145, 'colsample_bytree': 0.8118319429046319, 
 'min_child_weight': 7}
 
 lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample': 0.8313397546109982, 
-'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68}
+'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68, 'verbosity': -1 }
 
 cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
 'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
@@ -212,72 +212,52 @@ xgb_rf_F={'learning_rate': 0.09947887382378602, 'max_depth': 6, 'subsample': 0.4
 xgb_rf_D={'learning_rate': 0.09959861108872929, 'max_depth': 8, 'subsample': 0.22688490349547857, 
         'colsample_bytree': 0.4775583435702645, 'min_child_weight': 15}
 
-#59 in mlflow
-est_list_59 = [ CatBoostRegressor(**cbr), 
-              LGBMRegressor(**lbr),  
-              XGBRegressor(**xgr), 
-              XGBRFRegressor(**xg_rf),
-              CatBoostRegressor(), 
-              LGBMRegressor(),
-              XGBRegressor(), 
-              XGBRFRegressor()
-             ]
 
-est_list_xgrf = [ XGBRFRegressor(),  
-              XGBRFRegressor(**xgr),  
-              XGBRFRegressor(**xgb_rf_t),  
-              XGBRFRegressor(**xgb_rf_F), 
-              XGBRFRegressor(**xgb_rf_D),                
-              ]
-
-
-est_list_xgb = [ XGBRegressor(),  
-              XGBRegressor(**xgr),  
-              XGBRegressor(**xgb_params_F), 
-              XGBRegressor(**xgb_params_M),                
-              ]
-
-
-est_list_cat = [ CatBoostRegressor(), 
+est_list = [ 
+                XGBRegressor(),   
+                XGBRegressor(**xgb_3070),  
+                XGBRegressor(**xgr),  
+                XGBRegressor(**xgb_params_F), 
+                XGBRegressor(**xgb_params_M), 
+                CatBoostRegressor(),  
+                CatBoostRegressor(**cat_3070), 
                 CatBoostRegressor(**cbr),  
                 CatBoostRegressor(**cat_params_F), 
                 CatBoostRegressor(**cat_params_M),
-          ]
-
-
-est_list_lgb = [ LGBMRegressor(), 
+                LGBMRegressor(**lbr), 
+                LGBMRegressor(**lgb_3070), 
                 LGBMRegressor(**lbr), 
                 LGBMRegressor(**lgb_params_F), 
                 LGBMRegressor(**lgb_params_M), 
+                XGBRFRegressor(**xg_rf),
+                XGBRFRegressor()  
           ]
 
 
+datafile = [ 
+        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
+        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
+        'data/buildSeqInd_Lucky13_F.csv',  #2
+        'data/buildSeqInd_Lucky13_D.csv',  #3
+        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
+        'data/ndata_3070.csv', #5
+    ]
 
-
-est_list_comb = [ XGBRegressor(),  
-                XGBRegressor(**xgr),  
-                XGBRegressor(**xgb_params_F), 
-                XGBRegressor(**xgb_params_M),                
-                CatBoostRegressor(), 
-                CatBoostRegressor(**cbr),  
-                CatBoostRegressor(**cat_params_F), 
-                CatBoostRegressor(**cat_params_M),
-          ]
-
-
-
-
-
-
+dtx = pd.read_csv(datafile[5])
 
 split_test_size_value = 0.7          
 min_features_used = 6
-max_features_used = 11
+max_features_used = 12
 step_features_used = 1
 total_cycles_used = 100
 
+feat_ndata_3070 = ['RSI9', 'RSI7', 'ZH', 'ATR7', 'RSI14', 'ATR3', 'ZL', 'ROC14', 'ATR2', 'ZH9', 'VOLMA13', 'STOK714', 'RSI72', 'ROC9', 'output', 'outputC']
+dtx = dtx[feat_ndata_3070]
 
-p_df, experiment_id_parent = run_models(dtx, est_list_comb, 
+#Lucky13
+# SDLR310,SDBB91,SDKC91,SDKC9,ROC,ATR34,ATR32,ATR31,ATR3,ATR21,ATR2,RSI,STOK1,output,outputC
+
+p_df, experiment_id_parent = run_models(dtx, est_list, 
                                         split_test_size_value, min_features_used, max_features_used, 
                                         step_features_used, total_cycles_used  )
 
