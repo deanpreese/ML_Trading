@@ -176,17 +176,16 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 def run():
 
     datafile = [ 
-                'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-                'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
-                'data/buildSeqInd_Lucky13_F.csv',  #2
-                'data/buildSeqInd_Lucky13_D.csv',  #3
-                'data/buildSeqInd_Lucky13_F_3070.csv',  #4
-                'data/Expanded_Lucky13_3070.csv',  #5
-                'data/ndata_3070.csv', #6
-                'data/ndata_3070_d_l13.csv', #7    
-        ]
+            'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070.csv',  #1
+            'data/ndata_diff_lucky13_3070_oos.csv', 
+            'data/ndata_diff_lucky13_3070.csv', #3
+            'data/ndata_lag_3070_oos.csv', 
+            'data/ndata_lag_3070.csv', #5
+    ]
 
-    file_loaded = pd.read_csv(datafile[7])
+
+    file_loaded = pd.read_csv(datafile[1])
     X = file_loaded
     X = X.drop(columns=['output', 'outputC'])
     y = file_loaded['outputC'].values

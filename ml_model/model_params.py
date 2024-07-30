@@ -1,219 +1,85 @@
-from itertools import product
+cbc_set = {
+    'learning_rate': 0.009, 
+    'depth': 3, 
+    'l2_leaf_reg': 3.0, 
+    'min_child_samples': 32, 
+    'iterations': 1000, 
+    #'random_state': [0], 
+    #'thread_count': [-1],
+}
 
+lbc_set = { 
+    'boosting_type': 'gbdt', 
+    'num_leaves': 31, 
+    'learning_rate': 0.1, 
+    'n_estimators': 10,
+    'objective': None, 
+    'min_child_samples': 20, 
+    'subsample': 1.0, 
+    'colsample_bytree': 1.0, 
+    'random_state': 0, 
+    'n_jobs': -1,
+}
 
-def create_param_list(grid):
-    param_combinations = list(product(*grid.values()))
-    par_list = []
-    for params in param_combinations:
-        param_set = dict(zip(grid.keys(), params))
-        par_list.append(param_set)
-    return par_list
-
-
-def cbc_param_set():    
-    params = {
-        'learning_rate' : 0.009,
-        'depth' : 3,
-        'l2_leaf_reg' :  3.0,
-        'min_child_samples' : 32,
-        'iterations' : 1000,
-        #'random_state' : [0],
-        #'thread_count' : [-1],
-    }
-    return params
-
-def cbc_param_grid():
-    params = {
-        'learning_rate' : [ 0.009, 0.01],
-        #'depth' : [3,5,7,9,11],
-        'depth' : [3,7,9,11],
-        #'l2_leaf_reg' : [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 ],
-        'l2_leaf_reg' : [ 3.0, 4.0, 5.0 ],
-        #'min_child_samples' : [1, 4, 8, 16, 32],
-        'min_child_samples' : [ 8, 16, 32],
-        #'grow_policy' : ['Depthwise'],
-        'iterations' : [1000],
-        #'eval_metric' : ['RMSE'],
-        #'random_state' : [0],
-        #'boosting_type' : ['Ordered', 'Plain'],
-        #'thread_count' : [-1],
-    }
-    return create_param_list(params)
-    
-def lbc_param_set():    
-    params = {
-        'boosting_type': 'gbdt',
-        'num_leaves': 31,
-        'learning_rate': 0.1,
-        'n_estimators': 10,
-        'objective': None,
-        'min_child_samples': 20,
-        'subsample': 1.0,
-        'colsample_bytree': 1.0,
-        'random_state': 0,
-        'n_jobs': -1
-    }
-    return params
-    
-def lbc_param_grid():
-    params = {
-        'boosting_type': 'gbdt',
-        #'class_weight': None,
-        #'colsample_bytree': 1.0,
-        #'importance_type': 'split',
-        'learning_rate': 0.1,
-        'max_depth': -1,
-        'min_child_samples': 20,
-        #'min_child_weight': 0.001,
-        #'min_split_gain': 0.0,
-        'n_estimators': 100,
-        'num_leaves': 31,
-        #'objective': None,
-        #'random_state': None,
-        'reg_alpha': 0.0,
-        'reg_lambda': 0.0,
-        'subsample': 1.0,
-        'subsample_for_bin': 200000,
-        'subsample_freq': 0,            
-    }
-    return create_param_list(params)
-        
-def xgc_param_set():
-    params = {
-        'colsample_bytree': 0.6655392754230048, 
-        'gamma': 4.198875359789924, 
-        'max_depth': 17.0, 
-        'min_child_weight': 1.0, 
-        'reg_alpha': 57.0, 
-        'reg_lambda': 0.896332305739873
-        }
-    return params
-    
-def xgc_param_grid():
-    params = { 
-        'max_depth': [ 3, 18, 1],
-        'gamma': [1,9],
-        'reg_alpha' : [40,180,1],
-        'reg_lambda' : [ 0,1],
-        'colsample_bytree' : [0.5,1],
-        'min_child_weight' : [0, 10],
-        'n_estimators': [180],
-        'seed': [0]
-    }
-    return create_param_list(params)        
+xgc_set = {
+    'colsample_bytree': 0.6655392754230048, 
+    'gamma': 4.198875359789924, 
+    'max_depth': 17.0, 
+    'min_child_weight': 1.0,  
+    'reg_alpha': 57.0,  
+    'reg_lambda': 0.896332305739873,
+}
 
 # =============================================================================
 
-def cbr_param_set():
-    params = {
-        "iterations": 800,
-        "learning_rate": 0.01,
-        "depth": 7,
-        #"subsample": [0.05, 0.07, 1.0],
-        #"colsample_bylevel": [ 0.05, 0.07,  1.0],
-        #"min_data_in_leaf": [ 1, 5, 25, 50, 100],
+cbr_set = {
+    "iterations": 800, 
+    "learning_rate": 0.01, 
+    "depth": 7,
+}
 
-    }
-    return params
-    
-def cbr_param_grid():
-    params = {
-        "iterations": [600,700,800,900 ],
-        "learning_rate": [0.01, 0.3, 0.7, 0.1 ],
-        "depth": [ 1, 3, 5, 7, 10],
-        #"subsample": [0.05, 0.07, 1.0],
-        #"colsample_bylevel": [ 0.05, 0.07,  1.0],
-        #"min_data_in_leaf": [ 1, 5, 25, 50, 100],
-    } 
-    return create_param_list(params)
+lbr_set = { 
+    'n_estimators': 150, 
+    'objective': 'regression', 
+    'min_child_samples': 7, 
+    'subsample': 1,
+    'num_leaves': 35, 
+    'colsample_bytree': 1, 
+    'random_state': 0, 
+    'n_jobs': -1, 
+    'learning_rate': 0.01, 
+    'verbose': 1,
+}
 
-def lbr_param_set():
-    params= {
-        'n_estimators' : 150,
-        'objective': 'regression',
-        'min_child_samples' : 7,
-        'subsample' : 1,
-        'num_leaves': 35,
-        'colsample_bytree' : 1,
-        'random_state' : 0,
-        'n_jobs' : -1,
-        'learning_rate': 0.01,
-        'verbose': 1,
-        }
-    return params        
+xgbr_set = { 
+    'max_depth': 3,
+    'booster': 'dart', 
+    'learning_rate': 0.1, 
+    'n_estimators': 50, 
+    #'gamma': [0, 20],  
+    #'subsample': [0.8,1], 
+    #'colsample_bytree': [0.8,1], 
+    #'lambda': [0, 0.1, 1],
+    'tree_method': "hist",
+    #'eval_metric': "reg:squarederror",
+    "verbosity": 2,
+}
 
-def lbr_param_grid():
-    params = {
-        'n_estimators' : [150],
-        #'boosting_type': ['gbdt', 'rf', 'dart'],
-        #'objective': ['regression'],
-        'min_child_samples' : [5,7,9],
-        #'subsample' : [1],
-        'num_leaves': [19,21,23,25,30,35],
-        #'colsample_bytree' : [1,2,3],
-        'random_state' : [0],
-        'n_jobs' : [-1],
-        #'learning_rate': [0.01, 0.02, 0.03, 0.04 ],
-        'learning_rate': [0.01],
-        'verbose': [1],
-    }    
-    return create_param_list(params)
-
-
-def xgr_param_set():
-    params = {
-        'max_depth': 3,
-        'booster' : 'dart', 
-        'learning_rate': 0.1,
-        'n_estimators':  50, 
-        #'gamma': [0, 20], 
-        #'subsample': [0.8,1], 
-        #'colsample_bytree': [0.8,1], 
-        #'lambda': [0, 0.1, 1],
-        'tree_method': "hist",
-        'eval_metric': "mae",
-        "verbosity" : 2
-    }
-    return params
-
-
-
-
-def xgr_param_set2():
-    params = {
-        #'max_depth': 3,
-        'booster' : 'gbtree', 
-        #'learning_rate': 0.1,
-        'n_estimators':  100, 
-        #'gamma': [0, 20], 
-        #'subsample': [0.8,1], 
-        #'colsample_bytree': [0.8,1], 
-        #'lambda': [0, 0.1, 1],
-        'tree_method': "hist",
-        #'eval_metric': "mae",
-        "verbosity" : 2
-    }
-    return params
+xgbr_set2 = {
+    #'max_depth': 3,
+    'booster': 'gbtree', 
+    #'learning_rate': 0.1,
+    'n_estimators': 100, 
+    #'gamma': [0, 20], 
+    #'subsample': [0.8,1], 
+    #'colsample_bytree': [0.8,1], 
+    #'lambda': [0, 0.1, 1],
+    'tree_method': "hist",
+    #'eval_metric': "mae",
+    "verbosity": 2,
+}
         
-def xgr_param_grid():
-    params = {
-        'max_depth': [2, 3, 4, 5, 6], 
-        'learning_rate': [0.1, 0.2, 0.3],
-        'n_estimators': [25, 50, 100, 150], 
-        #'gamma': [0, 20], 
-        #'subsample': [0.8,1], 
-        #'colsample_bytree': [0.8,1], 
-        #'lambda': [0, 0.1, 1],
-        'tree_method': ["hist"],
-        'eval_metric': ["mae"],
-        "verbosity" : [2]
-    }
-    return create_param_list(params)      
-
-
-
-def xgb_rf_params():
-    params = {
+xgbrf_set = {
     "colsample_bynode": 0.8,
     "learning_rate": 1,
     "max_depth": 5,
@@ -222,5 +88,103 @@ def xgb_rf_params():
     "subsample": 0.8,
     "tree_method": "hist",
     #"device": "cuda",
-    }
-    return params    
+}
+
+xgb_3070 = {
+    'learning_rate': 0.003170080749254201, 
+    'max_depth': 32, 
+    'subsample': 0.2957816844532192, 
+    'colsample_bytree': 0.6594664699872866, 
+    'min_child_weight': 8,
+}
+
+lgb_3070 = {
+    'learning_rate': 0.00297158669016989, 
+    'num_leaves': 32, 
+    'subsample': 0.5457131060645429, 
+    'colsample_bytree': 0.6206074333400939, 
+    'min_data_in_leaf': 31,  
+    'verbosity': -1,
+}
+
+cat_3070 = {
+    'learning_rate': 0.012872913108877197, 
+    'depth': 5, 
+    'subsample': 0.9491103714261131, 
+    'colsample_bylevel': 0.9771468169920741, 
+    'min_data_in_leaf': 21,
+}
+
+cat_params_F = {
+    'learning_rate': 0.0360944196001379, 
+    'depth': 10, 
+    'subsample': 0.3523958110464825, 
+    'colsample_bylevel': 0.6176118972551982, 
+    'min_data_in_leaf': 46,
+}
+
+xgb_params_F = {
+    'learning_rate': 0.004023993590803149, 
+    'max_depth': 9, 
+    'subsample': 0.5061891892307074, 
+    'colsample_bytree': 0.6646068031525607, 
+    'min_child_weight': 18,
+}
+
+lgb_params_F = {
+    'learning_rate': 0.006961479110933946, 
+    'num_leaves': 762, 
+    'subsample': 0.5909033731294365, 
+    'colsample_bytree': 0.8383929309109572, 
+    'min_data_in_leaf': 80, 
+    'verbosity': -1,
+}
+
+xgb_params_M = {
+    'learning_rate': 0.00264122394857379, 
+    'max_depth': 8, 
+    'subsample': 0.2772844546321145, 
+    'colsample_bytree': 0.8118319429046319, 
+    'min_child_weight': 7,
+}
+
+lgb_params_M = {
+    'learning_rate': 0.004818774485749822, 
+    'num_leaves': 9, 
+    'subsample': 0.8313397546109982, 
+    'colsample_bytree': 0.6285174849150702, 
+    'min_data_in_leaf': 68, 
+    'verbosity': -1,
+}
+
+cat_params_M = {
+    'learning_rate': 0.012193433669679433, 
+    'depth': 7, 
+    'subsample': 0.8003609726402594, 
+    'colsample_bylevel': 0.9066114272514963, 
+    'min_data_in_leaf': 34,
+}
+
+xgbrf_t = {
+    'learning_rate': 0.09992558454567729, 
+    'max_depth': 4, 
+    'subsample': 0.6295085012732937, 
+    'colsample_bytree': 0.507405257238443, 
+    'min_child_weight': 12,
+}
+
+xgbrf_F = {
+    'learning_rate': 0.09947887382378602, 
+    'max_depth': 6, 
+    'subsample': 0.4532548971709517, 
+    'colsample_bytree': 0.26550838751481926, 
+    'min_child_weight': 10,
+}
+
+xgbrf_D = {
+    'learning_rate': 0.09959861108872929, 
+    'max_depth': 8, 
+    'subsample': 0.22688490349547857, 
+    'colsample_bytree': 0.4775583435702645, 
+    'min_child_weight': 15,
+}

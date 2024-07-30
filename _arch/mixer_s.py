@@ -13,11 +13,11 @@ import scipy.stats
 from ml_model.model_tracking import track_regressor_model
 from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
 from ml_model.data_func import simple_split_and_scale
-from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params
+import ml_model.model_params as mp
 
 
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
-
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor, AdaBoostRegressor, BaggingRegressor
 from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
@@ -43,7 +43,9 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow, feat_da
                 
                 X = data
                 X = X.drop(columns=['output', 'outputC'])
-                X= X[feat_data]
+                
+                if feat_data != 'xxx':
+                        X= X[feat_data]
                                 
                 y = data['output'].values
                 fl_out = list(X.columns)
@@ -79,8 +81,8 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow, feat_da
         rmse =mean_squared_error(r_y_target, r_predictions, squared=False)
         r2 =r2_score(r_y_target, r_predictions)
         
-        pear = scipy.stats.pearsonr(r_y_target, r_predictions) 
-        r2 = pear
+        #pear = scipy.stats.pearsonr(r_y_target, r_predictions) 
+        #r2 = pear
         
         mae = float(mean_absolute_error(r_y_target,r_predictions))                
 
@@ -120,7 +122,7 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
         print(" ")
         
         for x in range(len(p_df["e_perf"][0])):
-                print(f"{p_df['e_perf'][0][x][0]}  {p_df['e_perf'][0][x][1]}  {p_df['e_perf'][0][x][5]}" )     
+                print(f"{p_df['e_perf'][0][x][0]}  {p_df['e_perf'][0][x][1]}  {p_df['e_perf'][0][x][3]}  {p_df['e_perf'][0][x][4]}  {p_df['e_perf'][0][x][5]}" )     
 
         if save_to_mlflow :
 
@@ -172,159 +174,204 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
 
 def run():
 
-       
+        est_list_base = [ 
+                XGBRFRegressor(),
+                XGBRFRegressor(**mp.xgbrf_t),
+                XGBRFRegressor(**mp.xgbrf_F),
+                XGBRFRegressor(**mp.xgbrf_D),
+                XGBRFRegressor(**mp.xgbrf_set),
+                XGBRegressor(),   
+                XGBRegressor(**mp.xgb_3070),  
+                XGBRegressor(**mp.xgbr_set),  
+                XGBRegressor(**mp.xgb_params_F), 
+                XGBRegressor(**mp.xgb_params_M), 
+                CatBoostRegressor(),  
+                CatBoostRegressor(**mp.cat_3070), 
+                CatBoostRegressor(**mp.cbr_set),  
+                CatBoostRegressor(**mp.cat_params_F), 
+                CatBoostRegressor(**mp.cat_params_M),
+                LGBMRegressor(), 
+                LGBMRegressor(**mp.lgb_3070), 
+                LGBMRegressor(**mp.lbr_set), 
+                LGBMRegressor(**mp.lgb_params_F), 
+                LGBMRegressor(**mp.lgb_params_M), 
+        ]
 
-        xgb_3070 = {'learning_rate': 0.003170080749254201, 'max_depth': 32, 'subsample': 0.2957816844532192, 
-        'colsample_bytree': 0.6594664699872866, 'min_child_weight': 8}
+        # 87_FI data        
+        est_list_66 = [ 
+                XGBRegressor(),XGBRegressor(mp.xgbr_set), 
+                XGBRegressor(mp.xgb_params_F), XGBRegressor(mp.xgb_params_M), 
+                CatBoostRegressor(), CatBoostRegressor(mp.cbr_set),
+                CatBoostRegressor(mp.cat_params_F), CatBoostRegressor(mp.cat_params_M),
+                LGBMRegressor(), LGBMRegressor(mp.lbr_set), 
+                LGBMRegressor(mp.lgb_params_F), LGBMRegressor(mp.lgb_params_M), 
+                XGBRFRegressor(),XGBRFRegressor(mp.xgbrf_set),
+        ]
 
-        lgb_3070 = {'learning_rate': 0.00297158669016989, 'num_leaves': 32, 'subsample': 0.5457131060645429, 
-                        'colsample_bytree': 0.6206074333400939, 'min_data_in_leaf': 31,  'verbosity':-1 }
+        est_list_xgbrf = [
+                XGBRFRegressor(),
+                XGBRFRegressor(**mp.xgbrf_t),
+                XGBRFRegressor(**mp.xgbrf_F),
+                XGBRFRegressor(**mp.xgbrf_D),
+                XGBRFRegressor(**mp.xgbrf_set),                
+        ]
 
-        cat_3070 = {'learning_rate': 0.012872913108877197, 'depth': 5, 'subsample': 0.9491103714261131, 
-                'colsample_bylevel': 0.9771468169920741, 'min_data_in_leaf': 21}
+        est_list_xgb = [ 
+                XGBRegressor(**mp.xgb_params_M), 
+                XGBRegressor(),   
+                XGBRegressor(**mp.xgb_3070),  
+                XGBRFRegressor(**mp.xgbrf_set),
+                XGBRegressor(**mp.xgbr_set),  
+        ]
 
-        xgr = xgr_param_set()
-        lbr = lbr_param_set()
-        cbr = cbr_param_set()
-        xg_rf = xgb_rf_params()
+        est_list_lgb = [ 
+                LGBMRegressor(**mp.lgb_3070), 
+                LGBMRegressor(), 
+                LGBMRegressor(**mp.lbr_set), 
+                LGBMRegressor(**mp.lgb_params_F), 
+                LGBMRegressor(**mp.lgb_params_M), 
+        ]
 
-        cat_params_F={'learning_rate': 0.0360944196001379, 'depth': 10, 
-                'subsample': 0.3523958110464825, 'colsample_bylevel': 0.6176118972551982, 
-                        'min_data_in_leaf': 46 }
 
-        xgb_params_F={'learning_rate': 0.004023993590803149, 'max_depth': 9, 'subsample': 0.5061891892307074, 
-        'colsample_bytree': 0.6646068031525607, 'min_child_weight': 18}
-
-        lgb_params_F={'learning_rate': 0.006961479110933946, 'num_leaves': 762, 
-        'subsample': 0.5909033731294365, 'colsample_bytree': 0.8383929309109572, 
-        'min_data_in_leaf': 80, 'verbosity':-1 }
-
-        xgb_params_M={'learning_rate': 0.00264122394857379, 'max_depth': 8, 
-        'subsample': 0.2772844546321145, 'colsample_bytree': 0.8118319429046319, 
-        'min_child_weight': 7}
-
-        lgb_params_M={'learning_rate': 0.004818774485749822, 'num_leaves': 9, 'subsample': 0.8313397546109982, 
-        'colsample_bytree': 0.6285174849150702, 'min_data_in_leaf': 68, 'verbosity': -1 }
-
-        cat_params_M={'learning_rate': 0.012193433669679433, 'depth': 7, 'subsample': 0.8003609726402594, 
-        'colsample_bylevel': 0.9066114272514963, 'min_data_in_leaf': 34}
-
-        xgb_rf_t={'learning_rate': 0.09992558454567729, 'max_depth': 4, 'subsample': 0.6295085012732937, 
-                        'colsample_bytree': 0.507405257238443, 'min_child_weight': 12}
-
-        xgb_rf_F={'learning_rate': 0.09947887382378602, 'max_depth': 6, 'subsample': 0.4532548971709517, 
-                'colsample_bytree': 0.26550838751481926, 'min_child_weight': 10}
-
-        xgb_rf_D={'learning_rate': 0.09959861108872929, 'max_depth': 8, 'subsample': 0.22688490349547857, 
-                'colsample_bytree': 0.4775583435702645, 'min_child_weight': 15}
+        est_list_cat = [ 
+                CatBoostRegressor(**mp.cat_3070), 
+                CatBoostRegressor(),  
+                CatBoostRegressor(**mp.cbr_set),  
+                CatBoostRegressor(**mp.cat_params_F), 
+                CatBoostRegressor(**mp.cat_params_M),
+        ]
 
 
         est_list = [ 
-                        XGBRegressor(),   
-                        XGBRegressor(**xgb_3070),  
-                        XGBRegressor(**xgr),  
-                        XGBRegressor(**xgb_params_F), 
-                        XGBRegressor(**xgb_params_M), 
-                        CatBoostRegressor(),  
-                        CatBoostRegressor(**cat_3070), 
-                        CatBoostRegressor(**cbr),  
-                        CatBoostRegressor(**cat_params_F), 
-                        CatBoostRegressor(**cat_params_M),
-                        LGBMRegressor(**lbr), 
-                        LGBMRegressor(**lgb_3070), 
-                        LGBMRegressor(**lbr), 
-                        LGBMRegressor(**lgb_params_F), 
-                        LGBMRegressor(**lgb_params_M), 
-                        XGBRFRegressor(**xg_rf),
-                        XGBRFRegressor()  
-                ]
-
-
-        # for 'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-        features_87_FI = [
-                'RSI',
-                'STOK1',
-                'SDKC9',
-                'SDLR310',
-                'ATR2',
-                'SDKC91',
-                'SDBB91',
-                'ATR3',
-                'ATR21',
+                LGBMRegressor(**mp.lgb_3070), 
+                XGBRegressor(**mp.xgb_3070),  
+                CatBoostRegressor(**mp.cat_3070), 
+                XGBRFRegressor(**mp.xgbrf_set),
+                ExtraTreesRegressor(),
+                
+                #XGBRegressor(),   
+                #XGBRegressor(**xgr),  
+                #ßXGBRegressor(**xgb_params_F), 
+                #XGBRegressor(**xgb_params_M), 
+                #CatBoostRegressor(),  
+                #CatBoostRegressor(**cbr),  
+                #CatBoostRegressor(**cat_params_F), 
+                #CatBoostRegressor(**cat_params_M),
+                #LGBMRegressor(), 
+                #LGBMRegressor(**lbr), 
+                #LGBMRegressor(**lgb_params_F), 
+                #LGBMRegressor(**lgb_params_M), 
+                #XGBRFRegressor(),
         ]
 
-        feat_777 = ['RSI', 'ATR21', 'ATR2', 'ATR3', 'SDKC91']
-        
 
         datafile = [ 
-                        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-                        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
-                        'data/buildSeqInd_Lucky13_F.csv',  #2
-                        'data/buildSeqInd_Lucky13_D.csv',  #3
-                        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
-                        'data/Expanded_Lucky13_3070.csv',  #5
-                        'data/ndata_3070.csv', #6
-                ]
-
-
-        dtx = pd.read_csv(datafile[6])
-
-        lucky13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR34','ATR32','ATR31','ATR3','ATR21','ATR2','RSI','STOK1']
-
-        all_feat = [
-                ['SDLR3102', 'SDLR3101', 'SDLR310', 'VOLMA72'], 
-                ['VOLMA71', 'VOLMA7', 'VOLMA132', 'VOLMA131', 'VOLMA13'],
-                ['ZH212', 'ZH211', 'ZH21', 'ZH92', 'ZH91', 'ZH9'], 
-                ['ZL212', 'ZL211', 'ZL21', 'ZL92', 'ZL91', 'ZL9'], 
-                ['ZC212', 'ZC211', 'ZC21', 'ZC92', 'ZC91', 'ZC9'], 
-                ['SDBB92', 'SDBB91', 'SDBB9'],
-                ['SDBB202', 'SDBB201', 'SDBB20'],
-                ['SDKC92', 'SDKC91', 'SDKC9'], 
-                ['SDKC72', 'SDKC71', 'SDKC7'], 
-                ['ROC142', 'ROC141', 'ROC14'], 
-                ['ROC132', 'ROC131','ROC13'],
-                ['ROC92', 'ROC91', 'ROC'],
-                ['ATR144', 'ATR143', 'ATR142', 'ATR141', 'ATR14'], 
-                ['ATR74', 'ATR73', 'ATR72', 'ATR71', 'ATR7'], 
-                ['ATR34', 'ATR33', 'ATR32', 'ATR31', 'ATR3'],
-                ['ATR54', 'ATR53', 'ATR52', 'ATR51', 'ATR5'],
-                ['ATR24', 'ATR23', 'ATR22', 'ATR21', 'ATR2'], 
-                ['RSI142', 'RSI141', 'RSI14'], 
-                ['RSI92', 'RSI91', 'RSI'], 
-                ['RSI72', 'RSI71', 'RSI7'], 
-                ['RSI52', 'RSI51', 'RSI5'], 
-                ['RSI32', 'RSI31', 'RSI3'], 
-                ['STOK7142', 'STOK7141', 'STOK714'],
-                ['STOK7212', 'STOK7211', 'STOK1'], 
-                ['STOK52', 'STOK51', 'STOK5'],
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/ndata_diff_lucky13_3070_oos.csv', 
+                'data/ndata_diff_lucky13_3070.csv', #3
+                'data/ndata_lag_3070_oos.csv', 
+                'data/ndata_lag_3070.csv', #5
         ]
 
-        df_list = []
 
-        for i in range(len(all_feat)):
+        dtx = pd.read_csv(datafile[5])
 
-            feat_data = all_feat[i]
-            print(feat_data)
-            
-            split_test_size_value = 0.7          
-            save_mlflow = False
+        lucky13 = [
+                #'SDLR310',
+                #'SDBB91',
+                #'SDKC91',
+                #'SDKC9',
+                'ROC',
+                #'ATR34',
+                #'ATR32',
+                #'ATR31',
+                'ATR3',
+                #'ATR21',
+                'ATR2',
+                'RSI',
+                'STOK1'
+                ]
 
-            p_df, experiment_id_parent = run_models(dtx, est_list, split_test_size_value, save_mlflow, feat_data)
-            df_list.append(p_df.values.tolist())
-
-
-        d_list = []        
-        for x in range(len(df_list)):
-            
-            for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in df_list[x]: 
+ 
+        #data/ndata_3070.csv', #6
+        ndata_all_feat = [
+                #'SDLR3102', 'SDLR3101', 
+                # 'SDLR310', 
+                #'VOLMA72', 'VOLMA71',
+                #'VOLMA7', 
+                #'VOLMA132', 'VOLMA131', 
+                #'VOLMA13',
+                #'ZH212', 'ZH211', 'ZH21', 'ZH92', 'ZH91', 
+                #'ZH9', 
+                #'ZL212', 'ZL211', 'ZL21', 'ZL92', 'ZL91', 
+                #'ZL9', 
+                #'ZC212', 'ZC211', 'ZC21', 'ZC92', 'ZC91', 
+                #'ZC9', 
+                #'SDBB92','SDBB91', 
+                # 'SDBB9', 
+                #'SDBB202', 'SDBB201', 
+                # 'SDBB20',
+                #'SDKC92', 
+                #'SDKC91', 
+                'SDKC9', 
+                #'SDKC72', 'SDKC71', 
+                'SDKC7', 
+                #'ROC142', 'ROC141', 
+                #'ROC14', 
+                #'ROC132', 'ROC131',
+                #'ROC13', 
+                #'ROC92', 'ROC91', 
+                 'ROC', 
+                #'ATR144', 'ATR143', 'ATR142', 'ATR141', 
+                 #'ATR14', 
+                #'ATR74', 'ATR73', 'ATR72', 'ATR71', 
+                'ATR7', 
+                #'ATR54', 'ATR53', 'ATR52', 'ATR51', 
+                'ATR5',
+                'ATR34', 'ATR33', 'ATR32', 'ATR31', 
+                'ATR3', 
+                #'ATR24', 'ATR23', 'ATR22', 'ATR21', 
+                'ATR2', 
+                #'RSI142', 'RSI141', 
+                #'RSI14', 
                 
-                df_t = f"{run_uuid}  {correctX}  {correctY}  {correctP}  {totalX}  {cxp}  {cyp}  {cpp}  {mse}  {rmse}  {r2}  {mae} {all_feat[x]}"
-                d_list.append(df_t)
+                #'RSI92', 'RSI91', 
+                'RSI', 
                 
+                #'RSI72', 'RSI71', 
+                'RSI7', 
+                #'RSI52', 'RSI51', 
+                #'RSI5', 
+                #'RSI32', 'RSI31', 
+                #'RSI3', 
+               
+                #'STOK7142', 'STOK7141', 
+                'STOK714',
+                
+                #'STOK7212', 'STOK7211', 
+                'STOK1', 
+                
+                #'STOK52', 'STOK51', 
+                #'STOK5'
+        ]
 
-        print(d_list)
-        data_df = pd.DataFrame(d_list)
-        data_df.to_csv("df.csv", index=False)        
+
+
+
+        feat_data = 'xxx'
+        split_test_size_value = 0.7          
+        save_mlflow = False
+                
+        p_df, experiment_id_parent = run_models(dtx, est_list_base, split_test_size_value, save_mlflow, feat_data)
+
+        print("")
+        for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 
+                print(f"{run_uuid}  {cpp}  {mse}  {rmse} {mae} {r2}  ")
+
+        print("")
+
 
 if __name__ == "__main__":
     run()
+
