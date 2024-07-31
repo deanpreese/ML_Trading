@@ -249,10 +249,10 @@ def run_test():
     #run_single(model_list, file, target)
       
     model_loader = ModelLoader()
-    models = model_loader.load_composite_models(["66"], 2, 0)        
-    models = models + model_loader.load_composite_models(["108"], 2, 0)        
-    models = models + model_loader.load_composite_models(["116"], 2, 0)        
-    models = models + model_loader.load_composite_models(["68"], 2, 0)        
+    models = model_loader.load_composite_strategy(["66"], 2, 0)        
+    models = models + model_loader.load_composite_strategy(["108"], 2, 0)        
+    models = models + model_loader.load_composite_strategy(["116"], 2, 0)        
+    models = models + model_loader.load_composite_strategy(["68"], 2, 0)        
     run_sim( file, models, target)
 
 

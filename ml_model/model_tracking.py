@@ -5,13 +5,20 @@ from sklearn.metrics import confusion_matrix
 
 import pandas as pd
 from enum import Enum
+import datetime as dte_time
 
 from ml_model.model_stats import gen_reg_stats
+
+import logging
+logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+logging.getLogger('mlflow.tracking._tracking_service.client').setLevel(logging.ERROR)
+
+
 
 import mlflow
 mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 
-def track_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
+def train_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
         
     with mlflow.start_run(experiment_id = experiment_id, nested=nested):
     
@@ -59,13 +66,13 @@ def track_classifier_model(model_name, features_used, experiment_id, nested, mod
     
 
 # -----------------------------------------------------
-def track_regressor_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
+def train_regressor_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
     
     run_id = 0
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred, squared=True)
-    rmse =mean_squared_error(y_test, y_pred, squared=False)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = rmse =  rmse = mse**.5
     r2 =r2_score(y_test, y_pred)
     score = model.score(X_test, y_test)
     mae = float(mean_absolute_error(y_test,y_pred))                
@@ -107,3 +114,45 @@ def track_regressor_model(model_name, features_used, experiment_id, nested, mode
                
         
     return run_id, perf, total, mse, rmse, r2, score, mae, y_pred    
+
+
+# -----------------------------------------------------
+def save_reg_ens_data(ens_perf_df):
+    
+    step = 0
+    time_stamp = dte_time.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+    exp_name = f"mixer_output_{time_stamp}"
+    
+    try:
+        experiment_id = mlflow.create_experiment(exp_name)
+    except Exception as e:
+        print(f"{e}")    
+            
+    experiment_id = mlflow.get_experiment_by_name(exp_name).experiment_id        
+
+    for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in ens_perf_df.values.tolist() :
+    
+        with mlflow.start_run(experiment_id = experiment_id, nested=False): 
+                        
+            mlflow.log_param('FeatureCount', input_features)
+            mlflow.log_param('run_uuid', run_uuid)
+            mlflow.log_metric('FeatureCount', input_features, step)
+            mlflow.log_metric('correctX', correctX, step)
+            mlflow.log_metric('correctP', correctP, step)
+            mlflow.log_metric('correctY', correctY, step)
+            mlflow.log_metric('totalX', totalX, step)
+            mlflow.log_metric('cxp', cxp, step)
+            mlflow.log_metric("cyp", cyp, step)
+            mlflow.log_metric("cpp", cpp, step)
+
+            mlflow.log_metric('MSE', mse, step)
+            mlflow.log_metric('RMSE', rmse, step)
+            mlflow.log_metric('R2', r2, step)
+            mlflow.log_metric('Score', r2, step)
+            mlflow.log_metric("MAE", mae, step)
+            mlflow.log_metric("Perf", cpp, step)
+            mlflow.log_metric("Total", totalX, step)
+                            
+            
+            mlflow.log_table(data=pd.DataFrame(e_perf), artifact_file="all_perf_data.json")        
+            step += 1 

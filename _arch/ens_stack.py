@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
 from ml_model.data_func import simple_split_and_scale
 
-from ml_model.model_tracking import track_regressor_model
+from ml_model.model_tracking import train_regressor_model
 from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
 from ml_model.data_func import simple_split_and_scale
 from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params

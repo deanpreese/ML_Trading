@@ -10,7 +10,7 @@ import logging
 
 import scipy.stats
 
-from ml_model.model_tracking import track_regressor_model
+from ml_model.model_tracking import train_regressor_model
 from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
 from ml_model.data_func import simple_split_and_scale
 from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params
@@ -50,7 +50,7 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow, feat_da
               
                 X_train, X_test, y_train, y_test = simple_split_and_scale(X, y, run_test_size, 42)
                 
-                run_id, perf, tot, mse, rmse, r2, score, mae, predictions = track_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
+                run_id, perf, tot, mse, rmse, r2, score, mae, predictions = train_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                   y_train, X_test, y_test, save_to_mlflow)  
                 all_predict_data[model_run_uuid] = predictions
                 perf, total, mse, rmse, mae = gen_reg_stats(y_test, predictions)
@@ -75,8 +75,8 @@ def process_model(exp_name, data, models, run_test_size, save_to_mlflow, feat_da
         
         correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_reg_ens_results(all_predict_data, estimator_run_ids)
 
-        mse = mean_squared_error(r_y_target, r_predictions, squared=True)
-        rmse =mean_squared_error(r_y_target, r_predictions, squared=False)
+        mse = mean_squared_error(r_y_target, r_predictions)
+        rmse = rmse =  rmse = mse**.5
         r2 =r2_score(r_y_target, r_predictions)
         
         pear = scipy.stats.pearsonr(r_y_target, r_predictions) 

@@ -40,11 +40,7 @@ class ModelLoader:
             arti_d = mlflow.artifacts.load_dict(art_to_load)
             cols = [x[0] for x in arti_d['data'] if x[0] != 'output']
             self.l_artifacts.append(cols)
-            
-            #print("Columns")
-            #print(cols)
-            #print(" ")
-            
+
         except Exception as e:
             print(f"An error occurred: {e}")
             cols = []    
@@ -87,17 +83,14 @@ class ModelLoader:
         
         self.model_group = 0
         comp_strategies = []
-
         comp_strat = CompositeStrategy()
         comp_strat.run_id = 0
         comp_strat.run_name = "virtual_strategy"
         comp_strat.trader_group = 0     
-
         t_id = 1
         comp_strat.trader_id = t_id
 
         try:
-            
             for i in range(len(run_list)):
                 r_id = run_list[i]
                 print(f"Run Id     {r_id}")
@@ -105,14 +98,13 @@ class ModelLoader:
                         
             comp_strat.strategy_models = self.model_list    
             comp_strategies.append(comp_strat)
-                                
         except Exception as e:
             print(f"An error occurred: {e}")            
             
         return comp_strategies    
         
             
-    def load_composite_models(self, experiment_id, num_models, group_id): 
+    def load_composite_strategy(self, experiment_id, num_models, group_id): 
         
         print("Querying Runs ...")
         #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
@@ -124,38 +116,35 @@ class ModelLoader:
             self.model_list = []    
             r_id = runs.iloc[i].run_id 
             print(f"Run Id     {r_id}")
-            loaded_strat = self.add_composite_strategies(r_id, group_id)
-            comp_strategies.append(loaded_strat)
-        return comp_strategies    
+            
+            rinfo = mlflow.get_run(r_id)
+            comp_strat = CompositeStrategy()
+            comp_strat.run_id = r_id
+            comp_strat.run_name = rinfo.info.run_name   
+            comp_strat.trader_group = group_id     
 
+            t_id = 1
+            comp_strat.trader_id = t_id
 
-    def add_composite_strategies(self, rid, group_id):
-        
-        rinfo = mlflow.get_run(rid)
-        comp_strat = CompositeStrategy()
-        comp_strat.run_id = rid
-        comp_strat.run_name = rinfo.info.run_name   
-        comp_strat.trader_group = group_id     
-
-        t_id = 1
-        comp_strat.trader_id = t_id
-
-        try:
-            art = json.loads(rinfo.data.tags['mlflow.loggedArtifacts'])
-            for item in art:
-                if item.get('path') == "all_perf_data.json" :
-                    art_file = item.get('path', None)
-                    art_uri = rinfo.info.artifact_uri
-                    art_to_load = f"{art_uri}/{art_file}"
-                    print(art_to_load)
-                    arti_d = mlflow.artifacts.load_dict(art_to_load)
-                    for item_data in arti_d['data']:
-                        print( item_data[8])
-                        self.add_model(item_data[8], False)
+            try:
+                art = json.loads(rinfo.data.tags['mlflow.loggedArtifacts'])
+                for item in art:
+                    if item.get('path') == "all_perf_data.json" :
+                        art_file = item.get('path', None)
+                        art_uri = rinfo.info.artifact_uri
+                        art_to_load = f"{art_uri}/{art_file}"
+                        print(art_to_load)
+                        arti_d = mlflow.artifacts.load_dict(art_to_load)
+                        for item_data in arti_d['data']:
+                            print(item_data[0])
+                            print(item_data[1])
+                            print( item_data[8])
+                            self.add_model(item_data[8], False)
+                            
+                comp_strat.strategy_models = self.model_list    
                         
-            comp_strat.strategy_models = self.model_list    
-            return comp_strat
-                    
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
+            comp_strategies.append(comp_strat)
+        return comp_strategies    

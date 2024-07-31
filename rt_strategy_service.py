@@ -30,7 +30,7 @@ models_four = []
 
 
 def LoadModels(group_id, experiment_id, num_models):
-    return model_loader.load_composite_models( experiment_id, num_models, group_id)    
+    return model_loader.load_composite_strategy( experiment_id, num_models, group_id)    
 
 # single model prediction -- returns 1 to -1   
 def get_prediction(data_df, models):

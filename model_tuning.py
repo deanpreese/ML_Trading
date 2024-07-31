@@ -8,18 +8,15 @@ from ml_model.data_func import simple_split_and_scale
 import optuna
 
 datafile = [ 
-        'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-        'data/buildSeqInd_Lucky13_5M_ALL.csv',  #1
-        'data/buildSeqInd_Lucky13_F.csv',  #2
-        'data/buildSeqInd_Lucky13_D.csv',  #3
-        'data/buildSeqInd_Lucky13_F_3070.csv',  #4
-        'data/Expanded_Lucky13_3070.csv',  #5
-        'data/ndata_3070.csv', #6
-        'data/ndata_3070_alt.csv', #7
-        'data/ym_ndata_3070_alt.csv', #8                        
+        'data/Lucky13_3070_oos.csv',   
+        'data/Lucky13_3070.csv',  #1
+        'data/ndata_diff_lucky13_3070_oos.csv', 
+        'data/ndata_diff_lucky13_3070.csv', #3
+        'data/ndata_lag_3070_oos.csv', 
+        'data/ndata_lag_3070.csv', #5
 ]
 
-dtx = pd.read_csv(datafile[6])
+dtx = pd.read_csv(datafile[1])
 X = dtx
 X = X.drop(columns=['output', 'outputC'])
 y = dtx['output'].values
@@ -32,17 +29,27 @@ def objective_xgb(trial):
         "objective": "reg:squarederror",
         "n_estimators": 1000,
         "verbosity": 0,
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-        "max_depth": trial.suggest_int("max_depth", 1, 50),
-        "subsample": trial.suggest_float("subsample", 0.05, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.05, 1.0),
-        "min_child_weight": trial.suggest_int("min_child_weight", 1, 20),
+        'lambda': trial.suggest_loguniform('lambda', 7.0, 17.0),
+        'alpha': trial.suggest_loguniform('alpha', 7.0, 17.0),
+        'eta': trial.suggest_categorical('eta', [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
+        'gamma': trial.suggest_categorical('gamma', [18, 19, 20, 21, 22, 23, 24, 25]),
+        'learning_rate': trial.suggest_categorical('learning_rate', [0.008,0.01,0.012,0.014,0.016,0.018, 0.02]),
+        'colsample_bytree': trial.suggest_categorical('colsample_bytree', [0.3,0.4,0.5,0.6,0.7,0.8,0.9, 1.0]),
+        'colsample_bynode': trial.suggest_categorical('colsample_bynode', [0.3,0.4,0.5,0.6,0.7,0.8,0.9, 1.0]),
+        'n_estimators': trial.suggest_int('n_estimators', 400, 1000),
+        'min_child_weight': trial.suggest_int('min_child_weight', 8, 600),  
+        'max_depth': trial.suggest_categorical('max_depth', [3, 4, 5, 6, 7]),  
+        'subsample': trial.suggest_categorical('subsample', [0.5,0.6,0.7,0.8,1.0]),
+        'random_state': 42
+        
     }
 
     model = xgb.XGBRegressor(**params)
     model.fit(X_train, y_train, verbose=False)
     predictions = model.predict(X_val)
-    rmse = mean_squared_error(y_val, predictions, squared=False)
+    mse = mean_squared_error(y_val, predictions)
+    rmse = rmse =  rmse = mse**.5
+    
     return rmse
 
 
@@ -59,7 +66,8 @@ def objective_cat(trial):
     model = cb.CatBoostRegressor(**params, silent=True)
     model.fit(X_train, y_train)
     predictions = model.predict(X_val)
-    rmse = mean_squared_error(y_val, predictions, squared=False)
+    mse = mean_squared_error(y_val, predictions)
+    rmse = rmse =  rmse = mse**.5
     return rmse
 
 
@@ -69,18 +77,23 @@ def objective_lgb(trial):
         "metric": "rmse",
         'verbose': 0,
         "n_estimators": 1000,
-        "bagging_freq": 1,
-        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-        "num_leaves": trial.suggest_int("num_leaves", 2, 2**10),
-        "subsample": trial.suggest_float("subsample", 0.05, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.05, 1.0),
-        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
+        'metric': 'rmse', 
+        'reg_alpha': trial.suggest_loguniform('reg_alpha', 1e-3, 10.0),
+        'reg_lambda': trial.suggest_loguniform('reg_lambda', 1e-3, 10.0),
+        'colsample_bytree': trial.suggest_categorical('colsample_bytree', [0.3,0.4,0.5,0.6,0.7,0.8,0.9, 1.0]),
+        'subsample': trial.suggest_categorical('subsample', [0.4,0.5,0.6,0.7,0.8,1.0]),
+        'learning_rate': trial.suggest_categorical('learning_rate', [0.006,0.008,0.01,0.014,0.017,0.02]),
+        'max_depth': trial.suggest_categorical('max_depth', [10,20,100]),
+        'num_leaves' : trial.suggest_int('num_leaves', 1, 1000),
+        'min_child_samples': trial.suggest_int('min_child_samples', 1, 300),
+        'cat_smooth' : trial.suggest_int('min_data_per_groups', 1, 100)
     }
 
     model = lgb.LGBMRegressor(**params)
     model.fit(X_train, y_train)
     predictions = model.predict(X_val)
-    rmse = mean_squared_error(y_val, predictions, squared=False)
+    mse = mean_squared_error(y_val, predictions)
+    rmse = rmse =  rmse = mse**.5
     return rmse
 
 
@@ -92,27 +105,27 @@ def main():
     #study_xgb = optuna.create_study(direction='minimize')
     #study_xgb.optimize(objective_xgb, n_trials=20)
 
-    #print(" ")
-    #print("Lightgbm Tuning")
-    #study_lgb = optuna.create_study(direction='minimize')
-    #study_lgb.optimize(objective_lgb, n_trials=20)
-
     print(" ")
-    print("CatBoost Tuning")
-    study_cat = optuna.create_study(direction='minimize')
-    study_cat.optimize(objective_cat, n_trials=50)
+    print("Lightgbm Tuning")
+    study_lgb = optuna.create_study(direction='minimize')
+    study_lgb.optimize(objective_lgb, n_trials=20)
+
+    #print(" ")
+    #print("CatBoost Tuning")
+    #study_cat = optuna.create_study(direction='minimize')
+    #study_cat.optimize(objective_cat, n_trials=50)
     
     
     #print(" ")
     #print("Best XGB parameters")
     #print(study_xgb.best_trial)
     #print(" ")
-    #print("Best LGB parameters")
-    #print(study_lgb.best_trial)
-    #print(" ")
-    print("Best CAT parameters")
-    print(study_cat.best_trial)
+    print("Best LGB parameters")
+    print(study_lgb.best_trial)
     print(" ")
+    #print("Best CAT parameters")
+    #print(study_cat.best_trial)
+    #print(" ")
 
 
     

@@ -24,7 +24,7 @@ def calc_importances_and_baseline(models, X_train, y_train, X_test, y_test, feat
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         model_r2 = r2_score(y_test,y_pred)
-        mse = mean_squared_error(y_test, y_pred, squared=True)
+        mse = mean_squared_error(y_test, y_pred)
         
         if "Regressor" in name:
             perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred)
@@ -110,7 +110,7 @@ def retrain_models(models, important_features, X_train, X_test, y_train, y_test,
         
         # Evaluate the new model
         y_pred_selected = model.predict(X_test_selected)
-        sel_mse = mean_squared_error(y_test, y_pred_selected, squared=True)
+        sel_mse = mean_squared_error(y_test, y_pred_selected)
         sel_model_r2 = r2_score(y_test,y_pred_selected)
         
         if "Regressor" in name:
