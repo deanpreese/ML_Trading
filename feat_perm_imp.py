@@ -175,15 +175,18 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 # --------------
 def run():
 
+
+
     datafile = [ 
             'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
             'data/ndata_diff_lucky13_3070_oos.csv', 
             'data/ndata_diff_lucky13_3070.csv', #3
-            'data/ndata_lag_3070_oos.csv', 
-            'data/ndata_lag_3070.csv', #5
+            'data/ndata_lucky13_lag_3070_oos.csv', 
+            'data/ndata_lucky13_lag_3070.csv', #5
+            'data/new_model_Z_lucky13_3070_oos.csv',   
+            'data/new_model_Z_lucky13_3070.csv',  #7
     ]
-
 
     file_loaded = pd.read_csv(datafile[1])
     X = file_loaded
@@ -191,7 +194,7 @@ def run():
     y = file_loaded['outputC'].values
     y2 = file_loaded['output'].values
     
-    threshold = 80
+    threshold = 75
 
     X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
     X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
@@ -242,93 +245,94 @@ def run():
 if __name__ == "__main__":
     run()
 
+
 """
-'data/ndata_3070.csv', #6
-Features Selected based on threshold of 80 percent
+'data/Lucky13_3070.csv',  #1
+Features Selected based on threshold of 75 percent
 
 Regressor Selected Features
-['RSI', 'RSI14', 'RSI7', 'ZH21', 'ATR5', 'ATR3', 'ZL21', 'ROC142']
+['RSI', 'ATR2']
 Perf Results
                    Model  Base Perf  Sel Feat Perf   Base R2    Sel R2   Base MSE    Sel MSE
-0  RandomForestRegressor     0.7575         0.7577  0.298154  0.267068  12.841684  13.410465
-1      LightGBMRegressor     0.7580         0.7579  0.354981  0.354198  11.801921  11.816252
-2       XGBoostRegressor     0.7558         0.7581  0.198856  0.279380  14.658546  13.185196
-3      CatBoostRegressor     0.7585         0.7593  0.315338  0.329355  12.527262  12.270795
-
-Classifier Selected Features
-['RSI', 'RSI14', 'ATR2', 'RSI5', 'RSI3']
-Perf Results
-                    Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
-0  RandomForestClassifier   0.777062       0.758107  0.108143  0.032311  0.222938  0.241893
-1                LightGBM   0.777062       0.776466  0.108143  0.105758  0.222938  0.223534
-2                 XGBoost   0.771221       0.769790  0.084773  0.079050  0.228779  0.230210
-3                CatBoost   0.773724       0.772771  0.094789  0.090973  0.226276  0.227229
-
-
-
-'data/ndata_3070_alt.csv', #7
-Features Selected based on threshold of 80 percent
-
-Regressor Selected Features
-['STOK714', 'RSI9X', 'RSI7', 'ZH21', 'ROC14', 'RSI14', 'ZL9', 'ZH9', 'ATR5', 'ATR2X', 'ATR7', 'ATR3X']
-Perf Results
-                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2   Base MSE    Sel MSE
-0  RandomForestRegressor     0.7678         0.7648  0.311004  0.282914  12.032978  12.523554
-1      LightGBMRegressor     0.7663         0.7666  0.373942  0.380523  10.933788  10.818863
-2       XGBoostRegressor     0.7622         0.7639  0.277903  0.277994  12.611076  12.609479
-3      CatBoostRegressor     0.7685         0.7635  0.357480  0.368677  11.221289  11.025749
-
-Classifier Selected Features
-['RSI9X', 'ZH21', 'ATR2X', 'STOKX721']
-Perf Results
-                    Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
-0  RandomForestClassifier   0.779485       0.772099  0.117826  0.088277  0.220515  0.227901
-1                LightGBM   0.782225       0.783655  0.128788  0.134507  0.217775  0.216345
-2                 XGBoost   0.770550       0.780558  0.082082  0.122115  0.229450  0.219442
-3                CatBoost   0.783059       0.780438  0.132124  0.121639  0.216941  0.219562
-
-
-
-'data/buildSeqInd_Lucky13_5M_3070.csv',   #0
-Regressor Selected Features
-['RSI']
-Perf Results
-                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE    Sel MSE
-0  RandomForestRegressor     0.7541         0.7260  0.437924 -0.006855  9.593983  17.185827
-1      LightGBMRegressor     0.7584         0.7581  0.467815  0.337973  9.083780  11.300027
-2       XGBoostRegressor     0.7561         0.7559  0.424432  0.284433  9.824265  12.213895
-3      CatBoostRegressor     0.7550         0.7577  0.447159  0.333775  9.436339  11.371682
+0  RandomForestRegressor     0.7571         0.7467  0.331625  0.257686  11.536986  12.813274
+1      LightGBMRegressor     0.7575         0.7571  0.403233  0.433011  10.300953   9.786943
+2       XGBoostRegressor     0.7532         0.7563  0.356036  0.394698  11.115619  10.448273
+3      CatBoostRegressor     0.7569         0.7571  0.374997  0.428228  10.788345   9.869507
 
 Classifier Selected Features
 ['RSI', 'ATR2']
 Perf Results
                     Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
-0  RandomForestClassifier   0.777000       0.761286  0.107925  0.045063  0.223000  0.238714
-1                LightGBM   0.780857       0.779429  0.123355  0.117641  0.219143  0.220571
-2                 XGBoost   0.777000       0.777714  0.107925  0.110783  0.223000  0.222286
-3                CatBoost   0.778429       0.776714  0.113640  0.106782  0.221571  0.223286
-
-
-'data/ym_ndata_3070_alt.csv', #8
-Features Selected based on threshold of 80 percent
+0  RandomForestClassifier   0.783251       0.754127  0.132758  0.016231  0.216749  0.245873
+1                LightGBM   0.780835       0.779627  0.123092  0.118259  0.219165  0.220373
+2                 XGBoost   0.770635       0.775198  0.082281  0.100539  0.229365  0.224802
+3                CatBoost   0.780969       0.779090  0.123629  0.116111  0.219031  0.220910 
+ 
+ 
+ 'data/ndata_diff_lucky13_3070.csv', #3
+Features Selected based on threshold of 75 percent
 
 Regressor Selected Features
-['RSI9X', 'STOK714', 'RSI7', 'ZC21', 'RSI14', 'ATR3X', 'ATR2X', 'RSI3', 'ZC9']
+['RSI9X', 'ROC14X', 'RSI14X', 'STOK714X', 'RSI7X', 'ATR2X', 'ATR3X']
 Perf Results
-                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2    Base MSE     Sel MSE
-0  RandomForestRegressor     0.7746         0.7709  0.422498  0.405263  673.230376  693.321742
-1      LightGBMRegressor     0.7794         0.7761  0.406958  0.404063  691.346006  694.720407
-2       XGBoostRegressor     0.7745         0.7761  0.368080  0.434784  736.668210  658.906857
-3      CatBoostRegressor     0.7776         0.7775  0.412339  0.446774  685.072842  644.930163
+                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2   Base MSE    Sel MSE
+0  RandomForestRegressor     0.7567         0.7541  0.338584  0.304073  11.416871  12.012573
+1      LightGBMRegressor     0.7564         0.7567  0.411518  0.409335  10.157930  10.195626
+2       XGBoostRegressor     0.7517         0.7516  0.366225  0.333527  10.939751  11.504164
+3      CatBoostRegressor     0.7540         0.7552  0.394704  0.414240  10.448164  10.110949
 
 Classifier Selected Features
-['RSI9X', 'ATR21', 'STOK7211', 'ATR2X', 'STOK7212']
+['RSI9X', 'ROC14X', 'RSI14X', 'ATR2X', 'RSI3X', 'RSI7X', 'ATR21']
 Perf Results
                     Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
-0  RandomForestClassifier   0.787966       0.780265  0.151841  0.121034  0.212034  0.219735
-1                LightGBM   0.788327       0.789049  0.153286  0.156174  0.211673  0.210951
-2                 XGBoost   0.780866       0.782792  0.123441  0.131143  0.219134  0.217208
-3                CatBoost   0.789771       0.786402  0.159062  0.145584  0.210229  0.213598
+0  RandomForestClassifier   0.780969       0.773587  0.123629  0.094095  0.219031  0.226413
+1                LightGBM   0.778419       0.780701  0.113426  0.122555  0.221581  0.219299
+2                 XGBoost   0.771440       0.772648  0.085503  0.090336  0.228560  0.227352
+3                CatBoost   0.782848       0.778419  0.131147  0.113426  0.217152  0.221581    
+    
+data/new_model_Z_lucky13_3070.csv',  #7
+Features Selected based on threshold of 75 percent
+
+Regressor Selected Features
+['RSI', 'ATR5', 'RSI14Z', 'ATR3Z', 'STOK7143Z', 'ATR2', 'L01Z', 'L02Z']
+Perf Results
+                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2   Base MSE    Sel MSE
+0  RandomForestRegressor     0.7572         0.7565  0.322231  0.312034  11.699143  11.875157
+1      LightGBMRegressor     0.7541         0.7533  0.399271  0.402950  10.369336  10.305835
+2       XGBoostRegressor     0.7512         0.7553  0.330910  0.375647  11.549342  10.777115
+3      CatBoostRegressor     0.7553         0.7557  0.352401  0.422722  11.178367   9.964535
+
+Classifier Selected Features
+['RSI', 'RSI14Z', 'ATR2', 'ATR21', 'ATR54', 'ATR53']
+Perf Results
+                    Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
+0  RandomForestClassifier   0.777882       0.778285  0.111279  0.112890  0.222118  0.221715
+1                LightGBM   0.781372       0.783116  0.125240  0.132221  0.218628  0.216884
+2                 XGBoost   0.767280       0.775064  0.068856  0.100002  0.232720  0.224936
+3                CatBoost   0.775064       0.782177  0.100002  0.128462  0.224936  0.217823    
 
 
-"""
+
+'data/ndata_lucky13_lag_3070.csv', #5
+Features Selected based on threshold of 75 percent
+
+Regressor Selected Features
+['RSI9Y', 'STOK714Y', 'ATR3Y', 'RSI14Y', 'ZL9Y', 'ATR5Y', 'RSI7Y', 'ROC91Y', 'ZL21Y', 'ATR2Y', 'RSI5Y', 'ZH21Y', 'SDKC7Y']
+Perf Results
+                   Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE    Sel MSE
+0  RandomForestRegressor     0.7591         0.7567  0.367963  0.326789  10.90975  11.620462
+1      LightGBMRegressor     0.7547         0.7551  0.398790  0.414898  10.37764  10.099598
+2       XGBoostRegressor     0.7540         0.7555  0.331799  0.359155  11.53399  11.061791
+3      CatBoostRegressor     0.7563         0.7582  0.368733  0.395915  10.89646  10.427259
+
+Classifier Selected Features
+['RSI9Y', 'RSI14Y', 'RSI7Y', 'STOK7Y', 'ZL9Y', 'VOLMA7Y', 'ZH91Y', 'STOK5Y']
+Perf Results
+                    Model  Base Perf  Sel Feat Perf   Base R2    Sel R2  Base MSE   Sel MSE
+0  RandomForestClassifier   0.778151       0.774661  0.112353  0.098391  0.221849  0.225339
+1                LightGBM   0.781237       0.776137  0.124703  0.104298  0.218763  0.223863
+2                 XGBoost   0.767145       0.769964  0.068319  0.079596  0.232855  0.230036
+3                CatBoost   0.780566       0.778016  0.122018  0.111816  0.219434  0.221984
+    
+    
+    """

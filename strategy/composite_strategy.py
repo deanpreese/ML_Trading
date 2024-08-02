@@ -23,10 +23,10 @@ class CompositeStrategy (CommonStrategy):
         self.run_name = ""
         
         
-        self.long_threshold = 0
-        self.short_threshold = 0
-        self.long_big_threshold = 0
-        self.short_big_threshold = 0        
+        self.long_threshold = 0.5
+        self.short_threshold = -0.5
+        self.long_big_threshold = 1.5
+        self.short_big_threshold = -1.5        
         
         self.trader_id = 0
         self.trader_group = 0
@@ -44,6 +44,10 @@ class CompositeStrategy (CommonStrategy):
             
             perf = self.strategy_models[m].metrics["Perf"]
             predict = self.strategy_models[m].do_predict(data)
+            
+            if "Classifier" in self.strategy_models[m].model_name:
+                predict = (predict - 0.5) *2 
+            
             agg_weighted_predict += predict * perf
             agg_predict += predict
             predicts.append(predict)
@@ -68,21 +72,27 @@ class CompositeStrategy (CommonStrategy):
     
     def do_predict_v(self,data):
 
-        return_predict = 0
+        count_above_threshold_predict = 0
         agg_predict, agg_weighted_predict, predicts = self.do_predict_base(data)
             
         count_u = sum(1 for x in predicts if x > 0)             
+        count_u_w = sum(1 for x in agg_weighted_predict if x > 0)             
+        
         total_items = len(predicts)
         percentage_positive = (count_u / total_items) 
+        percentage_positive_w = (count_u / total_items) 
         
-        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_threshold:
-            return_predict = 1
-        else:
-            agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_threshold
-            return_predict = -1         
-                
-        #print(total_items  ,  count_u , percentage_positive , agg_predict, agg_weighted_predict, return_predict  )
+        if agg_predict > self.long_threshold or agg_weighted_predict > self.long_threshold:
+            count_above_threshold_predict = 1
+        elif agg_predict < self.short_threshold or agg_weighted_predict < self.short_threshold:
+            count_above_threshold_predict = -1         
 
-        return percentage_positive, return_predict, agg_predict, agg_weighted_predict
+        if agg_predict > self.long_big_threshold or agg_weighted_predict > self.long_big_threshold:
+            count_above_threshold_predict += 3
+        elif agg_predict < self.short_big_threshold or agg_weighted_predict < self.short_big_threshold:
+            count_above_threshold_predict += -3         
+
+
+        return percentage_positive, percentage_positive_w, count_above_threshold_predict, agg_predict, agg_weighted_predict
     
     

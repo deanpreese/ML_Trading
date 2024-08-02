@@ -9,8 +9,6 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import logging
 
 from ml_model.model_tracking import train_regressor_model, save_reg_ens_data
-from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results, calc_mse_rmse_mae
-from ml_model.data_func import simple_split_and_scale
 
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
 
@@ -19,7 +17,7 @@ from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
 import ml_model.model_params as mp
-import ml_model.model_func as model_processing
+import ml_model.model_process as model_processing
 
 
 
@@ -93,6 +91,12 @@ def run():
         ]
 
 
+        est_t = [ 
+                XGBClassifier(),
+                XGBRegressor(),   
+        ]
+
+
 
         datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
@@ -107,9 +111,9 @@ def run():
 
         split_test_size_value = 0.7          
         min_features_used = 3
-        max_features_used = 7
+        max_features_used = 5
         step_features_used = 1
-        total_cycles_used = 50
+        total_cycles_used = 1
 
         #feat_ndata_3070 = ['RSI9', 'RSI7', 'ZH', 'ATR7', 'RSI14', 'ATR3', 'ZL', 'ROC14', 'ATR2', 'ZH9', 'VOLMA13', 'STOK714', 'RSI72', 'ROC9', 'output', 'outputC']
         #dtx = dtx[feat_ndata_3070]
@@ -117,7 +121,7 @@ def run():
         #Lucky13
         # SDLR310,SDBB91,SDKC91,SDKC9,ROC,ATR34,ATR32,ATR31,ATR3,ATR21,ATR2,RSI,STOK1,output,outputC
 
-        p_df, experiment_id_parent = run_models(dtx, est_list, 
+        p_df, experiment_id_parent = run_models(dtx, est_t, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

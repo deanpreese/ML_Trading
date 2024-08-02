@@ -17,10 +17,9 @@ class MLStrategy (CommonStrategy):
         self.column_filter = col_filter
         self.run_id = run_id
         self.run_name = ""
-
         self.trader_id = 0
         self.trader_group = 25
-        
+        self.model_name = ""
 
     def do_predict(self,data):
         

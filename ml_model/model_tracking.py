@@ -12,44 +12,45 @@ from ml_model.model_stats import gen_reg_stats
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
 logging.getLogger('mlflow.tracking._tracking_service.client').setLevel(logging.ERROR)
-
-
+logging.getLogger('mlflow.models.model').setLevel(logging.ERROR)
 
 import mlflow
 mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 
 def train_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
-        
-    with mlflow.start_run(experiment_id = experiment_id, nested=nested):
     
-        run_id = mlflow.active_run().info.run_id  
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        pred_proba = model.predict_proba(X_test)
-        
-        TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
-        accuracy = accuracy_score(y_pred, y_test)
-        precision = precision_score(y_pred, y_test)
-        recall = recall_score(y_pred, y_test)
-        tot = TN + FP + FN + TP
-                
-        if save_to_mlflow :
+    run_id = 0
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    pred_proba = model.predict_proba(X_test)
+    
+    TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
+    accuracy = accuracy_score(y_pred, y_test)
+    precision = precision_score(y_pred, y_test)
+    recall = recall_score(y_pred, y_test)
+    tot = TN + FP + FN + TP
+            
+    if save_to_mlflow :
+        with mlflow.start_run(experiment_id = experiment_id, nested=nested):
+            
+            run_id = mlflow.active_run().info.run_id  
             if "XGB" in model_name :
                 mlflow.xgboost.log_model(model, "model") 
-                p = model.get_params()
                 p2 = model.get_xgb_params()
-                mlflow.log_params(p)
                 mlflow.log_params(p2)
+                mlflow.log_param("ModelName" , model_name)
                 
             if "LGB" in model_name :
                 mlflow.lightgbm.log_model(model, "model")
                 p = model.get_params()
                 mlflow.log_params(p)
+                mlflow.log_param("ModelName" , model_name)
                 
             if "Cat" in model_name :
                 mlflow.catboost.log_model(model, "model")
                 p = model.get_all_params()
                 mlflow.log_params(p)
+                mlflow.log_param("ModelName" , model_name)
             
             mlflow.log_table(data=pd.DataFrame(features_used), artifact_file="features_used.json") 
             mlflow.log_param("FeatureCount" , (X_train.shape[1]))
@@ -61,8 +62,9 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
             mlflow.log_metric("FalseNeg", FN)
             mlflow.log_metric("TruePos", TP)
             mlflow.log_metric("Perf", accuracy)
-        
-    return run_id, accuracy, precision, recall, TN/tot, FP/tot, FN/tot, TP/tot, tot, y_pred, pred_proba      
+
+    return run_id, accuracy, y_pred, pred_proba   
+    #return run_id, accuracy, precision, recall, TN/tot, FP/tot, FN/tot, TP/tot, tot, y_pred, pred_proba      
     
 
 # -----------------------------------------------------
@@ -87,19 +89,19 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
                 mlflow.xgboost.log_model(model, "model") 
                 p2 = model.get_xgb_params()
                 mlflow.log_params(p2)
-                mlflow.log_param("ModelName" , "XGB")
+                mlflow.log_param("ModelName" , model_name)
                 
             if "LGB" in model_name :
                 mlflow.lightgbm.log_model(model, "model")
                 p = model.get_params()
                 mlflow.log_params(p)
-                mlflow.log_param("ModelName" , "LGB")
+                mlflow.log_param("ModelName" , model_name)
                 
             if "Cat" in model_name :
                 mlflow.catboost.log_model(model, "model")
                 p = model.get_all_params()
                 mlflow.log_params(p)
-                mlflow.log_param("ModelName" , "CAT")
+                mlflow.log_param("ModelName" , model_name)
             
             mlflow.log_table(data=pd.DataFrame(features_used), artifact_file="features_used.json")  
             mlflow.log_param("FeatureCount" , (X_train.shape[1]))
@@ -112,8 +114,9 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
             mlflow.log_metric("Perf", perf)
             mlflow.log_metric("Total", total)
                
-        
-    return run_id, perf, total, mse, rmse, r2, score, mae, y_pred    
+    
+    return run_id, perf, y_pred        
+    #return run_id, perf, total, mse, rmse, r2, score, mae, y_pred    
 
 
 # -----------------------------------------------------
@@ -134,12 +137,12 @@ def save_reg_ens_data(ens_perf_df):
     
         with mlflow.start_run(experiment_id = experiment_id, nested=False): 
                         
-            mlflow.log_param('FeatureCount', input_features)
+            #mlflow.log_param('FeatureCount', input_features)
             mlflow.log_param('run_uuid', run_uuid)
-            mlflow.log_metric('FeatureCount', input_features, step)
-            mlflow.log_metric('correctX', correctX, step)
-            mlflow.log_metric('correctP', correctP, step)
-            mlflow.log_metric('correctY', correctY, step)
+            #mlflow.log_metric('FeatureCount', input_features, step)
+            #mlflow.log_metric('correctX', correctX, step)
+            #mlflow.log_metric('correctP', correctP, step)
+            #mlflow.log_metric('correctY', correctY, step)
             mlflow.log_metric('totalX', totalX, step)
             mlflow.log_metric('cxp', cxp, step)
             mlflow.log_metric("cyp", cyp, step)

@@ -8,8 +8,25 @@ import random as rand
 from strategy.ml_strategy import MLStrategy
 from strategy.composite_strategy import CompositeStrategy
 
+import logging
+logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+logging.getLogger('mlflow.tracking._tracking_service.client').setLevel(logging.ERROR)
+logging.getLogger('mlflow.utils.requirements_utils').setLevel(logging.ERROR)
+
+
+logging.getLogger('mlflow.pyfunc').setLevel(logging.ERROR)
+logging.getLogger('lightgbm').setLevel(logging.ERROR)
+logging.getLogger('[LightGBM]').setLevel(logging.ERROR)
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
+
 import mlflow
 mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
+
 
 
 class ModelLoader:
@@ -24,11 +41,12 @@ class ModelLoader:
     # -------------------------
     # Main add_model function
     # -------------------------
-    def add_model(self, rid, isReg):
+    def add_model(self, rid, model_n):
         rinfo = mlflow.get_run(rid)
         run_txt = f"runs:/{rid}/model" 
         
         loaded_model = mlflow.pyfunc.load_model(run_txt)
+        print(model_n)
         
         cols =[]
         try:
@@ -47,6 +65,7 @@ class ModelLoader:
         
         #self.l_models.append(loaded_model)
         lm = MLStrategy(loaded_model, cols,rid)
+        lm.model_name = model_n
         lm.trader_group = self.model_group
         lm.run_name = rinfo.info.run_name
         lm.metrics = rinfo.data.metrics
@@ -136,10 +155,11 @@ class ModelLoader:
                         print(art_to_load)
                         arti_d = mlflow.artifacts.load_dict(art_to_load)
                         for item_data in arti_d['data']:
-                            print(item_data[0])
-                            print(item_data[1])
-                            print( item_data[8])
-                            self.add_model(item_data[8], False)
+                            
+                            if "V2" in item_data[0] :
+                                self.add_model(item_data[3], item_data[0])
+                            if "V2" not in item_data[0] :
+                                self.add_model(item_data[8], item_data[0])
                             
                 comp_strat.strategy_models = self.model_list    
                         

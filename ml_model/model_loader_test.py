@@ -22,6 +22,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", module='mlflow')
 
 model_loader = ModelLoader()
-models_one = []
-models_one = model_loader.load_composite_strategy( ["68"], 2, 0)    
+print("  ")
+model_loader.load_composite_strategy( ["181"], 1, 0)    
+print("  ")
+print("  ")
+model_loader.load_composite_strategy( ["195"], 1, 0)    
+print("  ")
 

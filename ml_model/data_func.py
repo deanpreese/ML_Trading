@@ -1,4 +1,15 @@
+
+import itertools
 from sklearn.model_selection import train_test_split
+
+
+def generate_combinations(data_list, min=3, max=7):
+    all_combinations = []
+    for r in range(min, max + 1):
+        combinations = list(itertools.combinations(data_list, r))
+        all_combinations.extend(combinations)
+    return all_combinations
+
 
 def simple_split_and_scale(X, y, test_size, random_state):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)

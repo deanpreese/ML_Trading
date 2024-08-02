@@ -14,7 +14,7 @@ from catboost import CatBoostClassifier, CatBoostRegressor
 
 from ml_model.model_tracking import save_reg_ens_data
 import ml_model.model_params as mp
-import ml_model.model_func as model_processing
+import ml_model.model_process as model_processing
 
 
 def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
@@ -45,8 +45,10 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
 
         print(" ")
         
+        #["Estimator", "Perf", "Features", "RUN_ID" ]
+        
         for x in range(len(p_df["e_perf"][0])):
-                print(f"{p_df['e_perf'][0][x][0]}  {p_df['e_perf'][0][x][1]}  {p_df['e_perf'][0][x][3]}  {p_df['e_perf'][0][x][4]}  {p_df['e_perf'][0][x][5]}" )     
+                print(f"{p_df['e_perf'][0][x][0]}  {p_df['e_perf'][0][x][1]} " )     
 
         if save_to_mlflow :
             save_reg_ens_data(p_df)
@@ -144,18 +146,57 @@ def run():
                 
         ]
 
+        est_list = [ XGBRegressor(),
+                XGBRegressor(**mp.xgb_p), XGBRegressor(**mp.xgb_params_F),
+                XGBRegressor(**mp.xgb_params_M), CatBoostRegressor(), CatBoostRegressor(**mp.cbr_set),
+                CatBoostRegressor(**mp.cat_params_F), CatBoostRegressor(**mp.cat_params_M),
+                LGBMRegressor(),
+                LGBMRegressor(**mp.lbr_set), LGBMRegressor(**mp.lgb_params_F),
+                LGBMRegressor(**mp.lgb_params_M), XGBRFRegressor(**mp.xgbrf_t),
+                XGBRFRegressor(),
+                ]
+
+        est_comb = [
+                LGBMRegressor(**mp.lbr_set), 
+                CatBoostRegressor(**mp.cbr_set),
+                XGBRegressor(**mp.xgbr_set),   
+                XGBRFRegressor(**mp.xgbrf_set),                
+                LGBMClassifier(**mp.lbc_set),
+                XGBClassifier(),
+                CatBoostClassifier(**mp.cbc_set),
+                #LGBMRegressor(), 
+                #CatBoostRegressor(),
+                #XGBRFRegressor(),                
+                #LGBMClassifier(),
+                #CatBoostClassifier(),
+                XGBRFClassifier(),
+        ]
+
+        # ==========================================
 
         datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
                 'data/ndata_diff_lucky13_3070_oos.csv', 
                 'data/ndata_diff_lucky13_3070.csv', #3
-                'data/ndata_lag_3070_oos.csv', 
-                'data/ndata_lag_3070.csv', #5
+                'data/ndata_lucky13_lag_3070_oos.csv', 
+                'data/ndata_lucky13_lag_3070.csv', #5
+                'data/new_model_Z_lucky13_3070_oos.csv',   
+                'data/new_model_Z_lucky13_3070.csv',  #7
         ]
 
-
         dtx = pd.read_csv(datafile[1])
+
+
+        f_87 =['RSI',
+                'STOK1',
+                'SDKC9',
+                'SDLR310',
+                'ATR2',
+                'SDKC91',
+                'SDBB91',
+                'ATR5',
+                'ATR21',]
 
         lucky13 = [
                 #'SDLR310',
@@ -163,10 +204,10 @@ def run():
                 #'SDKC91',
                 'SDKC9',
                 'ROC',
-                #'ATR34',
-                #'ATR32',
-                #'ATR31',
-                'ATR3',
+                #'ATR54',
+                #'ATR52',
+                #'ATR51',
+                'ATR5',
                 #'ATR21',
                 'ATR2',
                 'RSI',
@@ -239,17 +280,17 @@ def run():
 
 
 
-        feat_data = lucky13
-        #feat_data = 'xxx'
+        #feat_data = lucky13
+        feat_data = 'xxx'
         split_test_size_value = 0.7          
         save_mlflow = False
                 
-        p_df, experiment_id_parent = run_models(dtx, est_list, split_test_size_value, save_mlflow, feat_data)
+        p_df, experiment_id_parent = run_models(dtx, est_comb, split_test_size_value, save_mlflow, feat_data)
 
         print("")
         for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 
-                print(f"{run_uuid}  {cpp}  {mse}  {rmse} {mae} {r2}  ")
-
+                print(f"{run_uuid}  {cxp}  {cyp}  {cpp}  {mse}  {rmse} {mae} {r2}  ")
+        
         print("")
 
 
