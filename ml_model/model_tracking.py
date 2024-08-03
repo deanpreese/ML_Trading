@@ -7,6 +7,7 @@ import pandas as pd
 from enum import Enum
 import datetime as dte_time
 
+from mlflow import MlflowClient
 from ml_model.model_stats import gen_reg_stats
 
 import logging
@@ -120,18 +121,17 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
 
 
 # -----------------------------------------------------
-def save_reg_ens_data(ens_perf_df):
+def save_reg_ens_data(ens_perf_df, exp_description=""):
     
     step = 0
     time_stamp = dte_time.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
     exp_name = f"mixer_output_{time_stamp}"
+    experiment_id = ""
     
-    try:
-        experiment_id = mlflow.create_experiment(exp_name)
-    except Exception as e:
-        print(f"{e}")    
-            
-    experiment_id = mlflow.get_experiment_by_name(exp_name).experiment_id        
+    tags={'mlflow.note.content':exp_description}
+    experiment_id = mlflow.create_experiment(exp_name, tags=tags)
+    new_exp_name = f"mixer_output_{experiment_id}"
+    mlflow.MlflowClient().rename_experiment(experiment_id, new_exp_name)
 
     for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in ens_perf_df.values.tolist() :
     

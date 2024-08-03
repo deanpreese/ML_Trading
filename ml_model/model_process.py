@@ -78,7 +78,6 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         e_perf = pd.DataFrame(estimator_perf)        
         e_perf.columns = ["Estimator", "Perf", "Features", "RUN_ID" ]
         
-        #correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_reg_ens_results(all_predict_data, estimator_run_ids)
         correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
 
         mse, rmse, mae = calc_mse_rmse_mae(r_y_target, r_predictions)

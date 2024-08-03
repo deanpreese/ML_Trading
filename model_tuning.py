@@ -3,28 +3,87 @@ import lightgbm as lgb
 import xgboost as xgb
 import catboost as cb
 
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error,accuracy_score
 from ml_model.data_func import simple_split_and_scale
 import optuna
 
-datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/ndata_diff_lucky13_3070_oos.csv', 
-        'data/ndata_diff_lucky13_3070.csv', #3
-        'data/ndata_lag_3070_oos.csv', 
-        'data/ndata_lag_3070.csv', #5
-]
 
-dtx = pd.read_csv(datafile[1])
-X = dtx
-X = X.drop(columns=['output', 'outputC'])
-y = dtx['output'].values
-fl_out = list(X.columns)
-X_train, X_val, y_train, y_val = simple_split_and_scale(X, y, 0.7, 42)
+# =====================================
+def objective_cat_c(trial, X_train, y_train, X_val, y_val):
+
+    param = {
+        "objective": "binary",
+        "metric": "binary_logloss",
+        "verbosity": -1,
+        "boosting_type": "gbdt",
+        "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
+        "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
+        "num_leaves": trial.suggest_int("num_leaves", 2, 256),
+        "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
+        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
+        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+    }
+
+    model = cb.CatBoostClassifier(**param)
+    model.fit(X_train, y_train)
+    preds = model.predict(X_val)
+    acc = accuracy_score(y_val, preds)
+    return acc
 
 
-def objective_xgb(trial):
+
+def objective_lgb_c(trial, X_train, y_train, X_val, y_val):
+
+    param = {
+        "objective": "binary",
+        "metric": "binary_logloss",
+        "verbosity": -1,
+        "boosting_type": "gbdt",
+        "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
+        "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
+        "num_leaves": trial.suggest_int("num_leaves", 2, 256),
+        "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
+        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
+        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+    }
+
+    model = lgb.LGBMClassifier(**param)
+    model.fit(X_train, y_train)
+    preds = model.predict(X_val)
+    acc = accuracy_score(y_val, preds)
+    return acc
+
+
+
+def objective_xgb_c(trial, X_train, y_train, X_val, y_val):
+    
+    param = {
+        'max_depth': trial.suggest_int('max_depth', 2, 15),
+        'subsample': trial.suggest_discrete_uniform('subsample', 0.6, 1.0, 0.05),
+        'n_estimators': trial.suggest_int('n_estimators', 1000, 10000, 100),
+        'eta': trial.suggest_discrete_uniform('eta', 0.01, 0.1, 0.01),
+        'reg_alpha': trial.suggest_int('reg_alpha', 1, 50),
+        'reg_lambda': trial.suggest_int('reg_lambda', 5, 100),
+        'min_child_weight': trial.suggest_int('min_child_weight', 2, 20),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
+    }
+   
+    #model = xgb.XGBClassifier(random_state=42, 
+    #                         tree_method='gpu_hist', 
+    #                         gpu_id=0, 
+    #                         predictor="gpu_predictor"
+    #                         ,**param )  
+
+    model = xgb.XGBClassifier(**param )  
+    model.fit(X_train, y_train,verbose=False)
+    preds = model.predict(X_val)
+    acc = accuracy_score(y_val, preds)
+    return acc
+
+# =====================================
+def objective_xgb_r(trial, X_train, y_train, X_val, y_val):
     params = {
         "objective": "reg:squarederror",
         "n_estimators": 1000,
@@ -53,7 +112,7 @@ def objective_xgb(trial):
     return rmse
 
 
-def objective_cat(trial):
+def objective_cat_r(trial, X_train, y_train, X_val, y_val):
     params = {
         "iterations": 1000,
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
@@ -71,7 +130,7 @@ def objective_cat(trial):
     return rmse
 
 
-def objective_lgb(trial):
+def objective_lgb_r(trial, X_train, y_train, X_val, y_val):
     params = {
         "objective": "regression",
         "metric": "rmse",
@@ -97,38 +156,115 @@ def objective_lgb(trial):
     return rmse
 
 
+# =====================================
+
+def study_xgb_r(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("XGBoost_R Tuning")
+    study_xgb_r = optuna.create_study(direction='minimize')
+    f_xgb_r = lambda trial: objective_xgb_r(trial, X_train, y_train, X_val, y_val)
+    study_xgb_r.optimize(f_xgb_r, n_trials=20)
+    return study_xgb_r.best_trial.params
+
+def study_xgb_c(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("XGBoost_C Tuning")
+    study_xgb_c = optuna.create_study(direction='minimize')
+    f_xgb_c = lambda trial: objective_xgb_c(trial, X_train, y_train, X_val, y_val)
+    study_xgb_c.optimize(f_xgb_c, n_trials=20)
+    return study_xgb_c.best_trial
+
+
+def study_lgb_r(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("Lightgbm_R Tuning")
+    study_lgb_r = optuna.create_study(direction='minimize')
+    f_lgb_r = lambda trial: objective_lgb_r(trial, X_train, y_train, X_val, y_val)
+    study_lgb_r.optimize(f_lgb_r, n_trials=20)
+    return study_lgb_r.best_trial
+
+def study_lgb_c(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("Lightgbm_C Tuning")
+    study_lgb_c = optuna.create_study(direction='minimize')
+    f_lgb_c = lambda trial: objective_lgb_c(trial, X_train, y_train, X_val, y_val)
+    study_lgb_c.optimize(f_lgb_c, n_trials=20)    
+    return study_lgb_c.best_trial
+
+def study_cat_r(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("CatBoost_R Tuning")
+    study_cat_r = optuna.create_study(direction='minimize')
+    f_cat_r = lambda trial: objective_cat_r(trial, X_train, y_train, X_val, y_val)
+    study_cat_r.optimize(f_cat_r, n_trials=50)
+    return study_cat_r.best_trial
+    
+def study_cat_c(X_train, y_train, X_val, y_val):
+    print(" ")
+    print("CatBoost_C Tuning")
+    study_cat_c = optuna.create_study(direction='minimize')
+    f_cat_c = lambda trial: objective_cat_c(trial, X_train, y_train, X_val, y_val)
+    study_cat_c.optimize(f_cat_c, n_trials=50)
+    return study_cat_c.best_trial
+
 def main():
     
     
-    #print(" ")
-    #print("XGBoost Tuning")
-    #study_xgb = optuna.create_study(direction='minimize')
-    #study_xgb.optimize(objective_xgb, n_trials=20)
-
-    print(" ")
-    print("Lightgbm Tuning")
-    study_lgb = optuna.create_study(direction='minimize')
-    study_lgb.optimize(objective_lgb, n_trials=20)
-
-    #print(" ")
-    #print("CatBoost Tuning")
-    #study_cat = optuna.create_study(direction='minimize')
-    #study_cat.optimize(objective_cat, n_trials=50)
     
-    
-    #print(" ")
-    #print("Best XGB parameters")
-    #print(study_xgb.best_trial)
-    #print(" ")
-    print("Best LGB parameters")
-    print(study_lgb.best_trial)
-    print(" ")
-    #print("Best CAT parameters")
-    #print(study_cat.best_trial)
-    #print(" ")
+    datafile = [ 
+            #'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070.csv',  #1
+            #'data/ndata_diff_lucky13_3070_oos.csv', 
+            'data/ndata_diff_lucky13_3070.csv', #3
+            #'data/ndata_lag_3070_oos.csv', 
+            'data/ndata_lag_3070.csv', #5
+    ]
 
+    cols = ['file','model', 'data']
+    comp_df = pd.DataFrame(columns=cols)
 
+    for i in range(len(datafile)):
+
+        file = datafile[i]
+        dtx = pd.read_csv(file)
+
+        X = dtx
+        X = X.drop(columns=['output', 'outputC'])
+        y = dtx[['output','outputC']]
+        fl_out = list(X.columns)
+        X_train, X_val, y_train_o, y_val_o = simple_split_and_scale(X, y, 0.7, 42)
+
+        y_train_r = y_train_o['output'].values
+        y_train_c = y_train_o['outputC'].values
+        y_val_r = y_val_o["output"].values          
+        y_val_c = y_val_o["outputC"].values
+        
+        study_xgb_r_best_trial = study_xgb_r(X_train, y_train_r, X_val, y_val_r)
+        t = {'file': file ,'model':'XGBR','data' : study_xgb_r_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        study_xgb_c_best_trial = study_xgb_c(X_train, y_train_c, X_val, y_val_c)
+        t = {'file': file ,'data' : study_xgb_c_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        study_lgb_r_best_trial = study_lgb_r(X_train, y_train_r, X_val, y_val_r) 
+        t = {'file': file ,'data' : study_lgb_r_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        study_lgb_c_best_trial = study_lgb_c(X_train, y_train_c, X_val, y_val_c) 
+        t = {'file': file ,'data' : study_lgb_c_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        study_cat_r_best_trial = study_cat_r(X_train, y_train_r, X_val, y_val_r)               
+        t = {'file': file ,'data' : study_cat_r_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        study_cat_c_best_trial = study_cat_c(X_train, y_train_c, X_val, y_val_c)               
+        t = {'file': file ,'data' : study_cat_c_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
     
+    print(comp_df)
+    comp_df.to_csv('params.csv')  
 
 if __name__ == "__main__":
     main()

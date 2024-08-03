@@ -30,11 +30,16 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
         time_stamp = dte_time.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
         exp_name = f"mixer_runs_{time_stamp}"
         
+        experiment_id = ""
+        
         try:
             experiment_id = mlflow.create_experiment(exp_name)
+            new_exp_name = f"mixer_runs_{experiment_id}"
+            mlflow.MlflowClient().rename_experiment(experiment_id, new_exp_name)
+            
         except Exception as e:
             print(f"{e}")    
-            experiment_id = mlflow.get_experiment_by_name(exp_name).experiment_id        
+            experiment_id = mlflow.get_experiment(experiment_id).experiment_id        
        
         perf_data = []
         for q in range(total_cycles):
@@ -47,7 +52,16 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
                                 "correctP", "totalX", "cxp", "cyp", "cpp", "mse", "rmse", "r2", "mae"]
                 p_df.sort_values(by=['cpp'], ascending=False, inplace=True)
 
-        save_reg_ens_data(p_df)
+
+        markdown_content = f"### {len(estimators)} Models  --  Min Feat {min_features}  Max Feat {max_features}  Cycles {total_cycles} \n\n"                                
+        
+        for item in estimators:
+                markdown_content += f"\n\n"
+                markdown_content += f"### {item.__class__.__name__} \n"
+                markdown_content += f"{item.get_params()}\n\n"
+
+        markdown_content += f"\n\n"                
+        save_reg_ens_data(p_df, markdown_content)
                                
         return p_df, experiment_id        
                 
@@ -96,6 +110,24 @@ def run():
                 XGBRegressor(),   
         ]
 
+        est_comb = [
+                LGBMRegressor(**mp.lbr_set), 
+                CatBoostRegressor(**mp.cbr_set),
+                XGBRegressor(**mp.xgbr_set),   
+                XGBRFRegressor(**mp.xgbrf_set),                
+                LGBMClassifier(**mp.lbc_set),
+                XGBClassifier(),
+                CatBoostClassifier(**mp.cbc_set),
+                XGBRFClassifier(),
+        ]
+
+        est_comb_2 = [
+                CatBoostRegressor(**mp.cbr_set),
+                XGBRFRegressor(**mp.xgbrf_set),                
+                LGBMClassifier(**mp.lbc_set),
+                XGBClassifier(),
+                CatBoostClassifier(**mp.cbc_set),
+        ]
 
 
         datafile = [ 
@@ -110,18 +142,12 @@ def run():
         dtx = pd.read_csv(datafile[1])
 
         split_test_size_value = 0.7          
-        min_features_used = 3
-        max_features_used = 5
+        min_features_used = 6
+        max_features_used = 8
         step_features_used = 1
         total_cycles_used = 1
 
-        #feat_ndata_3070 = ['RSI9', 'RSI7', 'ZH', 'ATR7', 'RSI14', 'ATR3', 'ZL', 'ROC14', 'ATR2', 'ZH9', 'VOLMA13', 'STOK714', 'RSI72', 'ROC9', 'output', 'outputC']
-        #dtx = dtx[feat_ndata_3070]
-
-        #Lucky13
-        # SDLR310,SDBB91,SDKC91,SDKC9,ROC,ATR34,ATR32,ATR31,ATR3,ATR21,ATR2,RSI,STOK1,output,outputC
-
-        p_df, experiment_id_parent = run_models(dtx, est_t, 
+        p_df, experiment_id_parent = run_models(dtx, est_comb_2, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 
