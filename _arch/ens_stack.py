@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
 from ml_model.data_func import simple_split_and_scale
 
-from ml_model.model_tracking import track_regressor_model
+from ml_model.model_tracking import train_regressor_model
 from ml_model.model_stats import gen_reg_stats, calc_reg_ens_results
 from ml_model.data_func import simple_split_and_scale
 from ml_model.model_params import xgr_param_set, lbr_param_set, cbr_param_set, xgr_param_set2, xgb_rf_params
@@ -159,7 +159,7 @@ for m in regressor.named_estimators_:
         r2 =r2_score(y_test, r_pred)
         score = regressor.score(X_test, r_pred)
         mae = float(mean_absolute_error(y_test,r_pred))                
-        perf, tot = gen_reg_stats(y_test, r_pred)        
+        perf, total, mse, rmse = gen_reg_stats(y_test, r_pred)        
 
         print(f"{m}  MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
 
