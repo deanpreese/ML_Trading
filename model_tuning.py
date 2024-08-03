@@ -208,17 +208,19 @@ def study_cat_c(X_train, y_train, X_val, y_val):
     return study_cat_c.best_trial
 
 def main():
-    
-    
-    
+
     datafile = [ 
-            #'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
-            #'data/ndata_diff_lucky13_3070_oos.csv', 
+            'data/ndata_diff_lucky13_3070_oos.csv', 
             'data/ndata_diff_lucky13_3070.csv', #3
-            #'data/ndata_lag_3070_oos.csv', 
-            'data/ndata_lag_3070.csv', #5
+            'data/ndata_lucky_13_lag_3070_oos.csv', 
+            'data/ndata_lucky13_lag_3070.csv', #5
+            'new_model_Z_lucky13_3070_oos.csv',
+            'new_model_Z_lucky13_3070.csv' #7,
+
     ]
+
 
     cols = ['file','model', 'data']
     comp_df = pd.DataFrame(columns=cols)

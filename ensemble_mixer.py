@@ -135,8 +135,11 @@ def run():
                 'data/Lucky13_3070.csv',  #1
                 'data/ndata_diff_lucky13_3070_oos.csv', 
                 'data/ndata_diff_lucky13_3070.csv', #3
-                'data/ndata_lag_3070_oos.csv', 
-                'data/ndata_lag_3070.csv', #5
+                'data/ndata_lucky_13_lag_3070_oos.csv', 
+                'data/ndata_lucky13_lag_3070.csv', #5
+                'new_model_Z_lucky13_3070_oos.csv',
+                'new_model_Z_lucky13_3070.csv' #7,
+
         ]
 
         dtx = pd.read_csv(datafile[1])
