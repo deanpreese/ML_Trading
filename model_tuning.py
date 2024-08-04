@@ -215,11 +215,11 @@ def main():
             #'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
             #'data/ndata_diff_lucky13_3070_oos.csv', 
-            #'data/ndata_diff_lucky13_3070.csv', #3
+            'data/ndata_diff_lucky13_3070.csv', #3
             #'data/ndata_lucky_13_lag_3070_oos.csv', 
-            #'data/ndata_lucky13_lag_3070.csv', #5
+            'data/ndata_lucky13_lag_3070.csv', #5
             #'new_model_Z_lucky13_3070_oos.csv',
-            #'new_model_Z_lucky13_3070.csv' #7,
+            'new_model_Z_lucky13_3070.csv' #7,
 
     ]
 
@@ -243,7 +243,7 @@ def main():
         y_val_r = y_val_o["output"].values          
         y_val_c = y_val_o["outputC"].values
         
-        """
+        
         study_xgb_r_best_trial = study_xgb_r(X_train, y_train_r, X_val, y_val_r)
         t = {'file': file ,'model':'XGBR','data' : study_xgb_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
@@ -259,8 +259,6 @@ def main():
         study_lgb_c_best_trial = study_lgb_c(X_train, y_train_c, X_val, y_val_c) 
         t = {'file': file ,'model':'LGBC','data' : study_lgb_c_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
-        
-        """
         
         study_cat_r_best_trial = study_cat_r(X_train, y_train_r, X_val, y_val_r)               
         t = {'file': file ,'model':'CATR','data' : study_cat_r_best_trial}
