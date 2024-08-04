@@ -12,18 +12,20 @@ import optuna
 def objective_cat_c(trial, X_train, y_train, X_val, y_val):
 
     param = {
-        "objective": "binary",
-        "metric": "binary_logloss",
-        "verbosity": -1,
-        "boosting_type": "gbdt",
-        "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
-        "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
-        "num_leaves": trial.suggest_int("num_leaves", 2, 256),
-        "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
-        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
-        "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+        "objective": trial.suggest_categorical("objective", ["Logloss", "CrossEntropy"]),
+        "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.01, 0.1, log=True),
+        "depth": trial.suggest_int("depth", 1, 12),
+        "boosting_type": trial.suggest_categorical("boosting_type", ["Ordered", "Plain"]),
+        "bootstrap_type": trial.suggest_categorical(
+            "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
+        ),
+        "eval_metric": "Accuracy",
     }
+
+    if param["bootstrap_type"] == "Bayesian":
+        param["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0, 10)
+    elif param["bootstrap_type"] == "Bernoulli":
+        param["subsample"] = trial.suggest_float("subsample", 0.1, 1, log=True)
 
     model = cb.CatBoostClassifier(**param)
     model.fit(X_train, y_train)
@@ -119,7 +121,7 @@ def objective_cat_r(trial, X_train, y_train, X_val, y_val):
         "depth": trial.suggest_int("depth", 1, 15),
         "subsample": trial.suggest_float("subsample", 0.05, 1.0),
         "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
-        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
+        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 3, 50),
     }
 
     model = cb.CatBoostRegressor(**params, silent=True)
@@ -172,7 +174,7 @@ def study_xgb_c(X_train, y_train, X_val, y_val):
     study_xgb_c = optuna.create_study(direction='minimize')
     f_xgb_c = lambda trial: objective_xgb_c(trial, X_train, y_train, X_val, y_val)
     study_xgb_c.optimize(f_xgb_c, n_trials=20)
-    return study_xgb_c.best_trial
+    return study_xgb_c.best_trial.params
 
 
 def study_lgb_r(X_train, y_train, X_val, y_val):
@@ -181,7 +183,7 @@ def study_lgb_r(X_train, y_train, X_val, y_val):
     study_lgb_r = optuna.create_study(direction='minimize')
     f_lgb_r = lambda trial: objective_lgb_r(trial, X_train, y_train, X_val, y_val)
     study_lgb_r.optimize(f_lgb_r, n_trials=20)
-    return study_lgb_r.best_trial
+    return study_lgb_r.best_trial.params
 
 def study_lgb_c(X_train, y_train, X_val, y_val):
     print(" ")
@@ -189,7 +191,7 @@ def study_lgb_c(X_train, y_train, X_val, y_val):
     study_lgb_c = optuna.create_study(direction='minimize')
     f_lgb_c = lambda trial: objective_lgb_c(trial, X_train, y_train, X_val, y_val)
     study_lgb_c.optimize(f_lgb_c, n_trials=20)    
-    return study_lgb_c.best_trial
+    return study_lgb_c.best_trial.params
 
 def study_cat_r(X_train, y_train, X_val, y_val):
     print(" ")
@@ -197,7 +199,7 @@ def study_cat_r(X_train, y_train, X_val, y_val):
     study_cat_r = optuna.create_study(direction='minimize')
     f_cat_r = lambda trial: objective_cat_r(trial, X_train, y_train, X_val, y_val)
     study_cat_r.optimize(f_cat_r, n_trials=50)
-    return study_cat_r.best_trial
+    return study_cat_r.best_trial.params
     
 def study_cat_c(X_train, y_train, X_val, y_val):
     print(" ")
@@ -205,19 +207,19 @@ def study_cat_c(X_train, y_train, X_val, y_val):
     study_cat_c = optuna.create_study(direction='minimize')
     f_cat_c = lambda trial: objective_cat_c(trial, X_train, y_train, X_val, y_val)
     study_cat_c.optimize(f_cat_c, n_trials=50)
-    return study_cat_c.best_trial
+    return study_cat_c.best_trial.params
 
 def main():
 
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
+            #'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
-            'data/ndata_diff_lucky13_3070_oos.csv', 
-            'data/ndata_diff_lucky13_3070.csv', #3
-            'data/ndata_lucky_13_lag_3070_oos.csv', 
-            'data/ndata_lucky13_lag_3070.csv', #5
-            'new_model_Z_lucky13_3070_oos.csv',
-            'new_model_Z_lucky13_3070.csv' #7,
+            #'data/ndata_diff_lucky13_3070_oos.csv', 
+            #'data/ndata_diff_lucky13_3070.csv', #3
+            #'data/ndata_lucky_13_lag_3070_oos.csv', 
+            #'data/ndata_lucky13_lag_3070.csv', #5
+            #'new_model_Z_lucky13_3070_oos.csv',
+            #'new_model_Z_lucky13_3070.csv' #7,
 
     ]
 
@@ -241,32 +243,36 @@ def main():
         y_val_r = y_val_o["output"].values          
         y_val_c = y_val_o["outputC"].values
         
+        """
         study_xgb_r_best_trial = study_xgb_r(X_train, y_train_r, X_val, y_val_r)
         t = {'file': file ,'model':'XGBR','data' : study_xgb_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
         study_xgb_c_best_trial = study_xgb_c(X_train, y_train_c, X_val, y_val_c)
-        t = {'file': file ,'data' : study_xgb_c_best_trial}
+        t = {'file': file ,'model':'XGBC','data' : study_xgb_c_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
         study_lgb_r_best_trial = study_lgb_r(X_train, y_train_r, X_val, y_val_r) 
-        t = {'file': file ,'data' : study_lgb_r_best_trial}
+        t = {'file': file ,'model':'LGBR','data' : study_lgb_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
         study_lgb_c_best_trial = study_lgb_c(X_train, y_train_c, X_val, y_val_c) 
-        t = {'file': file ,'data' : study_lgb_c_best_trial}
+        t = {'file': file ,'model':'LGBC','data' : study_lgb_c_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
+        """
+        
         study_cat_r_best_trial = study_cat_r(X_train, y_train_r, X_val, y_val_r)               
-        t = {'file': file ,'data' : study_cat_r_best_trial}
+        t = {'file': file ,'model':'CATR','data' : study_cat_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
         study_cat_c_best_trial = study_cat_c(X_train, y_train_c, X_val, y_val_c)               
-        t = {'file': file ,'data' : study_cat_c_best_trial}
+        t = {'file': file ,'model':'CATC','data' : study_cat_c_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
-    
+        
+        comp_df.to_csv('params.csv', mode='a', index=False, header=False)
+        
     print(comp_df)
-    comp_df.to_csv('params.csv')  
 
 if __name__ == "__main__":
     main()
