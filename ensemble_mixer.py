@@ -71,64 +71,41 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
 #
 # ---------------------------
 def run():
-        est_list_base = [ 
-                XGBRFRegressor(),
-                XGBRFRegressor(**mp.xgbrf_t),
-                XGBRFRegressor(**mp.xgbrf_F),
-                XGBRFRegressor(**mp.xgbrf_D),
-                XGBRFRegressor(**mp.xgbrf_set),
-                XGBRegressor(),   
-                XGBRegressor(**mp.xgb_3070),  
-                XGBRegressor(**mp.xgbr_set),  
-                XGBRegressor(**mp.xgb_params_F), 
-                XGBRegressor(**mp.xgb_params_M), 
-                CatBoostRegressor(),  
-                CatBoostRegressor(**mp.cat_3070), 
-                CatBoostRegressor(**mp.cbr_set),  
-                CatBoostRegressor(**mp.cat_params_F), 
-                CatBoostRegressor(**mp.cat_params_M),
+
+        baseline = [
                 LGBMRegressor(), 
-                LGBMRegressor(**mp.lgb_3070), 
-                LGBMRegressor(**mp.lbr_set), 
-                LGBMRegressor(**mp.lgb_params_F), 
-                LGBMRegressor(**mp.lgb_params_M), 
-        ]
-
-        est_list = [ 
-                LGBMRegressor(**mp.lbr_set), 
-                CatBoostRegressor(**mp.cat_3070), 
-                CatBoostRegressor(**mp.cbr_set),
-                XGBRegressor(**mp.xgbr_set),   
-                XGBRegressor(**mp.xgb_p),   
-                XGBRFRegressor(**mp.xgbrf_t),
-                XGBRFRegressor(**mp.xgbrf_set),                       
-        ]
-
-
-        est_t = [ 
-                XGBClassifier(),
+                CatBoostRegressor(),
                 XGBRegressor(),   
-        ]
-
-        est_comb = [
-                LGBMRegressor(**mp.lbr_set), 
-                CatBoostRegressor(**mp.cbr_set),
-                XGBRegressor(**mp.xgbr_set),   
-                XGBRFRegressor(**mp.xgbrf_set),                
-                LGBMClassifier(**mp.lbc_set),
+                XGBRFRegressor(),                
+                LGBMClassifier(),
                 XGBClassifier(),
-                CatBoostClassifier(**mp.cbc_set),
+                CatBoostClassifier(),
                 XGBRFClassifier(),
         ]
 
-        est_comb_2 = [
-                CatBoostRegressor(**mp.cbr_set),
-                XGBRFRegressor(**mp.xgbrf_set),                
-                LGBMClassifier(**mp.lbc_set),
+        est_list_1 = [ 
+                XGBRegressor(), 
                 XGBClassifier(),
+                XGBClassifier(**mp.lbc_set),
+                CatBoostClassifier(),
                 CatBoostClassifier(**mp.cbc_set),
         ]
 
+
+        est_list_2 = [
+                XGBRegressor(**mp.xgbr_t),   
+                XGBClassifier(),
+                XGBRFClassifier(**mp.xgc_set),
+                XGBClassifier(**mp.xgbc_t),
+                LGBMClassifier(**mp.lbc_set),
+                LGBMClassifier(**mp.lgbc_t),
+                CatBoostClassifier(**mp.catc_t),
+                XGBRFClassifier(),
+        ]
+
+
+
+        # ==================
 
         datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
@@ -145,12 +122,12 @@ def run():
         dtx = pd.read_csv(datafile[1])
 
         split_test_size_value = 0.7          
-        min_features_used = 6
-        max_features_used = 8
+        min_features_used = 5
+        max_features_used = 10
         step_features_used = 1
-        total_cycles_used = 1
+        total_cycles_used = 50
 
-        p_df, experiment_id_parent = run_models(dtx, est_comb_2, 
+        p_df, experiment_id_parent = run_models(dtx, baseline, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

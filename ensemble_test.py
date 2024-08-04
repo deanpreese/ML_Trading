@@ -126,14 +126,17 @@ def run_test():
             'data/Lucky13_3070.csv',  #1
             'data/ndata_diff_lucky13_3070_oos.csv', 
             'data/ndata_diff_lucky13_3070.csv', #3
-            'data/ndata_lag_3070_oos.csv', 
-            'data/ndata_lag_3070.csv', #5
-    ]    
-    
+            'data/ndata_lucky_13_lag_3070_oos.csv', 
+            'data/ndata_lucky13_lag_3070.csv', #5
+            'new_model_Z_lucky13_3070_oos.csv',
+            'new_model_Z_lucky13_3070.csv' #7,
+
+    ]
+
     target = 'output'
     model_loader = ModelLoader()
     models = model_loader.load_composite_strategy(["179"], 2, 0)   
-    run_sim( datafile[0], models, target)
+    run_sim( datafile[1], models, target)
 
 
 if __name__ == "__main__":

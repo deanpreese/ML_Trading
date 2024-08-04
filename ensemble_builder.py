@@ -63,114 +63,58 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
 
 def run():
 
-        est_list_base = [ 
+        baseline = [
+                LGBMRegressor(), 
+                CatBoostRegressor(),
                 XGBRegressor(),   
-                XGBRegressor(**mp.xgb_3070),  
-                XGBRegressor(**mp.xgbr_set),  
-                XGBRegressor(**mp.xgb_params_F), 
-                XGBRegressor(**mp.xgb_params_M), 
-                CatBoostRegressor(),  
-                CatBoostRegressor(**mp.cat_3070), 
-                CatBoostRegressor(**mp.cbr_set),  
-                CatBoostRegressor(**mp.cat_params_F), 
-                CatBoostRegressor(**mp.cat_params_M),
-                LGBMRegressor(), 
-                LGBMRegressor(**mp.lgb_3070), 
-                LGBMRegressor(**mp.lbr_set), 
-                LGBMRegressor(**mp.lgb_params_F), 
-                LGBMRegressor(**mp.lgb_params_M), 
-        ]
-
-        # 87_FI data        
-        est_list_lgb = [ 
-                XGBRegressor(),XGBRegressor(mp.xgbr_set), 
-                XGBRegressor(mp.xgb_params_F), XGBRegressor(mp.xgb_params_M), 
-                CatBoostRegressor(), CatBoostRegressor(mp.cbr_set),
-                CatBoostRegressor(mp.cat_params_F), CatBoostRegressor(mp.cat_params_M),
-                LGBMRegressor(), LGBMRegressor(mp.lbr_set), 
-                LGBMRegressor(mp.lgb_params_F), LGBMRegressor(mp.lgb_params_M), 
-                XGBRFRegressor(),XGBRFRegressor(mp.xgbrf_set),
-        ]
-
-        est_list_xgbrf = [
-                XGBRFRegressor(),
-                XGBRFRegressor(**mp.xgbrf_t),
-                XGBRFRegressor(**mp.xgbrf_F),
-                XGBRFRegressor(**mp.xgbrf_D),
-                XGBRFRegressor(**mp.xgbrf_set),                
-        ]
-
-        est_list_xgb = [ 
-                XGBRegressor(**mp.xgb_params_F), 
-                XGBRegressor(**mp.xgb_params_M), 
-                XGBRegressor(**mp.xgbr_set),   
-                XGBRegressor(**mp.xgb_3070), 
-                XGBRegressor(**mp.xgb_p),   
-        ]
-
-        est_list_lgb = [ 
-                LGBMRegressor(**mp.lgb_3070), 
-                LGBMRegressor(), 
-                LGBMRegressor(**mp.lbr_set), 
-                LGBMRegressor(**mp.lgb_params_F), 
-                LGBMRegressor(**mp.lgb_params_M), 
-        ]
-
-
-        est_list_cat = [ 
-                CatBoostRegressor(**mp.cat_3070), 
-                CatBoostRegressor(),  
-                CatBoostRegressor(**mp.cbr_set),  
-                CatBoostRegressor(**mp.cat_params_F), 
-                CatBoostRegressor(**mp.cat_params_M),
-        ]
-
-
-        est_list = [ 
-                #LGBMRegressor(**mp.lgb_3070), 
-                LGBMRegressor(**mp.lbr_set), 
-                CatBoostRegressor(**mp.cat_3070), 
-                CatBoostRegressor(**mp.cbr_set),
-                
-                #XGBRegressor(**mp.xgb_params_F), 
-                #XGBRegressor(**mp.xgb_params_M), 
-                XGBRegressor(**mp.xgbr_set),   
-                #XGBRegressor(**mp.xgb_3070), 
-                XGBRegressor(**mp.xgb_p),   
-                
-                #XGBRFRegressor(),
-                XGBRFRegressor(**mp.xgbrf_t),
-                #XGBRFRegressor(**mp.xgbrf_F),
-                #XGBRFRegressor(**mp.xgbrf_D),
-                XGBRFRegressor(**mp.xgbrf_set),                       
-                
-        ]
-
-        est_list = [ XGBRegressor(),
-                XGBRegressor(**mp.xgb_p), XGBRegressor(**mp.xgb_params_F),
-                XGBRegressor(**mp.xgb_params_M), CatBoostRegressor(), CatBoostRegressor(**mp.cbr_set),
-                CatBoostRegressor(**mp.cat_params_F), CatBoostRegressor(**mp.cat_params_M),
-                LGBMRegressor(),
-                LGBMRegressor(**mp.lbr_set), LGBMRegressor(**mp.lgb_params_F),
-                LGBMRegressor(**mp.lgb_params_M), XGBRFRegressor(**mp.xgbrf_t),
-                XGBRFRegressor(),
-                ]
-
-        est_comb = [
-                LGBMRegressor(**mp.lbr_set), 
-                CatBoostRegressor(**mp.cbr_set),
-                XGBRegressor(**mp.xgbr_set),   
-                XGBRFRegressor(**mp.xgbrf_set),                
-                LGBMClassifier(**mp.lbc_set),
+                XGBRFRegressor(),                
+                LGBMClassifier(),
                 XGBClassifier(),
-                CatBoostClassifier(**mp.cbc_set),
-                #LGBMRegressor(), 
-                #CatBoostRegressor(),
-                #XGBRFRegressor(),                
-                #LGBMClassifier(),
-                #CatBoostClassifier(),
+                CatBoostClassifier(),
                 XGBRFClassifier(),
         ]
+
+        est_list_1 = [ 
+                XGBRegressor(), 
+                #XGBRegressor(**mp.xgbr_set2 ), 
+                #XGBRFRegressor(), 
+                #XGBRFRegressor(**mp.xgbrf_set ),
+                #CatBoostRegressor(),  
+                #CatBoostRegressor(**mp.cbr_set),
+                #LGBMRegressor(), 
+                #LGBMRegressor(**mp.lbr_set), 
+                #LGBMClassifier(),
+                #LGBMClassifier(**mp.lbc_set),
+                XGBClassifier(),
+                XGBClassifier(**mp.lbc_set),
+                CatBoostClassifier(),
+                CatBoostClassifier(**mp.cbc_set),
+                #XGBRFClassifier(),
+        ]
+
+
+        est_list_2 = [
+                #XGBRegressor(), 
+                XGBRegressor(**mp.xgbr_t),   
+                XGBClassifier(),
+                XGBRFClassifier(**mp.xgc_set),
+                XGBClassifier(**mp.xgbc_t),
+                
+                #LGBMRegressor(**mp.lgbr_t), 
+                LGBMClassifier(**mp.lbc_set),
+                LGBMClassifier(**mp.lgbc_t),
+                
+                #CatBoostRegressor(**mp.catr_t),
+                #CatBoostClassifier(),
+                CatBoostClassifier(**mp.catc_t),
+                CatBoostClassifier(**mp.cbc_set),
+                
+                #XGBRFRegressor(),                
+                XGBRFClassifier(),
+                #XGBRFRegressor(**mp.xgbrf_set ),
+        ]
+
+
 
         # ==========================================
 
@@ -183,8 +127,8 @@ def run():
                 'data/ndata_lucky13_lag_3070.csv', #5
                 'new_model_Z_lucky13_3070_oos.csv',
                 'new_model_Z_lucky13_3070.csv' #7,
-        ]
 
+        ]
 
         dtx = pd.read_csv(datafile[1])
 
@@ -216,77 +160,14 @@ def run():
                 ]
 
  
-        #data/ndata_3070.csv', #6
-        ndata_all_feat = [
-                #'SDLR3102', 'SDLR3101', 
-                # 'SDLR310', 
-                #'VOLMA72', 'VOLMA71',
-                #'VOLMA7', 
-                #'VOLMA132', 'VOLMA131', 
-                #'VOLMA13',
-                #'ZH212', 'ZH211', 'ZH21', 'ZH92', 'ZH91', 
-                #'ZH9', 
-                #'ZL212', 'ZL211', 'ZL21', 'ZL92', 'ZL91', 
-                #'ZL9', 
-                #'ZC212', 'ZC211', 'ZC21', 'ZC92', 'ZC91', 
-                #'ZC9', 
-                #'SDBB92','SDBB91', 
-                # 'SDBB9', 
-                #'SDBB202', 'SDBB201', 
-                # 'SDBB20',
-                #'SDKC92', 
-                #'SDKC91', 
-                'SDKC9', 
-                #'SDKC72', 'SDKC71', 
-                'SDKC7', 
-                #'ROC142', 'ROC141', 
-                #'ROC14', 
-                #'ROC132', 'ROC131',
-                #'ROC13', 
-                #'ROC92', 'ROC91', 
-                 'ROC', 
-                #'ATR144', 'ATR143', 'ATR142', 'ATR141', 
-                 #'ATR14', 
-                #'ATR74', 'ATR73', 'ATR72', 'ATR71', 
-                'ATR7', 
-                #'ATR54', 'ATR53', 'ATR52', 'ATR51', 
-                'ATR5',
-                'ATR34', 'ATR33', 'ATR32', 'ATR31', 
-                'ATR3', 
-                #'ATR24', 'ATR23', 'ATR22', 'ATR21', 
-                'ATR2', 
-                #'RSI142', 'RSI141', 
-                #'RSI14', 
-                
-                #'RSI92', 'RSI91', 
-                'RSI', 
-                
-                #'RSI72', 'RSI71', 
-                'RSI7', 
-                #'RSI52', 'RSI51', 
-                #'RSI5', 
-                #'RSI32', 'RSI31', 
-                #'RSI3', 
-               
-                #'STOK7142', 'STOK7141', 
-                'STOK714',
-                
-                #'STOK7212', 'STOK7211', 
-                'STOK1', 
-                
-                #'STOK52', 'STOK51', 
-                #'STOK5'
-        ]
 
-
-
-
+        #feat_data = f_87
         #feat_data = lucky13
         feat_data = 'xxx'
         split_test_size_value = 0.7          
         save_mlflow = False
                 
-        p_df, experiment_id_parent = run_models(dtx, est_comb, split_test_size_value, save_mlflow, feat_data)
+        p_df, experiment_id_parent = run_models(dtx, est_list_2, split_test_size_value, save_mlflow, feat_data)
 
         print("")
         for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 
