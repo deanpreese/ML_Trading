@@ -58,10 +58,10 @@ def init_app():
 
     with app.app_context():
 
-       models_one = LoadModels(0, ["68"], 2)
-       models_two = LoadModels(0, ["68"], 2)
-       models_three = LoadModels(0, ["66"], 2)
-       models_four = LoadModels(0, ["66"], 2)
+       models_one = LoadModels(0, ["251"], 1)
+       models_two = LoadModels(0, ["251"], 1)
+       models_three = LoadModels(0, ["251"], 1)
+       models_four = LoadModels(0, ["251"], 1)
 
     # ------------------------------------------
     # Baseline Aggregate Prediction          
