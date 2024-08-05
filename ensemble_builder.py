@@ -74,6 +74,17 @@ def run():
                 XGBRFClassifier(),
         ]
 
+        baseline_r = [
+                #XGBRegressor(), 
+                XGBRegressor(**mp.xgbr_set ), 
+                #XGBRFRegressor(), 
+                XGBRFRegressor(**mp.xgbrf_set ),
+                #CatBoostRegressor(),  
+                CatBoostRegressor(**mp.cbr_set),
+                #LGBMRegressor(), 
+                LGBMRegressor(**mp.lbr_set),               
+        ]
+
         est_list_1 = [ 
                 XGBRegressor(), 
                 #XGBRegressor(**mp.xgbr_set2 ), 
@@ -127,10 +138,16 @@ def run():
                 'data/ndata_lucky13_lag_3070.csv', #5
                 'new_model_Z_lucky13_3070_oos.csv',
                 'new_model_Z_lucky13_3070.csv' #7,
+                'data/Lucky13_3070_oos_3.csv',   
+                'data/Lucky13_3070_3.csv',  #8
+                'data/Lucky13_3070_oos_5.csv',   
+                'data/Lucky13_3070_5.csv',  #10
 
         ]
 
-        dtx = pd.read_csv(datafile[1])
+
+
+        dtx = pd.read_csv(datafile[10])
 
 
         f_87 =['RSI',
@@ -167,7 +184,7 @@ def run():
         split_test_size_value = 0.7          
         save_mlflow = False
                 
-        p_df, experiment_id_parent = run_models(dtx, est_list_2, split_test_size_value, save_mlflow, feat_data)
+        p_df, experiment_id_parent = run_models(dtx, baseline_r, split_test_size_value, save_mlflow, feat_data)
 
         print("")
         for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 

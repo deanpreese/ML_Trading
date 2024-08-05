@@ -105,6 +105,18 @@ def run():
 
 
 
+        ens_r = [
+                #XGBRegressor(), 
+                XGBRegressor(**mp.xgbr_set ), 
+                #XGBRFRegressor(), 
+                XGBRFRegressor(**mp.xgbrf_set ),
+                #CatBoostRegressor(),  
+                CatBoostRegressor(**mp.cbr_set),
+                #LGBMRegressor(), 
+                LGBMRegressor(**mp.lbr_set),               
+        ]
+
+
         # ==================
 
         datafile = [ 
@@ -116,18 +128,22 @@ def run():
                 'data/ndata_lucky13_lag_3070.csv', #5
                 'new_model_Z_lucky13_3070_oos.csv',
                 'new_model_Z_lucky13_3070.csv' #7,
-
+                'data/Lucky13_3070_oos_3.csv',   
+                'data/Lucky13_3070_3.csv',  #8
+                'data/Lucky13_3070_oos_5.csv',   
+                'data/Lucky13_3070_5.csv',  #10
+                
         ]
 
-        dtx = pd.read_csv(datafile[1])
+        dtx = pd.read_csv(datafile[10])
 
         split_test_size_value = 0.7          
         min_features_used = 5
-        max_features_used = 10
+        max_features_used = 11
         step_features_used = 1
         total_cycles_used = 50
 
-        p_df, experiment_id_parent = run_models(dtx, baseline, 
+        p_df, experiment_id_parent = run_models(dtx, ens_r, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

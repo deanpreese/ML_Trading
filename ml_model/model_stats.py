@@ -119,7 +119,7 @@ def calc_ensemble_results(all_predictions, estimator_run_ids):
    
    
    
-def calc_ensemble(num_models, target_output_in, agg_predict_in,  agg_weighted_predict_in ):
+def calc_ensemble(num_models, target_val, agg_pre,  agg_weighted ):
     
     agg_rtn = 0
     agg_w_rtn = 0
@@ -127,25 +127,25 @@ def calc_ensemble(num_models, target_output_in, agg_predict_in,  agg_weighted_pr
     agg_agree = 0
     y_count = 0   
     
-    agg_predict_in = agg_predict_in/num_models
-    agg_predict_w = agg_weighted_predict_in/num_models
+    agg_pre = agg_pre/num_models
+    agg_predict_w = agg_weighted/num_models
     
-    comp_predict = ((0.46 * agg_predict_in) + (0.54 * agg_predict_w)  )
+    comp_predict = ((0.46 * agg_pre) + (0.54 * agg_predict_w)  )
 
-    if target_output_in > 0.5:
+    if target_val > 0.5:
         y_count += 1
-        if agg_predict_in > 0 :  agg_rtn += 1
+        if agg_pre > 0 :  agg_rtn += 1
         if agg_predict_w > 0: agg_w_rtn += 1
         if comp_predict > 0: comp_rtn += 1
-        if agg_weighted_predict_in > 0  and agg_predict_in > 0:
+        if agg_weighted > 0  and agg_pre > 0:
             agg_agree += 1
         
-    if target_output_in < -0.5:
+    if target_val < -0.5:
         y_count += 1
-        if agg_predict_in < 0:  agg_rtn += 1
+        if agg_pre < 0:  agg_rtn += 1
         if agg_predict_w < 0: agg_w_rtn += 1
         if comp_predict < 0: comp_rtn += 1
-        if agg_weighted_predict_in < 0  and agg_predict_in < 0:
+        if agg_weighted < 0  and agg_pre < 0:
             agg_agree += 1                                    
             
 
