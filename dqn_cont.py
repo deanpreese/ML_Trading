@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from collections import deque
-im01port rando7
+import random
 import logging
 import time
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_errorthcontroldis
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,8 +26,8 @@ if gpus:
 class DQN(tf.keras.Model):
     def __init__(self, input_dim, output_dim):
         super(DQN, self).__init__()
-        self.fc1 = tf.keras.layers.Dense(64, activation='relu')
-        self.fc2 = tf.keras.layers.Dense(64, activation='relu')
+        self.fc1 = tf.keras.layers.Dense(32, activation='relu')  # Reduced number of neurons
+        self.fc2 = tf.keras.layers.Dense(32, activation='relu')  # Reduced number of neurons
         self.output_layer = tf.keras.layers.Dense(output_dim)
     
     def call(self, x):
@@ -169,7 +169,7 @@ def initialize_agents(state_dim, action_dim, num_agents=2, lr=0.001, gamma=0.99,
     return agents
 
 # Training loop
-def train_agents(agents, train_features, train_output, val_features, val_output, batch_size=64, save_interval=10, max_episodes=1000, patience=10):
+def train_agents(agents, train_features, train_output, val_features, val_output, batch_size=128, save_interval=10, max_episodes=500, patience=10):
     max_time_steps = len(train_features) - 1
     best_val_loss = float('inf')
     patience_counter = 0
@@ -246,7 +246,7 @@ def main():
     ]
     
     logging.info("Starting main process...")
-    features, continuous_output = load_data(datafile[1])
+    features, continuous_output = load_data(datafile[0])
     train_features, val_features, train_output, val_output = train_val_split(features, continuous_output)
     state_dim = train_features.shape[1]
     continuous_action_dim = 1  # For continuous output
