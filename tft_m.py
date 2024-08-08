@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Input, LSTM, Dense, LayerNormalization, MultiHeadAttention, Add, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 
 # Data Preparation
@@ -43,22 +44,19 @@ def prepare_data(df, target_col='output', sequence_length=30):
 def tft_model(sequence_length, num_features):
     inputs = Input(shape=(sequence_length, num_features))
     
-    # Reduced LSTM size for performance improvement
     lstm_out = LSTM(64, return_sequences=True)(inputs)
     lstm_out = LSTM(64, return_sequences=True)(lstm_out)
     
-    # MultiHeadAttention layer with reduced key_dim for performance
     attention = MultiHeadAttention(num_heads=4, key_dim=64)(lstm_out, lstm_out)
     attention = Add()([attention, lstm_out])
     attention = LayerNormalization()(attention)
     
-    # Added Dropout layers for regularization
-    dense = Dense(128, activation='relu')(attention)
+    dense = Dense(64, activation='relu')(attention)
     dense = Dropout(0.3)(dense)
-    dense = Dense(64, activation='relu')(dense)
+    dense = Dense(21, activation='relu')(dense)
     dense = Dropout(0.3)(dense)
     
-    output = Dense(1)(dense[:, -1, :])  # Predicting the target for the last time step
+    output = Dense(1)(dense[:, -1, :])
     
     model = Model(inputs, output)
     return model
@@ -67,18 +65,31 @@ def tft_model(sequence_length, num_features):
 def train_model(X_train, y_train, X_val, y_val, sequence_length, num_features):
     model = tft_model(sequence_length, num_features)
     model.compile(optimizer='adam', loss='mse')
-    
+    model.summary()
     early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    
     history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_val, y_val), callbacks=[early_stopping])
-    
     return model, history
 
-# Evaluation and Plotting
 def evaluate_model(model, X_test, y_test):
-    loss = model.evaluate(X_test, y_test)
-    print(f'Test Loss: {loss}')
+    predictions = model.predict(X_test).flatten()  # Flatten predictions to match y_test shape
+    mse = mean_squared_error(y_test, predictions)
+    r2 = r2_score(y_test, predictions)
+
+    print("X_test Shape: " + str(X_test.shape))
+    print("y_test Shape: " + str(y_test.shape))
+
+    # Calculate wins and losses
+    wins = np.sum((predictions > 0) & (y_test > 0))
+    losses = np.sum((predictions <= 0) & (y_test <= 0))
     
+    print(f'Test MSE: {mse}')
+    print(f'Test R2: {r2}')
+    print(f'Wins: {wins}')
+    print(f'Losses: {losses}')
+    
+    return predictions
+
+
 def plot_training_history(history):
     plt.figure(figsize=(12, 6))
     plt.plot(history.history['loss'], label='Train Loss')
@@ -89,11 +100,9 @@ def plot_training_history(history):
     plt.legend()
     plt.show()
 
-def plot_predictions(model, X_test, y_test, scaler):
-    predictions = model.predict(X_test)
-    
-    y_test_rescaled = scaler.inverse_transform(np.hstack([X_test[:, -1, :], y_test.reshape(-1, 1)]))[:, -1]
-    predictions_rescaled = scaler.inverse_transform(np.hstack([X_test[:, -1, :], predictions]))[:, -1]
+def plot_predictions(y_test, predictions, X_test, scaler):
+    y_test_rescaled = scaler.inverse_transform(np.hstack([np.zeros((y_test.shape[0], X_test.shape[2])), y_test.reshape(-1, 1)]))[:, -1]
+    predictions_rescaled = scaler.inverse_transform(np.hstack([np.zeros((predictions.shape[0], X_test.shape[2])), predictions]))[:, -1]
     
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_rescaled, label='Actual')
@@ -106,22 +115,8 @@ def plot_predictions(model, X_test, y_test, scaler):
 
 # Main Function
 def main():
-    datafile = [
-        'data/Lucky13_3070_oos.csv',
-        'data/Lucky13_3070.csv',
-        'data/ndata_diff_lucky13_3070_oos.csv',
-        'data/ndata_diff_lucky13_3070.csv',
-        'data/ndata_lucky_13_lag_3070_oos.csv',
-        'data/ndata_lucky13_lag_3070.csv',
-        'new_model_Z_lucky13_3070_oos.csv',
-        'new_model_Z_lucky13_3070.csv',
-        'data/Lucky13_3070_oos_3.csv',
-        'data/Lucky13_3070_3.csv',
-        'data/Lucky13_3070_oos_5.csv',
-        'data/Lucky13_3070_5.csv'
-    ]
-    
-    dtx = pd.read_csv(datafile[1])
+    datafile = 'data/Lucky13_3070.csv'
+    dtx = pd.read_csv(datafile)
     sequence_length = 21
     num_features = 13
 
@@ -131,11 +126,10 @@ def main():
     
     model, history = train_model(X_train, y_train, X_val, y_val, sequence_length, num_features)
     
-    evaluate_model(model, X_test, y_test)
+    predictions = evaluate_model(model, X_test, y_test)
     
     plot_training_history(history)
-    
-    plot_predictions(model, X_test, y_test, scaler)
+    plot_predictions(y_test, predictions, X_test, scaler)
 
 if __name__ == "__main__":
     main()

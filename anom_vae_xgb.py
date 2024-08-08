@@ -7,7 +7,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import backend as K
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -18,8 +18,7 @@ def load_and_preprocess_data(file_path):
     features = data.drop(['output', 'outputC'], axis=1)
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
-    x_train, x_val = train_test_split(scaled_features, test_size=0.2, random_state=42)
-    return x_train, x_val, scaler, data
+    return scaled_features, data, scaler
 
 # Function to build the VAE model
 def build_vae(input_dim, latent_dim):
@@ -86,9 +85,9 @@ def train_vae(vae, x_train, x_val, epochs=50, batch_size=128):
     return history
 
 # Function to detect anomalies
-def detect_anomalies(vae, x_val, threshold_percentile=95):
-    reconstructed = vae.predict(x_val)
-    reconstruction_error = np.mean(np.square(x_val - reconstructed), axis=1)
+def detect_anomalies(vae, data, threshold_percentile=95):
+    reconstructed = vae.predict(data)
+    reconstruction_error = np.mean(np.square(data - reconstructed), axis=1)
     threshold = np.percentile(reconstruction_error, threshold_percentile)
     anomalies = reconstruction_error > threshold
     return anomalies, reconstructed, reconstruction_error
@@ -105,21 +104,29 @@ def plot_results(x_val, reconstructed, anomalies):
     plt.legend()
     plt.show()
 
-# Main function
+# Function to calculate and display statistics
+def calculate_statistics(y_true, y_pred):
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    wins = np.sum((y_pred > 0) & (y_true > 0)) + np.sum((y_pred <= 0) & (y_true <= 0))
+    losses = np.sum((y_pred > 0) & (y_true <= 0)) + np.sum((y_pred <= 0) & (y_true > 0))
+    return mse, r2, wins, losses
+
 def main():
     file_path = 'data/Lucky13_3070.csv'
-    x_train, x_val, scaler, data = load_and_preprocess_data(file_path)
+    scaled_features, data, scaler = load_and_preprocess_data(file_path)
+    x_train, x_val = train_test_split(scaled_features, test_size=0.2, random_state=42)
     input_dim = x_train.shape[1]
     latent_dim = 2
     vae = build_vae(input_dim, latent_dim)
     train_vae(vae, x_train, x_val)
-    anomalies, reconstructed, reconstruction_error = detect_anomalies(vae, x_val)
-    plot_results(x_val, reconstructed, anomalies)
+    anomalies, reconstructed, reconstruction_error = detect_anomalies(vae, scaled_features)
+    val_indices = np.arange(len(scaled_features))[-len(x_val):]  # Get the indices of the validation set in the entire dataset
+    val_anomalies = anomalies[val_indices]  # Extract anomalies corresponding to the validation set
+    plot_results(x_val, vae.predict(x_val), val_anomalies)
 
     # Filtering anomalies for XGBoost
-    anomalies_train, _, _ = detect_anomalies(vae, x_train)
-    x_train_filtered = x_train[~anomalies_train]
-    data_filtered = data.iloc[~anomalies_train]
+    data_filtered = data.iloc[~anomalies]
 
     # Prepare XGBoost model
     X = data_filtered.drop(['output', 'outputC'], axis=1)
@@ -129,13 +136,20 @@ def main():
 
     # Predictions before and after filtering anomalies
     X_all = scaler.transform(data.drop(['output', 'outputC'], axis=1))
+    y_all = data['output']
     predictions_before = xgb_model.predict(X_all)
 
     X_filtered = scaler.transform(data_filtered.drop(['output', 'outputC'], axis=1))
+    y_filtered = data_filtered['output']
     predictions_after = xgb_model.predict(X_filtered)
 
-    print("Predictions before filtering anomalies:", predictions_before)
-    print("Predictions after filtering anomalies:", predictions_after)
+    # Calculate and print statistics before filtering anomalies
+    mse_before, r2_before, wins_before, losses_before = calculate_statistics(y_all, predictions_before)
+    print(f"Statistics before filtering anomalies:\nMSE: {mse_before}\nR2: {r2_before}\nWins: {wins_before}\nLosses: {losses_before}")
+
+    # Calculate and print statistics after filtering anomalies
+    mse_after, r2_after, wins_after, losses_after = calculate_statistics(y_filtered, predictions_after)
+    print(f"Statistics after filtering anomalies:\nMSE: {mse_after}\nR2: {r2_after}\nWins: {wins_after}\nLosses: {losses_after}")
 
 if __name__ == '__main__':
     main()
