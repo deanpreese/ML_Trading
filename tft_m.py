@@ -5,11 +5,11 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Input, LSTM, Dense, LayerNormalization, MultiHeadAttention, Add, Dropout
 from tensorflow.keras.models import Model
-from tensorflow.keras.regularizers import l2
-
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras import regularizers
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
+from multiprocessing import Pool
 
 # Data Preparation
 def create_sequences(data, target_col_index, sequence_length):
@@ -42,16 +42,19 @@ def prepare_data(df, target_col='output', sequence_length=30):
     
     return X_train, y_train, X_test, y_test, scaler
 
+# TFT Model Design with Regularization
 def tft_model(sequence_length, num_features):
-    l2_reg = tf.keras.regularizers.l2(0.01)
+    l2_reg = regularizers.l2(0.01)
     
     inputs = Input(shape=(sequence_length, num_features))
     
-    lstm_out = LSTM(16, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(inputs)
-    lstm_out = LSTM(32, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(lstm_out)
+    lstm_out = LSTM(64, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(inputs)
+    lstm_out = LSTM(64, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(lstm_out)
+    
     attention = MultiHeadAttention(num_heads=4, key_dim=64, kernel_regularizer=l2_reg)(lstm_out, lstm_out)
     attention = Add()([attention, lstm_out])
     attention = LayerNormalization()(attention)
+    
     dense = Dense(128, activation='relu', kernel_regularizer=l2_reg)(attention)
     dense = Dropout(0.3)(dense)
     dense = Dense(64, activation='relu', kernel_regularizer=l2_reg)(dense)
@@ -61,31 +64,33 @@ def tft_model(sequence_length, num_features):
     
     model = Model(inputs, output)
     return model
-# Model Training
-def train_model(X_train, y_train, X_val, y_val, sequence_length, num_features):
+
+# Function to train a single TFT model
+def train_single_tft_model(seed, X_train, y_train, X_val, y_val, sequence_length, num_features):
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+    
     model = tft_model(sequence_length, num_features)
     model.compile(optimizer='adam', loss='mse')
-    model.summary()
     early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_val, y_val), callbacks=[early_stopping])
-    return model, history
+    
+    model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_val, y_val), callbacks=[early_stopping])
+    
+    return model
 
-def evaluate_model(model, X_test, y_test):
-    predictions = model.predict(X_test).flatten()  # Flatten predictions to match y_test shape
+# Function to predict with ensemble of models
+def ensemble_predict(models, X_test):
+    predictions = np.array([model.predict(X_test).flatten() for model in models])
+    return np.mean(predictions, axis=0)
+
+# Evaluation and Plotting
+def evaluate_model(predictions, y_test):
     mse = mean_squared_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
 
-    # Calculate wins and losses
-    wins = np.sum((predictions > 0) & (y_test > 0))
-    losses = np.sum((predictions <= 0) & (y_test <= 0))
-    
     print(f'Test MSE: {mse}')
     print(f'Test R2: {r2}')
-    print(f'Wins: {wins} Losses: {losses}  Percent: {wins/(wins+losses)} ')
     
-    return predictions
-
-
 def plot_training_history(history):
     plt.figure(figsize=(12, 6))
     plt.plot(history.history['loss'], label='Train Loss')
@@ -97,14 +102,9 @@ def plot_training_history(history):
     plt.show()
 
 def plot_predictions(y_test, predictions, X_test, scaler):
-    # Reshape predictions to be 2D (shape: (7430, 1)) to match the shape of the features in X_test
-    predictions = predictions.reshape(-1, 1)
-    
-    # Prepare the full array for inverse scaling
     y_test_rescaled = scaler.inverse_transform(np.hstack([np.zeros((y_test.shape[0], X_test.shape[2])), y_test.reshape(-1, 1)]))[:, -1]
-    predictions_rescaled = scaler.inverse_transform(np.hstack([np.zeros((predictions.shape[0], X_test.shape[2])), predictions]))[:, -1]
+    predictions_rescaled = scaler.inverse_transform(np.hstack([np.zeros((predictions.shape[0], X_test.shape[2])), predictions.reshape(-1, 1)]))[:, -1]
     
-    # Plot the results
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_rescaled, label='Actual')
     plt.plot(predictions_rescaled, label='Predicted')
@@ -114,23 +114,32 @@ def plot_predictions(y_test, predictions, X_test, scaler):
     plt.legend()
     plt.show()
 
-
-# Main Function
+# Main function to train multiple models in parallel and combine their predictions
 def main():
+    
+    num_models = 3
     datafile = 'data/Lucky13_3070.csv'
     dtx = pd.read_csv(datafile)
     sequence_length = 7
     num_features = 13
 
     X_train, y_train, X_test, y_test, scaler = prepare_data(dtx, target_col='output', sequence_length=sequence_length)
-    
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+    # Generate random seeds for each model
+    seeds = np.random.randint(0, 10000, num_models)
     
-    model, history = train_model(X_train, y_train, X_val, y_val, sequence_length, num_features)
+    # Train models in parallel
+    with Pool(num_models) as pool:
+        models = pool.starmap(train_single_tft_model, [(seed, X_train, y_train, X_val, y_val, sequence_length, num_features) for seed in seeds])
     
-    predictions = evaluate_model(model, X_test, y_test)
+    # Combine predictions from all models
+    predictions = ensemble_predict(models, X_test)
     
-    plot_training_history(history)
+    # Evaluate combined predictions
+    evaluate_model(predictions, y_test)
+    
+    # Plot predictions
     plot_predictions(y_test, predictions, X_test, scaler)
 
 if __name__ == "__main__":

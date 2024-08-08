@@ -1,4 +1,5 @@
 import numpy as np
+from multiprocessing import Pool
 import pandas as pd
 import tensorflow as tf
 from collections import deque
