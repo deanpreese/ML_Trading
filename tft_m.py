@@ -5,6 +5,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Input, LSTM, Dense, LayerNormalization, MultiHeadAttention, Add, Dropout
 from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
@@ -40,27 +42,25 @@ def prepare_data(df, target_col='output', sequence_length=30):
     
     return X_train, y_train, X_test, y_test, scaler
 
-# TFT Model Design
 def tft_model(sequence_length, num_features):
+    l2_reg = tf.keras.regularizers.l2(0.01)
+    
     inputs = Input(shape=(sequence_length, num_features))
     
-    lstm_out = LSTM(64, return_sequences=True)(inputs)
-    lstm_out = LSTM(64, return_sequences=True)(lstm_out)
-    
-    attention = MultiHeadAttention(num_heads=4, key_dim=64)(lstm_out, lstm_out)
+    lstm_out = LSTM(16, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(inputs)
+    lstm_out = LSTM(32, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(lstm_out)
+    attention = MultiHeadAttention(num_heads=4, key_dim=64, kernel_regularizer=l2_reg)(lstm_out, lstm_out)
     attention = Add()([attention, lstm_out])
     attention = LayerNormalization()(attention)
-    
-    dense = Dense(64, activation='relu')(attention)
+    dense = Dense(128, activation='relu', kernel_regularizer=l2_reg)(attention)
     dense = Dropout(0.3)(dense)
-    dense = Dense(21, activation='relu')(dense)
+    dense = Dense(64, activation='relu', kernel_regularizer=l2_reg)(dense)
     dense = Dropout(0.3)(dense)
     
-    output = Dense(1)(dense[:, -1, :])
+    output = Dense(1, kernel_regularizer=l2_reg)(dense[:, -1, :])
     
     model = Model(inputs, output)
     return model
-
 # Model Training
 def train_model(X_train, y_train, X_val, y_val, sequence_length, num_features):
     model = tft_model(sequence_length, num_features)
@@ -75,17 +75,13 @@ def evaluate_model(model, X_test, y_test):
     mse = mean_squared_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
 
-    print("X_test Shape: " + str(X_test.shape))
-    print("y_test Shape: " + str(y_test.shape))
-
     # Calculate wins and losses
     wins = np.sum((predictions > 0) & (y_test > 0))
     losses = np.sum((predictions <= 0) & (y_test <= 0))
     
     print(f'Test MSE: {mse}')
     print(f'Test R2: {r2}')
-    print(f'Wins: {wins}')
-    print(f'Losses: {losses}')
+    print(f'Wins: {wins} Losses: {losses}  Percent: {wins/(wins+losses)} ')
     
     return predictions
 
@@ -101,9 +97,14 @@ def plot_training_history(history):
     plt.show()
 
 def plot_predictions(y_test, predictions, X_test, scaler):
+    # Reshape predictions to be 2D (shape: (7430, 1)) to match the shape of the features in X_test
+    predictions = predictions.reshape(-1, 1)
+    
+    # Prepare the full array for inverse scaling
     y_test_rescaled = scaler.inverse_transform(np.hstack([np.zeros((y_test.shape[0], X_test.shape[2])), y_test.reshape(-1, 1)]))[:, -1]
     predictions_rescaled = scaler.inverse_transform(np.hstack([np.zeros((predictions.shape[0], X_test.shape[2])), predictions]))[:, -1]
     
+    # Plot the results
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_rescaled, label='Actual')
     plt.plot(predictions_rescaled, label='Predicted')
@@ -113,11 +114,12 @@ def plot_predictions(y_test, predictions, X_test, scaler):
     plt.legend()
     plt.show()
 
+
 # Main Function
 def main():
     datafile = 'data/Lucky13_3070.csv'
     dtx = pd.read_csv(datafile)
-    sequence_length = 21
+    sequence_length = 7
     num_features = 13
 
     X_train, y_train, X_test, y_test, scaler = prepare_data(dtx, target_col='output', sequence_length=sequence_length)

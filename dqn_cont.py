@@ -26,8 +26,8 @@ if gpus:
 class DQN(tf.keras.Model):
     def __init__(self, input_dim, output_dim):
         super(DQN, self).__init__()
-        self.fc1 = tf.keras.layers.Dense(32, activation='relu')  # Reduced number of neurons
-        self.fc2 = tf.keras.layers.Dense(32, activation='relu')  # Reduced number of neurons
+        self.fc1 = tf.keras.layers.Dense(32, activation='relu')
+        self.fc2 = tf.keras.layers.Dense(32, activation='relu')
         self.output_layer = tf.keras.layers.Dense(output_dim)
     
     def call(self, x):
@@ -73,6 +73,10 @@ class DQNAgent:
     
     def replay(self, batch_size):
         start_time = time.time()
+        if len(self.memory) < batch_size:
+            logging.warning("Not enough samples in memory to replay. Skipping replay step.")
+            return
+        
         minibatch = random.sample(self.memory, batch_size)
         losses = []
         for state, action, reward, next_state, done in minibatch:
@@ -92,6 +96,8 @@ class DQNAgent:
                 losses.append(loss.numpy())
             
             grads = tape.gradient(loss, self.model.trainable_variables)
+            # Apply gradient clipping
+            grads = [tf.clip_by_value(grad, -1.0, 1.0) for grad in grads]
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         
         if self.epsilon > self.epsilon_min:
@@ -160,6 +166,7 @@ def validate(agent, val_features, val_output):
     mse = mean_squared_error(val_output, predictions)
     rmse = np.sqrt(mse)
     mae = mean_absolute_error(val_output, predictions)
+    logging.info(f"Validation MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
     return mse, rmse, mae
 
 # Initialize DQN agents
@@ -187,6 +194,7 @@ def train_agents(agents, train_features, train_output, val_features, val_output,
             state = next_state
             for agent in agents:
                 if len(agent.memory) > batch_size:
+                    logging.debug(f"Agent replay at time step {time_step} of episode {episode + 1}")
                     agent.replay(batch_size)
         for agent in agents:
             agent.update_target_model()
@@ -246,7 +254,7 @@ def main():
     ]
     
     logging.info("Starting main process...")
-    features, continuous_output = load_data(datafile[0])
+    features, continuous_output = load_data(datafile[1])
     train_features, val_features, train_output, val_output = train_val_split(features, continuous_output)
     state_dim = train_features.shape[1]
     continuous_action_dim = 1  # For continuous output
