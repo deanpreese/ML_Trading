@@ -1,4 +1,5 @@
 
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -32,8 +33,8 @@ def process_train_test_data(data, feature_columns, target_column, split):
     y_test = test.drop_columns(feature_columns)
     
     scaler = Scaler()
-    #X_train = scaler.fit_transform(X_train) 
-    #X_test = scaler.transform(X_test.astype(np.float32))   
+    X_train = scaler.fit_transform(X_train) 
+    X_test = scaler.transform(X_test.astype(np.float32))   
     
     #print("X_train shape: ", X_train.all_values().shape)
     #print("X_test shape: ", X_test.all_values().shape)
@@ -42,6 +43,34 @@ def process_train_test_data(data, feature_columns, target_column, split):
     
     return X_train, X_test, y_train, y_test, scaler
 
+
+def calc_r(predictions, actuals, model_name):
+    correct = 0 
+    total = 0
+    
+    forecast_results = predictions
+    test_series = actuals
+    
+    for i in range(len(forecast_results)):
+        
+        predicted_output = forecast_results[i].values()[0][0]
+        target_output = test_series[i].values()[0][0]
+
+        if ( target_output > 0 and predicted_output > 0):
+            correct += 1 
+
+        if ( target_output < 0 and predicted_output < 0):
+            correct += 1 
+        
+        if ( target_output == 0 and predicted_output == 0):
+            correct += 1     
+
+        total +=  1    
+
+    perf = round((correct)/total,4)
+    print(f"Total {total}  Correct {correct}  Percent {perf}")
+    
+    return total, correct, perf
 
 
 def calc_c(predictions, actuals, model_name):
@@ -105,6 +134,8 @@ def gen_forecast(test_series, output_chunk, model, past_covariates=None, future_
         forecast_horizon=output_chunk)
     return forecast_results    
 
+
+
 def build_cat(input_sequence_len, output_chunk_length, cov_lags=None):
     model = CatBoostModel(
         lags=input_sequence_len,
@@ -141,13 +172,9 @@ def ensemble_model(all_predict_data, actuals, forecast_len):
     print("Ensemble model...")
     actuals = actuals[-forecast_len:]
 
-    final_preds = []
-    final_actuals = []
-
     correct_ave = 0
     correct_maj = 0
     correct_ccc = 0
-    correct_xxx = 0
     total = 0
 
     for y in range(len(actuals)):
@@ -155,8 +182,6 @@ def ensemble_model(all_predict_data, actuals, forecast_len):
         target_output = actuals[y].values()[0][0]
         comb_pred = 0
         w_comb_pred =0
-        
-        final_actuals.append(target_output)
         
         total += 1
         wt_p = 0
@@ -170,14 +195,6 @@ def ensemble_model(all_predict_data, actuals, forecast_len):
 
         ave_p = comb_pred/len(all_predict_data)
         wt_p = w_comb_pred/len(all_predict_data)
-
-        algo_pred = 0
-
-        if ( target_output > 0 and (ave_p > 0.5  and wt_p > 0.5)):
-            correct_xxx += 1
-        
-        if ( target_output == 0 and (ave_p < 0.5 and wt_p < 0.5)):
-            correct_xxx += 1
 
         if ( target_output > 0 and (ave_p > 0.5  or wt_p > 0.5)):
             correct_ccc += 1
@@ -201,62 +218,36 @@ def ensemble_model(all_predict_data, actuals, forecast_len):
     perf_ave = round((correct_ave)/total,4)
     perf_maj = round((correct_maj)/total,4)
     perf_cc = round((correct_ccc)/total,4)
-    perf_xxx = round((correct_xxx)/total,4)
-        
-    print(f"Ensemble Perf Ave: {perf_ave}  Perf Maj: {perf_maj}  CCC {perf_cc} XXX {perf_xxx}  Total: {total}")
-        
+    
     return perf_ave, perf_maj, perf_cc, total
         
         
         
-def main(input_chunk_length, output_chunk_length):
+def main(input_chunk_length, output_chunk_length):    
     
-    #file_path = 'data/buildSeqInd_Lucky13_F.csv'
-    #data = pd.read_csv(file_path)
-    #list80 = ['SDKC9', 'ATR3', 'STOK1', 'SDKC91', 'ATR21', 'output']
+    datafile = [ 
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/ndata_diff_lucky13_3070_oos.csv', 
+                'data/ndata_diff_lucky13_3070.csv', #3
+                'data/ndata_lucky_13_lag_3070_oos.csv', 
+                'data/ndata_lucky13_lag_3070.csv', #5
+                'new_model_Z_lucky13_3070_oos.csv',
+                'new_model_Z_lucky13_3070.csv' #7,
+                'data/Lucky13_3070_oos_3.csv',   
+                'data/Lucky13_3070_3.csv',  #9
+                'data/Lucky13_3070_oos_5.csv',   
+                'data/Lucky13_3070_5.csv',  #11
+                
+        ]
+
+
+    data = pd.read_csv(datafile[3])
     
-    file_path = 'data/Ind_F.csv'
-    data = pd.read_csv(file_path)
-    
-    list80 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'RSI14', 'VOSC9', 'SDKC14', 'ADX14', 'outputC']
-    list60 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'outputC']
-    
-    listX = [
-            'CCI20', 
-             'ATR2', 
-             'CCI9', 
-             'RSI3', ##
-             'RSI9',  ##
-             'VOSC7',    #
-             'STOK15657', #
-             'STOD15657',  #
-              # 'ADX20', 
-              # 'STOD7217', 
-              # 'STOK7217', 
-              # 'SDKC9', 
-              # 'RSI14',
-              # 'VOSC9', 
-              # 'SDKC14', 
-              # 'ADX14', 
-              'LR1033',
-              'ROC9',
-              'SDKC9',
-              'BB14',
-              #'LR813',
-              #'BB9',
-              #'ROC7',
-              #'SDKC14',
-              #'LR310',
-              'outputC']
-    
-    data = data[listX]
-    
-    #data = data.drop(columns=['outputC'])
-    #data = data.drop(columns=['output'])
-        
-    feature_columns = list(data.columns[:-1])
-    
-    target_column = 'outputC'  
+    X = data
+    X = X.drop(columns=['output', 'outputC'])
+    feature_columns = list(X.columns)
+    target_column = 'outputC'  # Replace with your actual target column name
     #input_chunk_length = 9
     #output_chunk_length = 1
     test_split = 0.80
@@ -280,34 +271,27 @@ def main(input_chunk_length, output_chunk_length):
     model_xgb.fit(y_train, past_covariates=past_train_covariates_in)
     model_lgb = build_lightGBM(input_chunk_length, output_chunk_length, cov_lags=cov_lags_in)
     model_lgb.fit(y_train, past_covariates=past_train_covariates_in)
-    
     forecast_results_cat = gen_forecast(y_test, output_chunk_length, model_cat, past_covariates=past_test_covariates_in, future_covariates=None)
     forecast_results_xgb = gen_forecast(y_test, output_chunk_length, model_xgb, past_covariates=past_test_covariates_in, future_covariates=None)
     forecast_results_lgb = gen_forecast(y_test, output_chunk_length, model_lgb, past_covariates=past_test_covariates_in, future_covariates=None)
     
 
-    model_cat2 = build_cat(input_chunk_length, output_chunk_length, cov_lags=None)
-    model_cat2.fit(y_train, past_covariates=None)
+
+    #model_cat2 = build_cat(input_chunk_length, output_chunk_length, cov_lags=None)
+    #model_cat2.fit(y_train, past_covariates=None)
     model_xgb2 = build_xgb(input_chunk_length, output_chunk_length, cov_lags=None)
     model_xgb2.fit(y_train, past_covariates=None)
     model_lgb2 = build_lightGBM(input_chunk_length, output_chunk_length, cov_lags=None)
     model_lgb2.fit(y_train, past_covariates=None)
-    
-    forecast_results_cat2 = gen_forecast(y_test, output_chunk_length, model_cat2, past_covariates=None, future_covariates=None)
+    #forecast_results_cat2 = gen_forecast(y_test, output_chunk_length, model_cat2, past_covariates=None, future_covariates=None)
     forecast_results_xgb2 = gen_forecast(y_test, output_chunk_length, model_xgb2, past_covariates=None, future_covariates=None)
     forecast_results_lgb2 = gen_forecast(y_test, output_chunk_length, model_lgb2, past_covariates=None, future_covariates=None)
+     
     
     forecast_results_len = len(forecast_results_xgb)
-    predict_data1 = [forecast_results_lgb, forecast_results_xgb, forecast_results_cat]
-    predict_data2 = [forecast_results_xgb2, forecast_results_xgb ] #***
-    predict_data3 = [forecast_results_xgb, forecast_results_xgb2, forecast_results_cat ]
-    predict_data4 = [forecast_results_xgb, forecast_results_xgb2, forecast_results_cat2 ] #***
-
-    print(" ")
-    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data1, y_test, forecast_results_len)
-    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data2, y_test, forecast_results_len)
-    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data3, y_test, forecast_results_len)
-    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data4, y_test, forecast_results_len)
+    predict_data = [forecast_results_lgb, forecast_results_xgb,forecast_results_cat, forecast_results_lgb2, forecast_results_xgb2 ]
+    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data, y_test, forecast_results_len)
+    
      
     #forecast_results_len = len(forecast_results_xgb)
     #predict_data = [forecast_results_lgb, forecast_results_xgb,forecast_results_cat]
@@ -315,28 +299,33 @@ def main(input_chunk_length, output_chunk_length):
     
     #plot_model(y_test, output_chunk_length, model_hits, past_covariates=None, future_covariates=None)
     
-    #e_rmse_xgb = rmse(y_test, forecast_results_xgb)
-    #e_rmse_lgb = rmse(y_test, forecast_results_lgb)
-    #e_rmse_cat = rmse(y_test, forecast_results_cat)
+    e_rmse_xgb = rmse(y_test, forecast_results_xgb)
+    e_rmse_lgb = rmse(y_test, forecast_results_lgb)
+    e_rmse_cat = rmse(y_test, forecast_results_cat)
     
     print(" ")
-    #print(f"RMSE LGB: {e_rmse_lgb}")
-    #print(f"RMSE XGB: {e_rmse_xgb}")
-    #print(f"RMSE CAT: {e_rmse_cat}")
-    
-    """
+    print(f"RMSE LGB: {e_rmse_lgb}")
+    print(f"RMSE XGB: {e_rmse_xgb}")
+    print(f"RMSE CAT: {e_rmse_cat}")
+    #print(" Regression Results XGB :")    
+    #total_rx, correct_rx, perf_rx = calc_r(forecast_results_xgb, y_test)
+    print(" Classification Results XGB:")
     total_rc, correct_rc, perf_rc = calc_c(forecast_results_xgb, y_test, 'XGB')
+    #print(" Regression Results LGB:")    
+    #total_lr, correct_lr, perf_lr = calc_r(forecast_results_lgb, y_test)
+    print(" Classification Results LGB:")
     total_lc, correct_lc, perf_lc = calc_c(forecast_results_lgb, y_test, 'LGB')
+    #print(" Regression Results CAT:")    
+    #total_rcat, correct_rcat, perf_rcat = calc_r(forecast_results_lgb, y_test)
+    print(" Classification Results CAT:")
     total_ccat, correct_ccat, perf_ccat = calc_c(forecast_results_cat, y_test, 'CAT')
     
-    total_rc, correct_rc, perf_rc = calc_c(forecast_results_xgb2, y_test, 'XGB2')
-    total_lc, correct_lc, perf_lc = calc_c(forecast_results_lgb2, y_test, 'LGB2')
-    total_ccat, correct_ccat, perf_ccat = calc_c(forecast_results_cat2, y_test, 'CAT2')
-    """
+    print(" ")
+    print(f"Ensemble Perf Ave: {perf_ave}  Perf Maj: {perf_maj}  CCC {perf_cc}   Total: {total}")
+    print(" ")
     
     
-    
-    #return input_chunk_length, output_chunk_length, e_rmse_lgb, e_rmse_xgb,e_rmse_cat,0, perf_rc, 0, perf_lc, 0, perf_ccat
+    return input_chunk_length, output_chunk_length, e_rmse_lgb, e_rmse_xgb,e_rmse_cat,0, perf_rc, 0, perf_lc, 0, perf_ccat
     
     
 if __name__ == "__main__":
@@ -349,14 +338,7 @@ if __name__ == "__main__":
     #        rslts = main(i, num_predicts+o)
     #        output_list.append(rslts)
 
-    rslts = main(21, 1)
-    
-    # 15  1 
-    #   2  Ensemble Perf Ave: 0.5161  Perf Maj: 0.5221  CCC 0.6442   Total: 43620
-    #   4  Ensemble Perf Ave: 0.5155  Perf Maj: 0.5221  CCC 0.6499   Total: 43620
-    
-    #   2  Ensemble Perf Ave: 0.5145  Perf Maj: 0.522  CCC 0.6483   Total: 43614
-    #   5  Ensemble Perf Ave: 0.5102  Perf Maj: 0.522  CCC 0.6514   Total: 43614
+    rslts = main(1, 1)
     
     #output_list.append(rslts)
     #out_df = pd.DataFrame(output_list, columns=['input_chunk_length', 'output_chunk_length', 'e_rmse_lgb', 'e_rmse_xgb', 'e_rmse_cat','perf_rx', 'perf_rc', 'perf_lr', 'perf_lc', 'perf_rcat', 'perf_ccat'])

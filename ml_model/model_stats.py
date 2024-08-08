@@ -2,16 +2,23 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, root_mean_squared_error
-
+from sklearn.metrics import confusion_matrix
 
 def calc_mse_rmse_mae( y_test, predicted_values):
     mse = mean_squared_error(y_test, predicted_values)
     rmse =  rmse = mse**.5
     mae = float(mean_absolute_error(y_test,predicted_values))          
+    
+    mae = f"{round(mae, 4):.4f}"
+    mse = f"{round(mse, 4):.4f}"
+    rmse = f"{round(rmse, 4):.4f}"
+    
     return mse, rmse, mae
 
 
 def gen_class_stats( y_test, predicted_values):
+    
+    tn, fp, fn, tp = confusion_matrix(y_test, predicted_values).ravel()
     
     correct1 = 0 
     total = 0
@@ -27,8 +34,8 @@ def gen_class_stats( y_test, predicted_values):
 
         total = total + 1    
 
-    per1 = round((correct1)/total,4)
-    return(per1, total)
+    perf = round((correct1)/total,4)
+    return perf, total, tn, fp, fn, tp
 
 
 def gen_reg_stats( y_test, predicted_values):

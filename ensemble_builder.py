@@ -8,6 +8,9 @@ import logging
 
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
 
+from sklearn.ensemble import VotingRegressor, StackingRegressor
+from sklearn.svm import SVR
+
 from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
@@ -54,6 +57,52 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
             save_reg_ens_data(p_df)
                                
         return p_df, experiment_id        
+                
+                
+
+def run_stack_vote(est_list):
+                
+        stacking_regressor = StackingRegressor(estimators=est_list, cv=4
+        , verbose=True, final_estimator=CatBoostRegressor()
+        )
+
+        regressor = stacking_regressor
+        #regressor = voting_regressor
+
+
+        # Train the Voting Regressor on the training data
+        regressor.fit(X_train, y_train)
+
+        print(" ")
+        #print("Saving and Reloading Model ")
+        #pickle.dump(voting_regressor, open(model_filename, "wb"))
+        #loaded_model = pickle.load(open(model_filename, "rb"))
+        #predictions = loaded_model.predict(X_test)
+
+        y_pred = regressor.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred, squared=True)
+        rmse =mean_squared_error(y_test, y_pred, squared=False)
+        r2 =r2_score(y_test, y_pred)
+        score = regressor.score(X_test, y_test)
+        mae = float(mean_absolute_error(y_test,y_pred))                
+        perf, tot = gen_reg_stats(y_test, y_pred)        
+
+        print("Results ---")
+        print(f"MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
+
+        for m in regressor.named_estimators_:
+                r_pred = regressor.named_estimators_[m].predict(X_test)
+
+                mse = mean_squared_error(y_test, r_pred, squared=True)
+                rmse =mean_squared_error(y_test, r_pred, squared=False)
+                r2 =r2_score(y_test, r_pred)
+                score = regressor.score(X_test, r_pred)
+                mae = float(mean_absolute_error(y_test,r_pred))                
+                perf, total, mse, rmse = gen_reg_stats(y_test, r_pred)        
+
+                print(f"{m}  MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
+                        
+                
                 
 # ---------------------------
 #
