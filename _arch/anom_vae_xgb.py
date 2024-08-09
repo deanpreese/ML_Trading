@@ -143,13 +143,24 @@ def main():
     y_filtered = data_filtered['output']
     predictions_after = xgb_model.predict(X_filtered)
 
+    print(" ")
+
     # Calculate and print statistics before filtering anomalies
     mse_before, r2_before, wins_before, losses_before = calculate_statistics(y_all, predictions_before)
-    print(f"Statistics before filtering anomalies:\nMSE: {mse_before}\nR2: {r2_before}\nWins: {wins_before}\nLosses: {losses_before}")
+    print(f"Statistics before filtering anomalies:")
+    print(f"MSE: {mse_before} R2: {r2_before}  ")
+    print(f"Wins: {wins_before} Losses: {losses_before} Total: {wins_before + losses_before}")
+    print(f"Percent: {wins_before/(wins_before+losses_before)}")
+
+    print(" ")
 
     # Calculate and print statistics after filtering anomalies
     mse_after, r2_after, wins_after, losses_after = calculate_statistics(y_filtered, predictions_after)
-    print(f"Statistics after filtering anomalies:\nMSE: {mse_after}\nR2: {r2_after}\nWins: {wins_after}\nLosses: {losses_after}")
-
+    print(f"Statistics after filtering anomalies:")
+    print(f"MSE: {mse_after} R2: {r2_after} ")
+    print(f"Wins: {wins_after} Losses: {losses_after}  Total: {wins_after + losses_after} ")
+    print(f"Percent: {wins_after/(wins_after+losses_after)}")
+    print(" ")
+    
 if __name__ == '__main__':
     main()

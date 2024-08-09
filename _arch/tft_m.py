@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Input, LSTM, Dense, LayerNormalization, Mult
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import regularizers
+
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
@@ -83,13 +84,35 @@ def ensemble_predict(models, X_test):
     predictions = np.array([model.predict(X_test).flatten() for model in models])
     return np.mean(predictions, axis=0)
 
-# Evaluation and Plotting
-def evaluate_model(predictions, y_test):
+# Evaluation function for individual models
+def evaluate_individual_model(predictions, y_test, model_id):
     mse = mean_squared_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
+    
+    # Calculate wins and losses
+    wins = np.sum((predictions > 0) & (y_test > 0))
+    losses = np.sum((predictions <= 0) & (y_test <= 0))
 
-    print(f'Test MSE: {mse}')
-    print(f'Test R2: {r2}')
+    print(f'Model {model_id} Test MSE: {mse}')
+    print(f'Model {model_id} Test R2: {r2}')
+    print(f'Model {model_id} Wins: {wins}')
+    print(f'Model {model_id} Losses: {losses}')
+
+    return mse, r2, wins, losses
+
+# Evaluation and Plotting for the ensemble
+def evaluate_ensemble(predictions, y_test):
+    mse = mean_squared_error(y_test, predictions)
+    r2 = r2_score(y_test, predictions)
+    
+    # Calculate wins and losses for the ensemble
+    wins = np.sum((predictions > 0) & (y_test > 0))
+    losses = np.sum((predictions <= 0) & (y_test <= 0))
+
+    print(f'Ensemble Test MSE: {mse}')
+    print(f'Ensemble Test R2: {r2}')
+    print(f'Ensemble Wins: {wins}')
+    print(f'Ensemble Losses: {losses}')
     
 def plot_training_history(history):
     plt.figure(figsize=(12, 6))
@@ -117,10 +140,10 @@ def plot_predictions(y_test, predictions, X_test, scaler):
 # Main function to train multiple models in parallel and combine their predictions
 def main():
     
-    num_models = 3
+    num_models = 2
     datafile = 'data/Lucky13_3070.csv'
     dtx = pd.read_csv(datafile)
-    sequence_length = 7
+    sequence_length = 21
     num_features = 13
 
     X_train, y_train, X_test, y_test, scaler = prepare_data(dtx, target_col='output', sequence_length=sequence_length)
@@ -133,14 +156,21 @@ def main():
     with Pool(num_models) as pool:
         models = pool.starmap(train_single_tft_model, [(seed, X_train, y_train, X_val, y_val, sequence_length, num_features) for seed in seeds])
     
+    # Evaluate each model individually
+    individual_results = []
+    for i, model in enumerate(models):
+        predictions = model.predict(X_test).flatten()
+        results = evaluate_individual_model(predictions, y_test, i + 1)
+        individual_results.append(results)
+    
     # Combine predictions from all models
-    predictions = ensemble_predict(models, X_test)
+    ensemble_predictions = ensemble_predict(models, X_test)
     
     # Evaluate combined predictions
-    evaluate_model(predictions, y_test)
+    evaluate_ensemble(ensemble_predictions, y_test)
     
-    # Plot predictions
-    plot_predictions(y_test, predictions, X_test, scaler)
+    # Plot ensemble predictions
+    plot_predictions(y_test, ensemble_predictions, X_test, scaler)
 
 if __name__ == "__main__":
     main()
