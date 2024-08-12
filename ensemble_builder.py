@@ -196,7 +196,7 @@ def run():
 
 
 
-        dtx = pd.read_csv(datafile[10])
+        dtx = pd.read_csv(datafile[1])
 
 
         f_87 =['RSI',

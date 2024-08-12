@@ -15,25 +15,24 @@ from multiprocessing import Pool
 def create_sequences(data, target_col_index, sequence_length):
     xs, ys = [], []
     for i in range(len(data) - sequence_length):
-        x = data[i:i+sequence_length, :-2]  # all features except target columns
-        y = data[i+sequence_length, target_col_index]  # target column
+        x = data[i:i + sequence_length, :-2]  # All features except target columns
+        y = data[i + sequence_length, target_col_index]  # Target column
         xs.append(x)
         ys.append(y)
     return np.array(xs), np.array(ys)
 
 def prepare_data(df, target_col='output', sequence_length=30):
-    X = df
-    features = X.drop(columns=['output', 'outputC'])
+    features = df.drop(columns=['output', 'outputC'])
     target = df[target_col]
-    
+
     scaler = MinMaxScaler()
     features_scaled = scaler.fit_transform(features)
+    
     scaled_df = pd.DataFrame(features_scaled, columns=features.columns)
     scaled_df[target_col] = target.values
 
     train_size = int(len(scaled_df) * 0.8)
-    train_data = scaled_df[:train_size]
-    test_data = scaled_df[train_size:]
+    train_data, test_data = scaled_df[:train_size], scaled_df[train_size:]
     
     target_col_index = scaled_df.columns.get_loc(target_col)
     
@@ -43,15 +42,15 @@ def prepare_data(df, target_col='output', sequence_length=30):
     return X_train, y_train, X_test, y_test, scaler
 
 # TFT Model Design with Regularization and Custom Neurons
-def tft_model(sequence_length, num_features, lstm_units=64, dense_units=[128, 64]):
+def tft_model(sequence_length, num_features, lstm_units=[64,64], dense_units=[128, 64]):
     l2_reg = regularizers.l2(0.01)
     
     inputs = Input(shape=(sequence_length, num_features))
     
-    lstm_out = LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(inputs)
-    lstm_out = LSTM(lstm_units, return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(lstm_out)
+    lstm_out = LSTM(lstm_units[0], return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(inputs)
+    lstm_out = LSTM(lstm_units[1], return_sequences=True, kernel_regularizer=l2_reg, recurrent_regularizer=l2_reg)(lstm_out)
     
-    attention = MultiHeadAttention(num_heads=4, key_dim=lstm_units, kernel_regularizer=l2_reg)(lstm_out, lstm_out)
+    attention = MultiHeadAttention(num_heads=4, key_dim=lstm_units[1], kernel_regularizer=l2_reg)(lstm_out, lstm_out)
     attention = Add()([attention, lstm_out])
     attention = LayerNormalization()(attention)
     
@@ -85,17 +84,36 @@ def ensemble_predict(models, X_test):
 
 # Evaluation function for individual models
 def evaluate_individual_model(predictions, y_test, model_id):
+    
     mse = mean_squared_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
     
     # Calculate wins and losses
-    wins = np.sum((predictions > 0) & (y_test > 0))
-    losses = np.sum((predictions <= 0) & (y_test <= 0))
+    #wins = np.sum((predictions > 0) & (y_test > 0))
+    #losses = np.sum((predictions <= 0) & (y_test <= 0))
+    #win_rate = wins / (wins + losses) if (wins + losses) > 0 else 0
+
+    wins = 0
+    losses = 0
+    
+    for i in range(len(y_test)):
+        if (predictions[i] > 0 and y_test[i] > 0) or (predictions[i] < 0 and y_test[i] < 0):
+            wins += 1
+        elif (predictions[i] > 0 and y_test[i] < 0) or (predictions[i] < 0 and y_test[i] > 0):
+            losses += 1
+        elif (predictions[i] == 0 and y_test[i] == 0):
+            wins += 1
+        elif (predictions[i] == 0 and y_test[i] != 0):
+            losses += 1
+    
+    total_samples = wins + losses
+    win_percentage = (wins / total_samples) 
 
     print(f'Model {model_id} Test MSE: {mse}')
     print(f'Model {model_id} Test R2: {r2}')
     print(f'Model {model_id} Wins: {wins}')
     print(f'Model {model_id} Losses: {losses}')
+    print(f'Model {model_id} Win Rate: {win_percentage:.2%}')
 
     return mse, r2, wins, losses
 
@@ -104,14 +122,17 @@ def evaluate_ensemble(predictions, y_test):
     mse = mean_squared_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
     
-    # Calculate wins and losses for the ensemble
-    wins = np.sum((predictions > 0) & (y_test > 0))
-    losses = np.sum((predictions <= 0) & (y_test <= 0))
-
+    wins = np.sum((predictions > 0) & (y_test > 0)) + np.sum((predictions < 0) & (y_test < 0))
+    losses = np.sum((predictions < 0) & (y_test > 0))  + np.sum((predictions > 0) & (y_test < 0))  
+    total = wins+losses
+    win_percentage = (wins / total) 
+    
     print(f'Ensemble Test MSE: {mse}')
     print(f'Ensemble Test R2: {r2}')
     print(f'Ensemble Wins: {wins}')
     print(f'Ensemble Losses: {losses}')
+    print(f'Ensemble Win Rate: {win_percentage:.2%}')
+    
     
 def plot_training_history(history):
     plt.figure(figsize=(12, 6))
@@ -123,10 +144,24 @@ def plot_training_history(history):
     plt.legend()
     plt.show()
 
-def plot_predictions(y_test, predictions, X_test, scaler):
-    y_test_rescaled = scaler.inverse_transform(np.hstack([np.zeros((y_test.shape[0], X_test.shape[2])), y_test.reshape(-1, 1)]))[:, -1]
-    predictions_rescaled = scaler.inverse_transform(np.hstack([np.zeros((predictions.shape[0], X_test.shape[2])), predictions.reshape(-1, 1)]))[:, -1]
+# Corrected plot_predictions function
+def plot_predictions(y_test, predictions, scaler):
+    # Get the original number of features the scaler was fitted on
+    n_features = scaler.min_.shape[0]
     
+    # Create placeholders for inverse transform with the correct number of features
+    y_test_placeholder = np.zeros((y_test.shape[0], n_features))
+    predictions_placeholder = np.zeros((predictions.shape[0], n_features))
+    
+    # Set the last column (or the target column) to the y_test and predictions values
+    y_test_placeholder[:, -1] = y_test
+    predictions_placeholder[:, -1] = predictions
+    
+    # Inverse transform the placeholders
+    y_test_rescaled = scaler.inverse_transform(y_test_placeholder)[:, -1]
+    predictions_rescaled = scaler.inverse_transform(predictions_placeholder)[:, -1]
+    
+    # Plot the results
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_rescaled, label='Actual')
     plt.plot(predictions_rescaled, label='Predicted')
@@ -137,7 +172,7 @@ def plot_predictions(y_test, predictions, X_test, scaler):
     plt.show()
 
 # Main function to train multiple models in parallel and combine their predictions
-def main(num_models, lstm_units_list, dense_units_list):
+def main(lstm_units_list, dense_units_list):
     datafile = 'data/Lucky13_3070.csv'
     dtx = pd.read_csv(datafile)
     sequence_length = 21
@@ -146,14 +181,14 @@ def main(num_models, lstm_units_list, dense_units_list):
     X_train, y_train, X_test, y_test, scaler = prepare_data(dtx, target_col='output', sequence_length=sequence_length)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
-    # Generate random seeds for each model
+    num_models = len(lstm_units_list)
     seeds = np.random.randint(0, 10000, num_models)
     
     # Train models in parallel
     with Pool(num_models) as pool:
         models = pool.starmap(train_single_tft_model, [
-            (seed, X_train, y_train, X_val, y_val, sequence_length, num_features, lstm_units_list[i], dense_units_list[i])
-            for i, seed in enumerate(seeds)
+            (seeds[i], X_train, y_train, X_val, y_val, sequence_length, num_features, lstm_units_list[i], dense_units_list[i])
+            for i in range(num_models)
         ])
     
     # Evaluate each model individually
@@ -170,13 +205,23 @@ def main(num_models, lstm_units_list, dense_units_list):
     evaluate_ensemble(ensemble_predictions, y_test)
     
     # Plot ensemble predictions
-    plot_predictions(y_test, ensemble_predictions, X_test, scaler)
+    plot_predictions(y_test, ensemble_predictions, scaler)  # Updated call with three arguments
 
 if __name__ == "__main__":
-    num_models = 3  # Specify the number of models to run in parallel
 
     # Define LSTM and Dense units for each model in the ensemble
-    lstm_units_list = [64, 128, 64, 128, 64]  # Example of varying LSTM units for each model
-    dense_units_list = [[128, 64], [256, 128], [128, 64], [256, 128], [128, 64]]  # Varying Dense units for each model
+    lstm_units_list = [
+        [64,64], 
+        #[128, 64],
+        #[32,16],
+        ]  # Example of varying LSTM units for each model
     
-    main(num_models, lstm_units_list, dense_units_list)
+    dense_units_list = [
+        [128, 64], 
+        #[256, 128], 
+        # [128, 32]
+        ]  
+       
+    # Varying Dense units for each model
+    
+    main(lstm_units_list, dense_units_list)
