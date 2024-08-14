@@ -1,0 +1,225 @@
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Lambda, Add, LSTM, Attention, Concatenate, Reshape
+from tensorflow.keras.optimizers import Adam
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import matplotlib.pyplot as plt
+from tensorflow.keras.callbacks import EarlyStopping
+
+tf.config.set_visible_devices([], 'GPU')
+
+
+def build_tsmixer_kolmogorov_arnold_network( input_dim, hidden_units, output_dim):
+
+
+
+    inputs = Input(shape=(input_dim,))
+    reshaped_inputs = Lambda(lambda x: tf.expand_dims(x, axis=2))(inputs)
+
+    univariate_outputs = []
+    for i in range(input_dim):
+        x = Lambda(lambda x: x[:, i:i+1, :])(reshaped_inputs)
+        
+        x = LSTM(hidden_units, return_sequences=True)(x)
+        
+        # Feature mixing
+        x = tf.keras.layers.Dense(hidden_units, activation='relu')(x)
+        x = tf.keras.layers.Dense(input_dim, activation='relu')(x)
+
+        # Time mixing
+        x = tf.keras.layers.Permute((2, 1))(x)
+        x = tf.keras.layers.Dense(hidden_units, activation='relu')(x)
+        x = tf.keras.layers.Dense(output_dim, activation='relu')(x)
+        x = tf.keras.layers.Permute((2, 1))(x)
+        
+        x = LSTM(hidden_units, return_sequences=False)(x)
+        
+        univariate_outputs.append(x)
+    
+
+    # Concatenate outputs to simulate sequence length = input_dim
+    concatenated_outputs = Lambda(lambda x: tf.stack(x, axis=1))(univariate_outputs)
+
+
+    # Self-Attention mechanism
+    attention_output = Attention()([concatenated_outputs, concatenated_outputs])
+    
+    # Flatten the attention output
+    flattened_output = Lambda(lambda x: tf.reshape(x, (-1, input_dim * hidden_units)))(attention_output)
+    
+    # Additional dense layers after attention
+    dense_output = Dense(hidden_units, activation='relu')(flattened_output)
+    
+    # Parallel network for feature interaction
+    interaction_layer = Dense(hidden_units, activation='relu')(inputs)
+    #interaction_layer = Dense(hidden_units*2, activation='relu')(interaction_layer)
+    interaction_layer = Dense(hidden_units, activation='relu')(interaction_layer)
+    
+    # Combine dense_output with interaction layer
+    combined_output = Add()([dense_output, interaction_layer])
+    
+    # Final output layer
+    outputs = Dense(output_dim)(combined_output)
+    
+    # Build and compile the model
+    model = Model(inputs, outputs)
+    model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
+    model.summary()
+    
+    return model
+
+def train_model(model, X_train, y_train, epochs=100, batch_size=32, validation_split=0.2):
+    """
+    Trains the Kolmogorov-Arnold Network model with early stopping.
+    
+    Parameters:
+    - model: keras.Model, the model to be trained
+    - X_train: np.ndarray, training features
+    - y_train: np.ndarray, training target values
+    - epochs: int, number of training epochs
+    - batch_size: int, size of the training batches
+    - validation_split: float, fraction of the training data to be used as validation data
+    
+    Returns:
+    - history: keras.callbacks.History, the history object containing training details
+    """
+    # Early stopping to avoid overfitting
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    
+    history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, 
+                        validation_split=validation_split, callbacks=[early_stopping])
+    return history
+
+def evaluate_model(model, X_test, y_test):
+    """
+    Evaluates the trained model on the test set and computes extensive statistics including correct win/loss logic.
+    
+    Parameters:
+    - model: keras.Model, the trained model
+    - X_test: np.ndarray, testing features
+    - y_test: np.ndarray, testing target values
+    
+    Returns:
+    - metrics: dict, containing MSE, MAE, R2, Total Wins, Total Losses, Win Percentage, and the number of samples
+    """
+    y_pred = model.predict(X_test)
+    
+    # Ensure y_pred has the correct shape
+    if y_pred.shape != y_test.shape:
+        y_pred = np.reshape(y_pred, y_test.shape)
+    
+    print(f"y_pred.shape: {y_pred.shape}, y_test.shape: {y_test.shape}")
+    
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    
+    # Win/Loss calculation
+    wins = 0
+    losses = 0
+    
+    for i in range(len(y_test)):
+        if (y_pred[i] > 0 and y_test[i] > 0) or (y_pred[i] < 0 and y_test[i] < 0):
+            wins += 1
+        elif (y_pred[i] > 0 and y_test[i] < 0) or (y_pred[i] < 0 and y_test[i] > 0):
+            losses += 1
+        elif (y_pred[i] == 0 and y_test[i] == 0):
+            wins += 1
+        elif (y_pred[i] == 0 and y_test[i] != 0):
+            losses += 1
+    
+    total_samples = wins + losses
+    win_percentage = (wins / total_samples) * 100
+    
+    metrics = {
+        'MSE': mse,
+        'MAE': mae,
+        'R2': r2,
+        'Total Wins': wins,
+        'Total Losses': losses,
+        'Win Percentage': win_percentage,
+        'Samples': total_samples
+    }
+    
+    return metrics
+
+def plot_training_history(history):
+    """
+    Plots the training and validation loss and MAE over epochs.
+    
+    Parameters:
+    - history: keras.callbacks.History, the history object returned by model training
+    """
+    plt.figure(figsize=(12, 6))
+    
+    # Plot training & validation loss
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Loss over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss (MSE)')
+    plt.legend()
+    
+    # Plot training & validation MAE
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['mae'], label='Training MAE')
+    plt.plot(history.history['val_mae'], label='Validation MAE')
+    plt.title('MAE over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('MAE')
+    plt.legend()
+    
+    plt.show()
+
+def main():
+    datafile = [ 
+        'data/Lucky13_3070_oos.csv',   
+        'data/Lucky13_3070.csv',  #1
+        'data/ndata_diff_lucky13_3070_oos.csv', 
+        'data/ndata_diff_lucky13_3070.csv', #3
+        'data/ndata_lucky_13_lag_3070_oos.csv', 
+        'data/ndata_lucky13_lag_3070.csv', #5
+        'new_model_Z_lucky13_3070_oos.csv',
+        'new_model_Z_lucky13_3070.csv', #7,
+        'data/Lucky13_3070_oos_3.csv',   
+        'data/Lucky13_3070_3.csv',  #8
+        'data/Lucky13_3070_oos_5.csv',   
+        'data/Lucky13_3070_5.csv',  #10
+    ]
+
+    file_path = datafile[1]
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['outputC'])
+    X = df.drop(columns=['output']).values
+    y = df['output'].values
+    
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    input_dim = X_train.shape[1]
+    
+    # Define model parameters
+    hidden_units = 64  # Adjust this based on your data
+    output_dim = 1  # Single continuous output
+    
+    # Build the enhanced Kolmogorov-Arnold Network model with recurrent layers and self-attention
+    #model = build_enhanced_kolmogorov_arnold_network(input_dim, hidden_units, output_dim
+    model = build_tsmixer_kolmogorov_arnold_network(input_dim, hidden_units, output_dim)
+    # Train the model
+    history = train_model(model, X_train, y_train)
+    
+    # Plot the training history
+    plot_training_history(history)
+    
+    # Evaluate the model
+    metrics = evaluate_model(model, X_test, y_test)
+    print(f"Test MSE: {metrics['MSE']}, Test MAE: {metrics['MAE']}, R2: {metrics['R2']}")
+    print(f"Total Wins: {metrics['Total Wins']}, Total Losses: {metrics['Total Losses']}, Win Percentage: {metrics['Win Percentage']:.2f}%")
+    print(f"Number of Samples: {metrics['Samples']}")
+    
+if __name__ == "__main__":
+    main()

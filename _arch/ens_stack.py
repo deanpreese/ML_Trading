@@ -7,6 +7,8 @@ from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import spearmanr, pearsonr
 import matplotlib.pyplot as plt
 
+from sklearn.linear_model import Lasso
+
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -126,6 +128,10 @@ stacking_regressor = StackingRegressor(estimators=est_list_2
     , verbose=True,
     final_estimator=CatBoostRegressor()
  )
+
+stregr = StackingRegressor(regressors=[svr_lin, lr, ridge], 
+                           meta_regressor=svr_rbf)
+
 
 regressor = stacking_regressor
 #regressor = voting_regressor

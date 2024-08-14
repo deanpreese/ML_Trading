@@ -216,18 +216,27 @@ def eval_model(use_display, test_series, output_chunk, model, past_covariates=No
 
 def main():
     
-    #file_path = 'data/buildSeqInd_Lucky13_F.csv'
-    #data = pd.read_csv(file_path)
-    #list80 = ['SDKC9', 'ATR3', 'STOK1', 'SDKC91', 'ATR21', 'output']
-    
-    file_path = 'data/Ind_F.csv'
-    data = pd.read_csv(file_path)
-    list80 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'RSI14', 'VOSC9', 'SDKC14', 'ADX14', 'outputC']
-    list60 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'outputC']
-    data = data[list80]
+    datafile = [ 
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/ndata_diff_lucky13_3070_oos.csv', 
+                'data/ndata_diff_lucky13_3070.csv', #3
+                'data/ndata_lucky_13_lag_3070_oos.csv', 
+                'data/ndata_lucky13_lag_3070.csv', #5
+                'new_model_Z_lucky13_3070_oos.csv',
+                'new_model_Z_lucky13_3070.csv' #7,
+                'data/Lucky13_3070_oos_3.csv',   
+                'data/Lucky13_3070_3.csv',  #8
+                'data/Lucky13_3070_oos_5.csv',   
+                'data/Lucky13_3070_5.csv',  #10
+                
+        ]
+
+    data = pd.read_csv(datafile[1])
         
-    feature_columns = list(data.columns[:-1])
-    
+    X = data
+    X = X.drop(columns=['output', 'outputC'])
+    feature_columns = list(X.columns)
     target_column = 'outputC'  # Replace with your actual target column name
     base_input_chunk_length = 5
     base_output_chunk_length = 1
