@@ -50,7 +50,7 @@ class CompositeStrategy (CommonStrategy):
             
             agg_weighted_predict += predict * perf
             agg_predict += predict
-            predicts.append(predict)
+            predicts.append(float(round(predict[0],6)))
             
         return agg_predict, agg_weighted_predict, predicts
     
