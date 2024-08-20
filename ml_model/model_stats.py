@@ -38,29 +38,39 @@ def gen_class_stats( y_test, predicted_values):
     return perf, total, tn, fp, fn, tp
 
 
+def gen_reg_stats_x( y_test, predicted_values):
+
+    y_pred = predicted_values
+
+    wins = 0
+    losses = 0
+    total = 0
+
+    for i in range(len(y_test)):
+        if (y_pred[i] > 0 and y_test[i] > 0) or (y_pred[i] < 0 and y_test[i] < 0):
+            wins += 1
+        elif (y_pred[i] > 0 and y_test[i] < 0) or (y_pred[i] < 0 and y_test[i] > 0):
+            losses += 1
+        elif (y_pred[i] == 0 and y_test[i] == 0):
+            wins += 1
+        elif (y_pred[i] == 0 and y_test[i] != 0):
+            losses += 1
+        elif (y_pred[i] != 0 and y_test[i] == 0):
+            losses += 1
+        else:
+            print(f"{y_test[i]}   {y_pred[i]} ")            
+    
+    total = wins + losses
+    mse, rmse, mae =  calc_mse_rmse_mae( y_test, predicted_values)
+    r2 = r2_score(y_test, predicted_values)
+    perf = round((wins)/total,4)
+    return wins, perf, total, mse, rmse, mae, r2
+
+
 def gen_reg_stats( y_test, predicted_values):
     
-    correct1 = 0 
-    total = 0
-    for i in range(len(y_test)):
-        target_output = y_test[i] if i < len(y_test) else 0
-        predicted_output = predicted_values[i]  # Predicted output for the i-th sample
-
-        if ( target_output > 0 and predicted_output > 0):
-            correct1= correct1 + 1 
-
-        if ( target_output < 0 and predicted_output < 0):
-            correct1= correct1 + 1 
-        
-        if ( target_output == 0 and predicted_output == 0):
-            correct1= correct1 + 1     
-
-        total = total + 1    
-
-    mse, rmse, mae =  calc_mse_rmse_mae( y_test, predicted_values)
-    
-    per1 = round((correct1)/total,4)
-    return per1, total, mse, rmse, mae
+    correct1, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x( y_test, predicted_values)
+    return perf, total, mse, rmse, mae
 
 
 def calc_ensemble_results(all_predictions, estimator_run_ids):

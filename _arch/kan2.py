@@ -27,7 +27,7 @@ def load_and_prepare_data(file_path):
     return X_train, X_test, y_train, y_test, input_dim
 
 
-def build_enhanced_kolmogorov_arnold_network(input_dim, hidden_units, output_dim):
+def build_enhanced_kan_mixer(input_dim, hidden_units, output_dim):
     inputs = Input(shape=(input_dim,))
     
     # Reshape inputs to simulate a sequence for attention
@@ -197,13 +197,10 @@ def main():
     X_train, X_test, y_train, y_test, input_dim = load_and_prepare_data(file_path)
     
     # Define model parameters
-    hidden_units = 64  # Adjust this based on your data
+    hidden_units = 128  # Adjust this based on your data
     output_dim = 1  # Single continuous output
     
-    # Build the enhanced Kolmogorov-Arnold Network model with recurrent layers and self-attention
-    model = build_enhanced_kolmogorov_arnold_network(input_dim, hidden_units, output_dim)
-    
-    # Train the model
+    model = build_enhanced_kan_mixer(input_dim, hidden_units, output_dim)
     history = train_model(model, X_train, y_train)
     
     # Plot the training history
