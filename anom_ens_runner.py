@@ -14,10 +14,7 @@ from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
 from ml_model.model_stats import gen_reg_stats_x 
-from models.anom_ens import Anomaly_Ensemble 
-
-
-from models.anom_ens2 import Anomaly_Ensemble 
+from models.ensemble_models import Anomaly_Ensemble 
 
 tf.config.set_visible_devices([], 'GPU')
 
@@ -38,7 +35,7 @@ def main():
         'data/Lucky13_3070_5.csv',  #10
     ]
 
-    filepath = datafile[0]
+    filepath = datafile[1]
     ae = Anomaly_Ensemble(epochs=75, batch_size=32)
     
     train = False
@@ -69,6 +66,7 @@ def main():
         ae.X_test = X.values
         ae.y_test = y
         
+        y_pred = []
         
         yn = False
         count = 0
@@ -83,7 +81,6 @@ def main():
                 print(yn)
                 
         print(f"Count {count}  {ycount} ")    
-    
     
     
 if __name__ == "__main__":

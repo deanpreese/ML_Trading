@@ -2,12 +2,21 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import layers, models
 from sklearn.ensemble import IsolationForest
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+import joblib 
+
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv1D, Dense, Flatten, Dropout, MaxPooling1D, LSTM, Attention, Bidirectional, MultiHeadAttention
+from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-import joblib  # For saving scaler and IsolationForest
+from tensorflow.keras.regularizers import l2
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from ml_model.model_stats import gen_reg_stats_x 
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
 
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
@@ -52,8 +61,6 @@ class TSMixer(tf.keras.Model):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
-
-
 
 
 class TemporalFusionTransformer(tf.keras.Model):
@@ -138,6 +145,61 @@ class Anomaly_Ensemble:
         self.y_test = None
         self.ens_patience = 5
         print(f"Anomaly Ensemble Init")
+
+
+
+    def build_vae(self, input_dim):
+        
+        inputs = layers.Input(shape=(input_dim,))
+        h = layers.Dense(64, activation='relu')(inputs)
+        h = layers.Dense(64, activation='relu')(h)
+        z_mean = layers.Dense(16)(h)
+        z_log_var = layers.Dense(16)(h)
+
+        z = layers.Lambda(sampling)([z_mean, z_log_var])
+
+        decoder_h = layers.Dense(32, activation='relu')
+        decoder_mean = layers.Dense(input_dim, activation='sigmoid')
+        h_decoded = decoder_h(z)
+        outputs = decoder_mean(h_decoded)
+        vae = models.Model(inputs, outputs)
+        vae.compile(optimizer='adam', loss='mse')
+        return vae
+
+    def build_isolation_forest(self):
+        return IsolationForest(contamination=0.06, n_estimators=100, random_state=42)
+
+    def build_lstm_model(self, input_dim):
+        
+        inputs = layers.Input(shape=(None, input_dim))
+        x = layers.LSTM(128, return_sequences=True)(inputs)
+        x = layers.LSTM(64, return_sequences=True)(x)
+        x = layers.LSTM(16, return_sequences=True)(x)
+        x = layers.LSTM(64, return_sequences=True)(x)
+        x = layers.LSTM(32)(x)
+        x = layers.Dense(1)(x)
+
+        model = models.Model(inputs, x)
+        model.compile(optimizer='adam', loss='mse')
+        return model
+
+
+    def train_vae(self):
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=self.ens_patience, restore_best_weights=True)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_vae_model , save_best_only=True)
+        
+        self.vae_model.fit(self.X_train, self.X_train, epochs=self.epochs, batch_size=self.batch_size, validation_split=0.2, 
+                callbacks=[model_checkpoint, early_stopping])
+
+    def train_lstm(self):
+        
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=self.ens_patience, restore_best_weights=True)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_lstm_model,  save_best_only=True)
+        
+        X_train_lstm = np.expand_dims(self.X_train, axis=1)
+        
+        self.lstm_model.fit(X_train_lstm, self.y_train, epochs=self.epochs, batch_size=self.batch_size, validation_split=0.2, 
+                            callbacks=[model_checkpoint, early_stopping])
 
     def build_isolation_forest(self):
         return IsolationForest(contamination=0.06, n_estimators=100, random_state=42)
@@ -269,7 +331,6 @@ class Anomaly_Ensemble:
         #TFT Mean  1.705082390692624
         #TSM Mean  1.6680918936122138
         #Test Threshold 1.5248480003779112
-        
         #threshold = 1.5248480003779112
         threshold = 1.8
         

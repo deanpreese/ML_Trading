@@ -1,33 +1,51 @@
+import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Add, LSTM, Attention, Average, Reshape, Concatenate
 from tensorflow.keras.optimizers import Adam
-
 from keras.layers import LeakyReLU, Dropout, MultiHeadAttention
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.metrics import MeanSquaredError, BinaryCrossentropy, BinaryAccuracy, AUC  
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
-
-
+from sklearn.model_selection import train_test_split
+from ml_model.model_stats import gen_reg_stats_x 
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 
+tf.config.set_visible_devices([], 'GPU')
+
 class KANMixerModel:
-    def __init__(self, input_dim, hidden_units=32, output_dim=1, epochs=100, batch_size=32):
-        self.input_dim = input_dim
-        self.hidden_units = hidden_units
-        self.output_dim = output_dim
+    def __init__(self, epochs=50, batch_size=32, validation_split=0.2):
+        
+        np.random.seed(42)
+        tf.random.set_seed(42)
+        
         self.epochs = epochs
         self.batch_size = batch_size
+        self.validation_split = validation_split
+        
         self.model = None
-        self.build_model()
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
+        
+        self.checkpoint_dir = 'checkpoints/'
+        self.saved_model_path = os.path.join(self.checkpoint_dir, 'kan_ts_model.keras')
+        
+        self.input_dim = 0
+        self.hidden_units = 32
+        self.output_dim = 1
+        self.epochs = epochs
+        self.batch_size = batch_size
 
-    def build_model(self):
+
+    def build_model(self, input_shape):
 
         l2_reg = l2(0.01)
-        inputs = Input(shape=(self.input_dim,))
+        inputs = Input(shape=input_shape)
         reshaped_inputs = Reshape((self.input_dim, 1))(inputs)
 
         univariate_outputs = []
@@ -71,11 +89,26 @@ class KANMixerModel:
         return self.model
         
 
+    def train_model(self, file_path):
+    
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values
 
-    def train(self, X_train, y_train, epochs, model_save_path, batch_size=32, validation_split=0.2 ):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.validation_split, random_state=42)
+    
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
+    
+        self.input_dim = X_train.shape[1]
+        input_shape=(X_train.shape[1], 1)
+        self.build_model(input_shape)
         
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(model_save_path, save_best_only=True, monitor='val_loss')
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_model_path, save_best_only=True, monitor='val_loss')
         
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss",
@@ -88,62 +121,27 @@ class KANMixerModel:
             min_lr=0,
         )
         
-        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, 
-            validation_split=validation_split, 
-            callbacks=[
-                early_stopping, 
-                #reduce_lr, 
-                model_checkpoint
-                ]
+        history = self.model.fit(X_train, y_train, epochs=self.epochs, batch_size=self.batch_size, 
+            validation_split=self.validation_split,  
+            callbacks=[early_stopping, 
+                       #reduce_lr, 
+                        model_checkpoint
+                        ]
             )
         
-        
-        return history
-
-    def evaluate(self, X_test, y_test):
         y_pred = self.model.predict(X_test)
-        
-        mse = mean_squared_error(y_test, y_pred)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-        
-        # Win/Loss calculation
-        wins = 0
-        losses = 0
-        
-        # Win/Loss calculation
-        #wins = np.sum((y_pred > 0) & (y_test > 0)) + np.sum((y_pred < 0) & (y_test < 0))
-        #losses = np.sum((y_pred > 0) & (y_test < 0)) + np.sum((y_pred < 0) & (y_test > 0))
-        #total_samples = wins + losses
-        #win_percentage = (wins / total_samples) * 100 if total_samples > 0 else 0
-        
-        
-        for i in range(len(y_test)):
-            if (y_pred[i] > 0 and y_test[i] > 0) or (y_pred[i] < 0 and y_test[i] < 0):
-                wins += 1
-            elif (y_pred[i] > 0 and y_test[i] < 0) or (y_pred[i] < 0 and y_test[i] > 0):
-                losses += 1
-            elif (y_pred[i] == 0 and y_test[i] == 0):
-                wins += 1
-            elif (y_pred[i] == 0 and y_test[i] != 0):
-                losses += 1
-        
-        total_samples = wins + losses
-        win_percentage = (wins / total_samples) * 100
-        
-        metrics = {
-            'MSE': mse,
-            'MAE': mae,
-            'R2': r2,
-            'Total Wins': wins,
-            'Total Losses': losses,
-            'Win Percentage': win_percentage,
-            'Samples': total_samples
-        }
-        
-        return metrics
+        return history, y_pred
+
+
+    def evaluate_model(self, y_pred):
+        correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
+        print(f"Test MSE: {mse}, Test MAE: {mae}, R2: {r2}")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.2f}%")
+        print(f"Number of Samples: {total}")
+    
 
     def plot_training_history(self, history):
+        
         plt.figure(figsize=(12, 6))
         plt.subplot(1, 2, 1)
         plt.plot(history.history['loss'], label='Training Loss')
@@ -160,3 +158,21 @@ class KANMixerModel:
         plt.ylabel('MAE')
         plt.legend()
         plt.show()
+
+
+    def load_saved_model(self):
+        self.model = tf.keras.models.load_model(self.saved_model_path)
+
+
+    def run_batch_test(self, file_path):
+    
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values 
+               
+        self.X_test = X
+        self.y_test = y
+        y_pred = self.model.predict(self.X_test)
+        
+        self.evaluate_model(y_pred)
