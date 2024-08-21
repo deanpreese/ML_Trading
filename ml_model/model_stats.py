@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, root_mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.metrics import confusion_matrix
 
 def calc_mse_rmse_mae( y_test, predicted_values):
