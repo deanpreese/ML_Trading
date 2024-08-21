@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import joblib 
 
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Dense, Flatten, Dropout, MaxPooling1D, LSTM, Attention, Bidirectional, MultiHeadAttention
+from tensorflow.keras.layers import Input, Conv1D, Dense, Flatten, Dropout, MaxPooling1D, LSTM, Attention, Bidirectional, MultiHeadAttention, Lambda
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -36,9 +36,9 @@ class TSMixer(tf.keras.Model):
 
         self.layers_list = []
         for _ in range(num_layers):
-            self.layers_list.append(layers.Dense(hidden_units, activation='relu'))
-            self.layers_list.append(layers.Dropout(dropout_rate))
-        self.output_layer = layers.Dense(output_dim)
+            self.layers_list.append(Dense(hidden_units, activation='relu'))
+            self.layers_list.append(Dropout(dropout_rate))
+        self.output_layer = Dense(output_dim)
 
     def call(self, inputs):
         x = inputs
@@ -72,12 +72,12 @@ class TemporalFusionTransformer(tf.keras.Model):
         self.num_heads = num_heads
         self.dropout_rate = dropout_rate
 
-        self.embedding = layers.Dense(hidden_units)
-        self.dropout = layers.Dropout(dropout_rate)
-        self.lstm = layers.LSTM(hidden_units, return_sequences=True)
-        self.multi_head_attention = layers.MultiHeadAttention(num_heads=num_heads, key_dim=hidden_units)
-        self.dense1 = layers.Dense(hidden_units, activation='relu')
-        self.dense2 = layers.Dense(output_dim)
+        self.embedding = Dense(hidden_units)
+        self.dropout = Dropout(dropout_rate)
+        self.lstm = LSTM(hidden_units, return_sequences=True)
+        self.multi_head_attention = MultiHeadAttention(num_heads=num_heads, key_dim=hidden_units)
+        self.dense1 = Dense(hidden_units, activation='relu')
+        self.dense2 = Dense(output_dim)
 
     def call(self, inputs):
         x = self.embedding(inputs)
@@ -135,7 +135,7 @@ class Anomaly_Ensemble:
         self.saved_lstm_model = os.path.join(self.checkpoint_dir, 'lstm_model.keras')
         self.saved_tft_model = os.path.join(self.checkpoint_dir, 'tft_model.keras')
         self.saved_ts_mixer_model = os.path.join(self.checkpoint_dir, 'ts_mixer_model.keras')
-        self.saved_scaler = os.path.join(self.checkpoint_dir, 'scaler.pkl') 
+        self.saved_scaler = os.path.join(self.checkpoint_dir, 'anom_scaler.pkl') 
         self.saved_iso_forest_model = os.path.join(self.checkpoint_dir, 'iso_forest.pkl') 
         self.saved_ref_model = os.path.join(self.checkpoint_dir, 'xgb_model.json')  # Path to save XGB model
 
@@ -150,19 +150,19 @@ class Anomaly_Ensemble:
 
     def build_vae(self, input_dim):
         
-        inputs = layers.Input(shape=(input_dim,))
-        h = layers.Dense(64, activation='relu')(inputs)
-        h = layers.Dense(64, activation='relu')(h)
-        z_mean = layers.Dense(16)(h)
-        z_log_var = layers.Dense(16)(h)
+        inputs = Input(shape=(input_dim,))
+        h = Dense(64, activation='relu')(inputs)
+        h = Dense(64, activation='relu')(h)
+        z_mean = Dense(16)(h)
+        z_log_var = Dense(16)(h)
 
-        z = layers.Lambda(sampling)([z_mean, z_log_var])
+        z = Lambda(sampling)([z_mean, z_log_var])
 
-        decoder_h = layers.Dense(32, activation='relu')
-        decoder_mean = layers.Dense(input_dim, activation='sigmoid')
+        decoder_h = Dense(32, activation='relu')
+        decoder_mean = Dense(input_dim, activation='sigmoid')
         h_decoded = decoder_h(z)
         outputs = decoder_mean(h_decoded)
-        vae = models.Model(inputs, outputs)
+        vae = Model(inputs, outputs)
         vae.compile(optimizer='adam', loss='mse')
         return vae
 
@@ -171,15 +171,15 @@ class Anomaly_Ensemble:
 
     def build_lstm_model(self, input_dim):
         
-        inputs = layers.Input(shape=(None, input_dim))
-        x = layers.LSTM(128, return_sequences=True)(inputs)
-        x = layers.LSTM(64, return_sequences=True)(x)
-        x = layers.LSTM(16, return_sequences=True)(x)
-        x = layers.LSTM(64, return_sequences=True)(x)
-        x = layers.LSTM(32)(x)
-        x = layers.Dense(1)(x)
+        inputs = Input(shape=(None, input_dim))
+        x = LSTM(128, return_sequences=True)(inputs)
+        x = LSTM(64, return_sequences=True)(x)
+        x = LSTM(16, return_sequences=True)(x)
+        x = LSTM(64, return_sequences=True)(x)
+        x = LSTM(32)(x)
+        x = Dense(1)(x)
 
-        model = models.Model(inputs, x)
+        model = Model(inputs, x)
         model.compile(optimizer='adam', loss='mse')
         return model
 
@@ -291,7 +291,7 @@ class Anomaly_Ensemble:
 
     def train_ensemble(self):
         self.train_isolation_forest()
-        self.train_lstm()
+        #self.train_lstm()
         self.train_tft()
         self.train_ts_mixer()
         print(f"Anomaly Ensemble Train")
