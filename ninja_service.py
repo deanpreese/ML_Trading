@@ -4,13 +4,11 @@ from io import BytesIO
 import json
 import numpy as np
 
-
-
 from strategy.model_loader import ModelLoader
 from models.ts_mixer_model import TSMixerModel
 from models.cnn_lstm_model import CNN_LSTM
 from models.kan_mixer_model import KANMixerModel
-
+from models.anom_ensemble_model import Anomaly_Ensemble 
 
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
@@ -31,6 +29,7 @@ models_three = []
 ts_mixer = TSMixerModel(epochs=100, batch_size=32)
 cnn_model = CNN_LSTM()
 kan_mixer = KANMixerModel(epochs=100, batch_size=32)
+anom_ens = Anomaly_Ensemble(epochs=75, batch_size=32)
 
 # ----------------------------------------
 def LoadModels(group_id, experiment_id, num_models):
@@ -68,10 +67,14 @@ def get_model_predictions(data_df, models):
     return out_data
 
 
+def get_anomaly_score(X):
+    return anom_ens.detect_anomalies_single(X)
+
 def load_addtional_models():
     ts_mixer.load_saved_model()
     cnn_model.load_saved_model()
     kan_mixer.load_saved_model()
+    anom_ens.load_saved_ensemble()
 
 # ----------------------------------------
 def init_app():
@@ -130,12 +133,22 @@ def init_app():
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        x_val = data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
         
-        x_val = x_val.reshape((1, 14, 1)) 
+        X = data_df.values
+        
+        x_val = X.reshape((1, 14, 1)) 
         y_val = kan_mixer.model.predict(x_val)
-        out_data = y_val[0][0]
         
+        predicts = [y_val[0][0]]
+        
+        out_data = {
+            "agg_prediction" : round(y_val[0][0],6),
+            "agg_weighted_prediction" : round(y_val[0][0],6),
+            "all_predicts": predicts
+        }
+        
+        out_data = format_json(out_data)
         jd = json.dumps(out_data, indent=4)
         print(jd)
         return jd
@@ -147,12 +160,21 @@ def init_app():
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        x_val = data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
         
-        x_val = x_val.reshape((1, 14, 1)) 
+        X = data_df.values
+        
+        x_val = X.reshape((1, 14, 1)) 
         y_val = cnn_model.model.predict(x_val)
-        out_data = y_val[0][0]
+        predicts = [y_val[0][0]]
         
+        out_data = {
+            "agg_prediction" : round(y_val[0][0],6),
+            "agg_weighted_prediction" : round(y_val[0][0],6),
+            "all_predicts": predicts
+        }
+        
+        out_data = format_json(out_data)
         jd = json.dumps(out_data, indent=4)
         print(jd)
         return jd
@@ -165,14 +187,29 @@ def init_app():
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
         data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        x_val = data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        X = data_df    
         
-        X_scaled = ts_mixer.saved_scaler.transform([x_val])
-        x_val = x_val.reshape((1, 14, 1)) 
+        score = get_anomaly_score(X)
+        
+        print(" ")
+        print(score)
+        print(" ")
+        
+        X_scaled = ts_mixer.saved_scaler.transform(X)
         X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
         y_val = ts_mixer.model.predict(X_scaled)
-        out_data = y_val[0][0]
+
+        predicts = [y_val[0][0]]
         
+        out_data = {
+            "agg_prediction" : round(y_val[0][0],6),
+            "agg_weighted_prediction" : round(y_val[0][0],6),
+            "all_predicts": predicts
+        }
+        
+        out_data = format_json(out_data)
+        jd = json.dumps(out_data, indent=4)        
         jd = json.dumps(out_data, indent=4)
         print(jd)
         return jd

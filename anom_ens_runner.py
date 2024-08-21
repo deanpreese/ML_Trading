@@ -14,7 +14,7 @@ from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
 from ml_model.model_stats import gen_reg_stats_x 
-from models.ensemble_models import Anomaly_Ensemble 
+from models.anom_ensemble_model import Anomaly_Ensemble 
 
 tf.config.set_visible_devices([], 'GPU')
 
@@ -65,8 +65,6 @@ def main():
                 
         ae.X_test = X.values
         ae.y_test = y
-        
-        y_pred = []
         
         yn = False
         count = 0
