@@ -35,7 +35,6 @@ def main():
         'data/Lucky13_3070_5.csv',  #10
     ]
 
-    filepath = datafile[1]
     ae = Anomaly_Ensemble(epochs=75, batch_size=32)
     
     train = False
@@ -44,6 +43,7 @@ def main():
     
     if train:
         #Batch Training 
+        filepath = datafile[1]
         ae.training_setup(filepath)
         ae.build_ensemble_models()
         ae.train_ensemble()
@@ -52,11 +52,13 @@ def main():
 
     if test:
         # Batch Testing
+        filepath = datafile[0]
         ae.test_setup(filepath)
         ae.load_saved_ensemble()
         ae.anomaly_baseline()    
 
     if single_item:
+        filepath = datafile[0]
         ae.load_saved_ensemble()
         data = pd.read_csv(filepath)                   
         X = data
