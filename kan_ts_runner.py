@@ -23,37 +23,49 @@ datafile = [
     'data/Lucky13_3070_5.csv',  #10
 ]
 
-file_path = datafile[0]
+
 
 model = KANMixerModel(epochs=100, batch_size=32)
-#history_out, y_pred = model.train_model(file_path)
-#model.evaluate_model(y_pred)
+
+train = False
+test = False
+single_item = True
+
+
+if train:
+    file_path = datafile[1]
+    history_out, y_pred = model.train_model(file_path)
+    model.evaluate_model(y_pred)
     
-model.load_saved_model()
-#model.run_batch_test(file_path)
+if test:
+    file_path = datafile[0]    
+    model.load_saved_model("train")
+    model.run_batch_test(file_path)
     
-    
-df = pd.read_csv(file_path)
-df = df.drop(columns=['outputC'])
-X = df.drop(columns=['output']).values
-y = df['output'].values 
+if single_item: 
+    file_path = datafile[0]   
+    model.load_saved_model("run")        
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['outputC'])
+    X = df.drop(columns=['output']).values
+    y = df['output'].values 
 
-model.X_test = X
-model.y_test = y
+    model.X_test = X
+    model.y_test = y
 
-yn = False
-count = 0
-ycount = 0
+    yn = False
+    count = 0
+    ycount = 0
 
-y_pred = []
+    y_pred = []
 
-for i in range(len(y)):
-    x_val = X[i]
-    x_val = x_val.reshape((1, 14, 1)) 
-    y_val = model.model.predict(x_val)
-    
-    y_pred.append(y_val[0][0])
-    print(y_val[0][0])
+    for i in range(len(y)):
+        x_val = X[i]
+        x_val = x_val.reshape((1, 14, 1)) 
+        y_val = model.model.predict(x_val)
+        
+        y_pred.append(y_val[0][0])
+        print(y_val[0][0])
 
-model.evaluate_model(y_pred)
+    model.evaluate_model(y_pred)
     

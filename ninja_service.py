@@ -9,7 +9,6 @@ from strategy.model_loader import ModelLoader
 from models.ts_mixer_model import TSMixerModel
 from models.cnn_lstm_model import CNN_LSTM
 from models.kan_mixer_model import KANMixerModel
-from models.anom_ensemble_model import Anomaly_Ensemble 
 
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
@@ -30,10 +29,7 @@ models_three = []
 ts_mixer = TSMixerModel(epochs=100, batch_size=32)
 cnn_model = CNN_LSTM()
 kan_mixer = KANMixerModel(epochs=100, batch_size=32)
-anom_ens = Anomaly_Ensemble(epochs=75, batch_size=32)
 
-last_anom_timestamp = None
-last_anom_value = False
 
 # ----------------------------------------
 def LoadModels(group_id, experiment_id, num_models):
@@ -71,14 +67,10 @@ def get_model_predictions(data_df, models):
     return out_data
 
 
-def get_anomaly_score(X):
-    return anom_ens.detect_anomalies_single(X.iloc[0])
-
 def load_other_models():
-    ts_mixer.load_saved_model()
-    cnn_model.load_saved_model()
-    kan_mixer.load_saved_model()
-    anom_ens.load_saved_ensemble()
+    ts_mixer.load_saved_model("run")
+    cnn_model.load_saved_model("run")
+    kan_mixer.load_saved_model("run")
 
 # ----------------------------------------
 def init_app():

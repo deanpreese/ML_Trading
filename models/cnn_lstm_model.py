@@ -40,8 +40,13 @@ class CNN_LSTM:
         self.y_train = None
         self.y_test = None
         
+        
         self.checkpoint_dir = 'checkpoints/'
-        self.saved_cnn_lstm = os.path.join(self.checkpoint_dir, 'cnn_lstm_model.keras')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'cnn_lstm_model.keras')
+        
+        self.trained_dir = 'trained_models/'
+        self.trained_model = os.path.join(self.trained_dir, 'cnn_lstm_model.keras')
+        
         
     def build_model_o(self, input_shape):
         l2_reg = l2(0.01)
@@ -119,10 +124,10 @@ class CNN_LSTM:
         self.y_test = y_test
     
         input_shape=(X_train.shape[1], 1)
-        self.build_model(input_shape)
+        self.build_model_o(input_shape)
     
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_cnn_lstm, save_best_only=True)
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.checkpoint_model, save_best_only=True)
         history_out = self.model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=32, callbacks=[early_stopping,model_checkpoint])
         y_pred = self.model.predict(X_test)
 
@@ -136,8 +141,14 @@ class CNN_LSTM:
         print(f"Number of Samples: {total}")
     
     
-    def load_saved_model(self):
-        self.model = tf.keras.models.load_model(self.saved_cnn_lstm)
+    def load_saved_model(self, mode):
+        
+        if mode == "run":
+           self.model = tf.keras.models.load_model(self.trained_model)
+        
+        if mode == "train":
+           self.model = tf.keras.models.load_model(self.checkpoint_model)
+           
 
     def run_batch_test(self, file_path):
     
@@ -146,7 +157,7 @@ class CNN_LSTM:
         X = df.drop(columns=['output']).values
         y = df['output'].values 
                
-        self.X_test = X.values
+        self.X_test = X
         self.y_test = y
         y_pred = self.model.predict(self.X_test)
         

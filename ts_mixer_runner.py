@@ -35,12 +35,12 @@ if train:
 
 if test:
     file_path = datafile[0]
-    model.load_saved_model()
+    model.load_saved_model("train")
     model.run_batch_test(file_path)
 
 if single_item:
-    model.load_saved_model()
     file_path = datafile[0]
+    model.load_saved_model("train")
     df = pd.read_csv(file_path)
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output'])

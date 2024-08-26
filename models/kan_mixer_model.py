@@ -32,8 +32,12 @@ class KANMixerModel:
         self.y_train = None
         self.y_test = None
         
+        
         self.checkpoint_dir = 'checkpoints/'
-        self.saved_model_path = os.path.join(self.checkpoint_dir, 'kan_ts_model.keras')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'kan_ts_model.keras')
+        
+        self.trained_dir = 'trained_models/'
+        self.trained_model = os.path.join(self.trained_dir, 'kan_ts_model.keras')
         
         self.input_dim = 0
         self.hidden_units = 32
@@ -108,7 +112,7 @@ class KANMixerModel:
         self.build_model(input_shape)
         
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_model_path, save_best_only=True, monitor='val_loss')
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.checkpoint_model, save_best_only=True, monitor='val_loss')
         
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss",
@@ -160,8 +164,15 @@ class KANMixerModel:
         plt.show()
 
 
-    def load_saved_model(self):
-        self.model = tf.keras.models.load_model(self.saved_model_path)
+    def load_saved_model(self, mode):
+
+        if mode == "run":
+           self.model = tf.keras.models.load_model(self.trained_model)
+        
+        if mode == "train":
+           self.model = tf.keras.models.load_model(self.checkpoint_model)
+
+
 
 
     def run_batch_test(self, file_path):

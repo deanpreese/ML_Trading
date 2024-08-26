@@ -39,10 +39,16 @@ class TSMixerModel:
         
         self.hidden_dim = 64
         
+        
         self.checkpoint_dir = 'checkpoints/'
-        self.saved_model_path = os.path.join(self.checkpoint_dir, 'ts_mixer_model.keras')
-        self.saved_scaler_path = os.path.join(self.checkpoint_dir, 'ts_mixer_scaler.pkl')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'ts_mixer_model.keras')
+        self.checkpoint_scaler = os.path.join(self.checkpoint_dir, 'ts_mixer_scaler.pkl')
         self.saved_scaler = None
+
+        self.trained_dir = 'trained_models/'
+        self.trained_model = os.path.join(self.trained_dir, 'ts_mixer_model.keras')
+        self.trained_scaler = os.path.join(self.trained_dir, 'ts_mixer_scaler.pkl')
+
 
 
     def build_model(self, input_shape):
@@ -85,7 +91,7 @@ class TSMixerModel:
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         self.saved_scaler = scaler
-        joblib.dump(scaler, self.saved_scaler_path)
+        joblib.dump(scaler, self.checkpoint_scaler )
                 
         X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
         
@@ -103,7 +109,7 @@ class TSMixerModel:
         self.build_model("XYZ")
         
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.saved_model_path, save_best_only=True, monitor='val_loss', mode='min')
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.checkpoint_model, save_best_only=True, monitor='val_loss', mode='min')
         
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss",
@@ -155,9 +161,16 @@ class TSMixerModel:
         plt.show()
 
 
-    def load_saved_model(self):
-        self.model = tf.keras.models.load_model(self.saved_model_path)
-        self.saved_scaler =  joblib.load( self.saved_scaler_path )
+    def load_saved_model(self, mode):
+
+        if mode == "run":
+            self.model = tf.keras.models.load_model(self.trained_model)
+            self.saved_scaler =  joblib.load( self.trained_scaler )
+        
+        if mode == "train":
+           self.model = tf.keras.models.load_model(self.checkpoint_model)
+           self.saved_scaler = joblib.load( self.checkpoint_scaler )
+        
 
 
     def run_batch_test(self, file_path):
