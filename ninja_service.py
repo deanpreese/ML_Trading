@@ -3,6 +3,7 @@ import pandas as pd
 from io import BytesIO
 import json
 import numpy as np
+from datetime import datetime, timedelta
 
 from strategy.model_loader import ModelLoader
 from models.ts_mixer_model import TSMixerModel
@@ -30,6 +31,9 @@ ts_mixer = TSMixerModel(epochs=100, batch_size=32)
 cnn_model = CNN_LSTM()
 kan_mixer = KANMixerModel(epochs=100, batch_size=32)
 anom_ens = Anomaly_Ensemble(epochs=75, batch_size=32)
+
+last_anom_timestamp = None
+last_anom_value = False
 
 # ----------------------------------------
 def LoadModels(group_id, experiment_id, num_models):
@@ -68,9 +72,9 @@ def get_model_predictions(data_df, models):
 
 
 def get_anomaly_score(X):
-    return anom_ens.detect_anomalies_single(X)
+    return anom_ens.detect_anomalies_single(X.iloc[0])
 
-def load_addtional_models():
+def load_other_models():
     ts_mixer.load_saved_model()
     cnn_model.load_saved_model()
     kan_mixer.load_saved_model()
@@ -81,10 +85,10 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-       models_one = LoadModels(0, ["251"], 1)
-       models_two = LoadModels(0, ["253"], 1)
-       models_three = LoadModels(0, ["257"], 1)
-       load_addtional_models()
+        models_one = LoadModels(0, ["251"], 1)
+        models_two = LoadModels(0, ["253"], 1)
+        models_three = LoadModels(0, ["257"], 1)
+        load_other_models()
 
 
     # ----------------------------------------
@@ -190,21 +194,22 @@ def init_app():
         data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
         X = data_df    
         
-        score = get_anomaly_score(X)
+        #aX = data_df
+        #anom_score = get_anomaly_score(aX)
+        anom_score = False
         
-        print(" ")
-        print(score)
-        print(" ")
-        
-        X_scaled = ts_mixer.saved_scaler.transform(X)
-        X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
-        y_val = ts_mixer.model.predict(X_scaled)
-
-        predicts = [y_val[0][0]]
-        
+        if anom_score == False:
+            X_scaled = ts_mixer.saved_scaler.transform(X)
+            X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
+            y_val = ts_mixer.model.predict(X_scaled)
+            y_raw = y_val[0][0]
+        else:
+            y_raw = 0.0            
+            
+        predicts = [y_raw]
         out_data = {
-            "agg_prediction" : round(y_val[0][0],6),
-            "agg_weighted_prediction" : round(y_val[0][0],6),
+            "agg_prediction" : round(y_raw,6),
+            "agg_weighted_prediction" : round(y_raw,6),
             "all_predicts": predicts
         }
         

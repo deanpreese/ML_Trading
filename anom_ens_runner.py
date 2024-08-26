@@ -37,9 +37,9 @@ def main():
 
     ae = Anomaly_Ensemble(epochs=75, batch_size=32)
     
-    train = False
+    train = True
     test = False
-    single_item = True
+    single_item = False
     
     if train:
         #Batch Training 

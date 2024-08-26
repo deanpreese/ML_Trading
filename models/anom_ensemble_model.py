@@ -119,6 +119,9 @@ def sampling(args):
 class Anomaly_Ensemble:
     def __init__(self, epochs=50, batch_size=32):
         
+        np.random.seed(42)
+        tf.random.set_seed(42)
+        
         self.input_dim = None
         self.epochs = epochs
         self.batch_size = batch_size
@@ -132,12 +135,12 @@ class Anomaly_Ensemble:
 
         self.checkpoint_dir = 'checkpoints/'
         
-        self.saved_lstm_model = os.path.join(self.checkpoint_dir, 'lstm_model.keras')
-        self.saved_tft_model = os.path.join(self.checkpoint_dir, 'tft_model.keras')
-        self.saved_ts_mixer_model = os.path.join(self.checkpoint_dir, 'ts_mixer_model.keras')
+        self.saved_lstm_model = os.path.join(self.checkpoint_dir, 'anom_lstm_model.keras')
+        self.saved_tft_model = os.path.join(self.checkpoint_dir, 'anom_tft_model.keras')
+        self.saved_ts_mixer_model = os.path.join(self.checkpoint_dir, 'anom_ts_mixer_model.keras')
         self.saved_scaler = os.path.join(self.checkpoint_dir, 'anom_scaler.pkl') 
-        self.saved_iso_forest_model = os.path.join(self.checkpoint_dir, 'iso_forest.pkl') 
-        self.saved_ref_model = os.path.join(self.checkpoint_dir, 'xgb_model.json')  # Path to save XGB model
+        self.saved_iso_forest_model = os.path.join(self.checkpoint_dir, 'anom_iso_forest.pkl') 
+        self.saved_ref_model = os.path.join(self.checkpoint_dir, 'anom_xgb_model.json')  # Path to save XGB model
 
         self.X_train = None
         self.X_test = None
