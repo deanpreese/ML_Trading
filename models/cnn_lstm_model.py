@@ -43,8 +43,7 @@ class CNN_LSTM:
         self.checkpoint_dir = 'checkpoints/'
         self.saved_cnn_lstm = os.path.join(self.checkpoint_dir, 'cnn_lstm_model.keras')
         
-
-    def build_model(self, input_shape):
+    def build_model_o(self, input_shape):
         l2_reg = l2(0.01)
         inputs = Input(shape=input_shape)
         x = Conv1D(filters=64, kernel_size=2, activation='relu')(inputs)
@@ -58,6 +57,41 @@ class CNN_LSTM:
         x = Dropout(0.2)(x)
         x = LSTM(50)(x)
         x = Dropout(0.2)(x)
+        x = Dense(64, activation='relu')(x)
+        x = Dropout(0.2)(x)
+        outputs = Dense(1)(x)  # Output layer with 1 neuron for regression
+        
+        model = Model(inputs=inputs, outputs=outputs)
+        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
+        model.summary()
+        self.model = model
+        return model
+            
+
+    def build_model(self, input_shape):
+        l2_reg = l2(0.01)
+        inputs = Input(shape=input_shape)
+        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
+        x = MaxPooling1D(pool_size=2)(x)
+        x = Dropout(0.2)(x)
+
+        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
+        x = MaxPooling1D(pool_size=4)(x)
+        x = Dropout(0.2)(x)
+        
+        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
+        x = MaxPooling1D(pool_size=2)(x)
+        x = MultiHeadAttention(num_heads=input_shape[0]//2, key_dim=input_shape[0]//2, kernel_regularizer=l2_reg)(x, x)
+        x = Dropout(0.2)(x)    
+        x = LSTM(32, return_sequences=True)(x)
+        x = Dropout(0.2)(x)
+        x = LSTM(50)(x)
+        x = Dropout(0.2)(x)
+        
+        x = Dense(64, activation='relu')(x)
+        x = Dropout(0.2)(x)
+               
+        
         x = Dense(64, activation='relu')(x)
         x = Dropout(0.2)(x)
         outputs = Dense(1)(x)  # Output layer with 1 neuron for regression
