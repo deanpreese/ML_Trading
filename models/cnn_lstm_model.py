@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import joblib 
 
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Dense, Flatten, Dropout, MaxPooling1D, LSTM, Attention, Bidirectional, MultiHeadAttention
+from tensorflow.keras.layers import Input, Conv1D, Dense, SimpleRNN, Dropout, MaxPooling1D, LSTM,AveragePooling1D, Attention, Bidirectional, MultiHeadAttention
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -54,8 +54,6 @@ class CNN_LSTM:
         x = Conv1D(filters=64, kernel_size=2, activation='relu')(inputs)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.2)(x)
-        x = Conv1D(filters=64, kernel_size=2, activation='relu')(inputs)
-        x = MaxPooling1D(pool_size=2)(x)
         x = MultiHeadAttention(num_heads=input_shape[0]//2, key_dim=input_shape[0]//2, kernel_regularizer=l2_reg)(x, x)
         x = Dropout(0.2)(x)    
         x = LSTM(32, return_sequences=True)(x)
@@ -74,36 +72,35 @@ class CNN_LSTM:
             
 
     def build_model(self, input_shape):
-        l2_reg = l2(0.01)
+        l2_reg = l2(0.02)
         inputs = Input(shape=input_shape)
-        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
+
+        x = Conv1D(filters=64, kernel_size=2, activation='relu')(inputs)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.2)(x)
 
-        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
-        x = MaxPooling1D(pool_size=4)(x)
-        x = Dropout(0.2)(x)
+        z = Dense(128, activation='relu')(inputs)
+        z = Conv1D(filters=64, kernel_size=4, activation='relu')(z)
+        z = MaxPooling1D(pool_size=2)(z)
+        z = Dropout(0.2)(z)
         
-        x = Conv1D(filters=64, kernel_size=4, activation='relu')(inputs)
-        x = MaxPooling1D(pool_size=2)(x)
-        x = MultiHeadAttention(num_heads=input_shape[0]//2, key_dim=input_shape[0]//2, kernel_regularizer=l2_reg)(x, x)
+        x = MultiHeadAttention(num_heads=input_shape[0]//2, key_dim=input_shape[0]//2, kernel_regularizer=l2_reg)(x, z)
         x = Dropout(0.2)(x)    
-        x = LSTM(32, return_sequences=True)(x)
-        x = Dropout(0.2)(x)
-        x = LSTM(50)(x)
+        
+        x = LSTM(32)(x)
         x = Dropout(0.2)(x)
         
-        x = Dense(64, activation='relu')(x)
-        x = Dropout(0.2)(x)
-               
-        
-        x = Dense(64, activation='relu')(x)
+        x = Dense(16, activation='relu')(x)
         x = Dropout(0.2)(x)
         outputs = Dense(1)(x)  # Output layer with 1 neuron for regression
         
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
         model.summary()
+        
+        print(" ")
+        print(" ----- ")
+        print(" ")
         self.model = model
         return model
     
@@ -124,7 +121,7 @@ class CNN_LSTM:
         self.y_test = y_test
     
         input_shape=(X_train.shape[1], 1)
-        self.build_model_o(input_shape)
+        self.build_model(input_shape)
     
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(self.checkpoint_model, save_best_only=True)
@@ -137,7 +134,7 @@ class CNN_LSTM:
     def evaluate_model(self, y_pred):
         correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
         print(f"Test MSE: {mse}, Test MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.2f}%")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
         print(f"Number of Samples: {total}")
     
     

@@ -33,12 +33,12 @@ datafile = [
     'data/Lucky13_3070_5.csv',  #10
 ]
 
-file_path = datafile[0]
+file_path = datafile[1]
 model = CNN_LSTM()
 
-train = False
+train = True
 test = False
-single_item = True
+single_item = False
 
 if train:
     file_path = datafile[1]
