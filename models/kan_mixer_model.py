@@ -14,6 +14,8 @@ from ml_model.model_stats import gen_reg_stats_x
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 
+np.random.seed(42)
+tf.random.set_seed(42)
 tf.config.set_visible_devices([], 'GPU')
 
 class KANMixerModel:
@@ -21,6 +23,7 @@ class KANMixerModel:
         
         np.random.seed(42)
         tf.random.set_seed(42)
+        tf.keras.backend.clear_session()
         
         self.epochs = epochs
         self.batch_size = batch_size
@@ -88,7 +91,13 @@ class KANMixerModel:
         # Build and compile the model
         self.model = Model(inputs, outputs)
         self.model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
+        
+        #self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005), loss='mse', metrics=['mae'])
+        
         self.model.summary()
+    
+        dot_img_file = os.path.join(self.checkpoint_dir, 'kan_ts_plot.png')
+        tf.keras.utils.plot_model(self.model, to_file=dot_img_file, show_shapes=True)
     
         return self.model
         

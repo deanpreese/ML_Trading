@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import joblib 
 
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Dense, SimpleRNN, Dropout, MaxPooling1D, LSTM,AveragePooling1D, Attention, Bidirectional, MultiHeadAttention
+from tensorflow.keras.layers import Input, Conv1D, SeparableConv1D, DepthwiseConv1D, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -75,10 +75,10 @@ class CNN_LSTM:
         l2_reg = l2(0.02)
         inputs = Input(shape=input_shape)
 
-        x = Conv1D(filters=64, kernel_size=2, activation='relu')(inputs)
+        x = SeparableConv1D(filters=64, kernel_size=2, activation='relu')(inputs)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.2)(x)
-
+        
         z = Dense(128, activation='relu')(inputs)
         z = Conv1D(filters=64, kernel_size=4, activation='relu')(z)
         z = MaxPooling1D(pool_size=2)(z)
@@ -97,6 +97,11 @@ class CNN_LSTM:
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse')
         model.summary()
+        
+            
+        dot_img_file = os.path.join(self.checkpoint_dir, 'cnn_lstm_plot.png')
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+    
         
         print(" ")
         print(" ----- ")

@@ -27,9 +27,9 @@ datafile = [
 
 model = KANMixerModel(epochs=100, batch_size=32)
 
-train = False
+train = True
 test = False
-single_item = True
+single_item = False
 
 
 if train:
