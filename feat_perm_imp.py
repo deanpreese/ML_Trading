@@ -186,9 +186,10 @@ def run():
             'data/ndata_lucky13_lag_3070.csv', #5
             'data/new_model_Z_lucky13_3070_oos.csv',   
             'data/new_model_Z_lucky13_3070.csv',  #7
+            'data/new_model_HLC_lucky13.csv', #8
     ]
 
-    file_loaded = pd.read_csv(datafile[1])
+    file_loaded = pd.read_csv(datafile[8])
     X = file_loaded
     X = X.drop(columns=['output', 'outputC'])
     y = file_loaded['outputC'].values

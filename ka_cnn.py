@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Average, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.layers import Input, Conv1D, Average, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
 from sklearn.model_selection import train_test_split
@@ -28,7 +28,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class AIYN:
+class KA_CNN:
     def __init__(self, epochs=50, batch_size=32):
         
         self.epochs = epochs
@@ -42,134 +42,84 @@ class AIYN:
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'dcnn_model.keras')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'ka_cnn_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'ka_cnn_model.keras')
 
 
         self.drop_out = 0.2
         self.l2_reg = l2(0.02)
-        self.initializer = GlorotUniform(seed=42)  
-
+        self.initializer = GlorotUniform(seed=42)
+        
 
     def build_model(self, input_shape):
+
+        """
+        set x 
+        Val MSE: 9.3376, Val MAE: 1.7260, R2: 0.45904197704603666
+        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.7587
+        Number of Samples: 7451
+        
+        
+        
+        
+        """
+
+
+        l2_reg = l2(0.01)
         inputs = Input(shape=input_shape)
-
-        """
-        Val MSE: 9.6213, Val MAE: 1.7440, R2: 0.44260619562497083
-        Total Wins: 5646, Total Losses: 1805, Win Percentage: 0.758
-        Number of Samples: 7451
-        """
-
-        d = Conv1D(filters=128, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
-        d = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(d)
-        d = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(d)
-        #d = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(d)
-        d = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(d)
-        d = Conv1D(filters=128, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(d)
-        
-        d = MaxPooling1D(pool_size=1, strides=1)(d)
-        d = Dropout(self.drop_out )(d)
-        d = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(d)
-      
-        """
-        Val MSE: 9.6714, Val MAE: 1.7627, R2: 0.43970418014694834
-        Total Wins: 5645, Total Losses: 1806, Win Percentage: 0.758
-        Number of Samples: 7451        
-        """
-      
-        b = Conv1D(filters=128, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
-        b = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(b)
-        b = Conv1D(filters=128, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(b)
-        b = MaxPooling1D(pool_size=1, strides=1)(b)
-        b = Dropout(self.drop_out )(b)
-        b = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(b)
-      
-        """
-        Val MSE: 9.3959, Val MAE: 1.7371, R2: 0.4556655797009558
-        Total Wins: 5649, Total Losses: 1802, Win Percentage: 0.758
-        Number of Samples: 7451        
-        """
-      
-        c = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
-        c = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(c)
-        c = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(c)
-        c = MaxPooling1D(pool_size=1, strides=1)(c)
-        c = Dropout(self.drop_out )(c)
-        c = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(c)
-      
-        """
-        Val MSE: 9.9794, Val MAE: 1.7447, R2: 0.4218585298839954
-        Total Wins: 5645, Total Losses: 1806, Win Percentage: 0.758
-        Number of Samples: 7451
-        """
-      
-        s = SeparableConv1D(filters=64, kernel_size=2, activation='relu')(inputs)
-        s = SeparableConv1D(filters=32, kernel_size=2, activation='relu')(s)
-        s = SeparableConv1D(filters=64, kernel_size=1, activation='relu')(s)
-        s = MaxPooling1D(pool_size=1, strides=1)(s)
-        s = Dropout(self.drop_out )(s)
-        s = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(s)
-           
-        """
-        
-        b,c 
-        Val MSE: 9.4876, Val MAE: 1.7292, R2: 0.4503509886642375
-        Total Wins: 5645, Total Losses: 1806, Win Percentage: 0.758
-        Number of Samples: 7451
-        
-        a,c
-        Val MSE: 9.5965, Val MAE: 1.7339, R2: 0.4440447626859235
-        Total Wins: 5644, Total Losses: 1807, Win Percentage: 0.757
-        Number of Samples: 7451
-        
-        b,c,s
-        Val MSE: 9.6374, Val MAE: 1.7451, R2: 0.44167511748989285
-        Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
-        Number of Samples: 7451
-        
-        """           
-           
-           
-           
-        x = Average()([c,d]) 
-        #x = d
-      
-        lstm_o = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
-        lstm_o = Dropout(self.drop_out)(lstm_o)
-        lstm_o = Dense(name="C_out", units=16, activation='relu',kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(lstm_o)
                 
-        #x = tf.keras.layers.Permute((2, 1))(ave1)
-        #x = tf.keras.layers.Dense(input_shape[1]*3, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
-        #x = tf.keras.layers.Dense(input_shape[1], activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
-        #x = tf.keras.layers.Permute((2, 1))(x)
+        input_dim = inputs.shape[1]               
+        hidden_units = 32                
+        reshaped_inputs = Reshape((input_dim, 1))(inputs)
         
-        #x = LSTM(input_shape[1]*3, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        #x = LSTM(input_shape[1], kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = Dropout(self.drop_out )(x)
-        
-        #x = Dense(16, activation='relu')(x)
-        #x = Dropout(self.drop_out )(x)
-        
-        output_o = lstm_o
-        outputs = Dense(1)(output_o)  
-        
-        model = Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
-        model.summary()
-        
+        univariate_outputs = []
+        for i in range(input_dim):
             
-        dot_img_file = os.path.join(self.checkpoint_dir, 'scratch.png')
-        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
-    
-        
-        print(" ")
-        print(" ----- ")
-        print(" ")
-        self.model = model
-        return model
-    
-    
+            x = Reshape((1, -1))(reshaped_inputs[:, i, :])
+            inx = LSTM(32, return_sequences=True, activation='relu')(x)
+            
+            #set x
+            x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+            x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+            x = LSTM(32, return_sequences=True, activation='relu')(x)
+            x = MaxPooling1D(pool_size=1, strides=1)(x)
+            
+            #set y
+            y = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+            #y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
+            x = LSTM(32, return_sequences=True, activation='relu')(x)
+            y = MaxPooling1D(pool_size=1, strides=1)(y)
+            
+            
+            x = LSTM(32, return_sequences=False, activation='relu')(y)
+            univariate_outputs.append(x)
 
+        # Combine univariate outputs using Concatenate
+        concatenated_outputs = Concatenate(axis=1)(univariate_outputs)
+        
+        # Reshape the concatenated outputs to fit the expected input shape of the Attention layer
+        reshaped_attention_input = Reshape((input_dim, hidden_units))(concatenated_outputs)
+        attention_output = MultiHeadAttention(num_heads=input_dim//2, key_dim=input_dim//2, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
+        
+        # Flatten and final Dense layers
+        flattened_output = Reshape((-1,))(attention_output)
+        dense_output = Dense(hidden_units, activation='relu')(flattened_output)
+    
+        # Averaging and interaction layers
+        sum_output = Add()(univariate_outputs)
+        sum_output = Dense(hidden_units, activation='relu')(sum_output)
+        ave_output = Average()([sum_output, dense_output, sum_output])
+        outputs = Dense(1)(ave_output)
+        
+        self.model = Model(inputs, outputs)
+        self.model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+        self.model.summary()
+    
+        dot_img_file = os.path.join(self.checkpoint_dir, 'kan_cnn_plot.png')
+        tf.keras.utils.plot_model(self.model, to_file=dot_img_file, show_shapes=True)
+    
+        return self.model  
+        
     
     def train_model(self, file_path):
     
@@ -211,7 +161,7 @@ class AIYN:
                         save_weights_only=False, mode='min')
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=1000, 
+                                initial_epoch=0, epochs=150, 
                                 batch_size=32, callbacks=[
                                     early_stopping,
                                     reduce_lr,
@@ -224,7 +174,7 @@ class AIYN:
     def evaluate_model(self, y_pred):
         correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
         print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.4f}")
         print(f"Number of Samples: {total}")
     
     
@@ -292,7 +242,7 @@ def run():
     ]
 
     file_path = datafile[1]
-    model = AIYN()
+    model = KA_CNN()
 
     train = True
     test = False

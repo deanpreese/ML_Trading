@@ -3,16 +3,18 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Add, LSTM, Attention, Average, Reshape, Concatenate
+from tensorflow.keras.layers import Input, Dense, Add, LSTM, Attention, Average, Reshape, Concatenate, Conv1D, MaxPooling1D 
 from tensorflow.keras.optimizers import Adam
 from keras.layers import LeakyReLU, Dropout, MultiHeadAttention
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.initializers import GlorotUniform
 from tensorflow.keras.metrics import MeanSquaredError, BinaryCrossentropy, BinaryAccuracy, AUC  
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
 from ml_model.model_stats import gen_reg_stats_x 
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -49,12 +51,18 @@ class KANMixerModel:
         self.batch_size = batch_size
 
 
+        self.drop_out = 0.2
+        self.l2_reg = l2(0.01)
+        self.initializer = GlorotUniform(seed=42)  
+
+
     def build_model(self, input_shape):
 
         l2_reg = l2(0.01)
         inputs = Input(shape=input_shape)
+                
         reshaped_inputs = Reshape((self.input_dim, 1))(inputs)
-
+        
         univariate_outputs = []
         for i in range(self.input_dim):
             x = LSTM(self.hidden_units, return_sequences=True, activation='relu')(reshaped_inputs[:, i:i+1, :])
@@ -84,16 +92,13 @@ class KANMixerModel:
         # Averaging and interaction layers
         sum_output = Add()(univariate_outputs)
         sum_output = Dense(self.hidden_units, activation='relu')(sum_output)
-        ave_output = Average()([sum_output, dense_output, sum_output,sum_output,])
+        #ave_output = Average()([sum_output, dense_output, sum_output,sum_output,])
+        ave_output = Average()([sum_output, dense_output, sum_output])
         
         outputs = Dense(self.output_dim)(ave_output)
         
-        # Build and compile the model
         self.model = Model(inputs, outputs)
-        self.model.compile(optimizer=Adam(), loss='mse', metrics=['mae'])
-        
-        #self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005), loss='mse', metrics=['mae'])
-        
+        self.model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
         self.model.summary()
     
         dot_img_file = os.path.join(self.checkpoint_dir, 'kan_ts_plot.png')
@@ -109,6 +114,12 @@ class KANMixerModel:
         X = df.drop(columns=['output']).values
         y = df['output'].values
 
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        #self.saved_scaler = scaler
+        #joblib.dump(scaler, self.checkpoint_scaler )
+
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.validation_split, random_state=42)
     
         self.X_train = X_train
@@ -118,6 +129,8 @@ class KANMixerModel:
     
         self.input_dim = X_train.shape[1]
         input_shape=(X_train.shape[1], 1)
+        
+        
         self.build_model(input_shape)
         
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
@@ -149,7 +162,7 @@ class KANMixerModel:
     def evaluate_model(self, y_pred):
         correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
         print(f"Test MSE: {mse}, Test MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.2f}%")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.4f}%")
         print(f"Number of Samples: {total}")
     
 

@@ -143,64 +143,6 @@ class TSMixerModel:
 
 
 
-    def train_model_k(self, file_path):
-        data = pd.read_csv(file_path)
-        
-        # Assuming 'output' is the target and other columns are features
-        X = data.drop(columns=['output', 'outputC'])  # Dropping outputC as per your context
-        y = data['output'].values
-
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-        self.saved_scaler = scaler
-        joblib.dump(scaler, self.checkpoint_scaler)
-                
-        X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
-        
-        # KFold cross-validation
-        kf = KFold(n_splits=5, shuffle=True, random_state=42)
-        
-        for train_index, val_index in kf.split(X_scaled):
-            X_train, X_val = X_scaled[train_index], X_scaled[val_index]
-            y_train, y_val = y[train_index], y[val_index]
-            
-            self.X_train = X_train
-            self.X_val = X_val
-            self.y_train = y_train
-            self.y_val = y_val
-            
-            self.build_model(input_shape=X_train.shape[1:])
-            
-            early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-            model_checkpoint = ModelCheckpoint(self.checkpoint_model, save_best_only=True, monitor='val_loss', mode='min')
-            
-            reduce_lr = ReduceLROnPlateau(
-                monitor="val_loss",
-                factor=0.5,
-                patience=5,
-                verbose=0,
-                mode="auto",
-                min_delta=0.0001,
-                cooldown=0,
-                min_lr=0,
-            )
-            
-            history = self.model.fit(
-                X_train, y_train, 
-                epochs=self.epochs, 
-                batch_size=self.batch_size, 
-                validation_data=(X_val, y_val),   
-                callbacks=[early_stopping, reduce_lr, model_checkpoint]
-            )
-        
-        # Using the last fold for evaluation, but ideally, you'd average metrics across folds
-        self.X_test = X_val
-        self.y_test = y_val
-        y_pred = self.model.predict(X_val)
-        
-        return history, y_pred
-
-
     def evaluate_model(self, y_pred):
         correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
         print(f"Test MSE: {mse}, Test MAE: {mae}, R2: {r2}")
