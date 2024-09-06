@@ -18,10 +18,6 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from catboost import CatBoostRegressor
-
 from ml_model.model_stats import gen_reg_stats_x 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
