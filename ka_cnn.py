@@ -60,7 +60,9 @@ class KA_CNN:
         Number of Samples: 7451
         
         
-        
+        Val MSE: 9.5018, Val MAE: 1.7274, R2: 0.449529568922427
+        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.7587
+        Number of Samples: 7451
         
         """
 
@@ -85,9 +87,10 @@ class KA_CNN:
             x = MaxPooling1D(pool_size=1, strides=1)(x)
             
             #set y
-            y = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-            #y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            x = LSTM(32, return_sequences=True, activation='relu')(x)
+            y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+            y = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
+            y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
+            x = LSTM(64, return_sequences=True, activation='relu')(x)
             y = MaxPooling1D(pool_size=1, strides=1)(y)
             
             

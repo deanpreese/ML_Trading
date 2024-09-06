@@ -67,6 +67,12 @@ class DCNN:
         a = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(a)
         a = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(a)
         a = MaxPooling1D(pool_size=1, strides=1)(a)
+        ya= Dropout(self.drop_out)(a)
+        ya = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(ya)
+        ya = Dropout(self.drop_out)(ya)
+        ya = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(ya)
+        ya = Dropout(self.drop_out)(ya)
+        ya = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(ya)
         
         #------
 
@@ -76,19 +82,15 @@ class DCNN:
         b = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(b)
         b = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(b)
         b = MaxPooling1D(pool_size=1, strides=1)(b)
-
-        #------
-
-        y3 = Dropout(self.drop_out)(b)
-        y3 = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(y3)
-        y3 = Dropout(self.drop_out)(y3)
-        y3 = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(y3)
-        y3 = Dropout(self.drop_out)(y3)
-        y3 = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(y3)
-
-        ave_output = Average()([y, y2, y3])
-
-        outputs = Dense(1)(y2)  
+        yb = Dropout(self.drop_out)(b)
+        yb = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yb)
+        yb = Dropout(self.drop_out)(yb)
+        yb = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(yb)
+        yb = Dropout(self.drop_out)(yb)
+        yb = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yb)
+        
+        ave_output = Average()([ya, yb])
+        outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
         model.summary(expand_nested=True,show_trainable=True)
