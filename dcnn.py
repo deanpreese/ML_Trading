@@ -81,11 +81,45 @@ class DCNN:
         yb = Dropout(self.drop_out)(b)
         yb = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yb)
         yb = Dropout(self.drop_out)(yb)
-        yb = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(yb)
+        #yb = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(yb)
         yb = Dropout(self.drop_out)(yb)
         yb = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yb)
         
+        """
         ave_output = Average()([ya, yb])
+        Val MSE: 9.4009, Val MAE: 1.7269, R2: 0.45537637866248615
+        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.759
+        Number of Samples: 7451
+
+        ave_output = 0.4*yb + 0.6*ya
+        Val MSE: 9.4056, Val MAE: 1.7313, R2: 0.45510589571598137
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
+        Number of Samples: 7451      
+
+        ave_output = Average()([ya, ya, yb])
+        Val MSE: 9.3818, Val MAE: 1.7219, R2: 0.45647946626513114
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451    
+
+        ave_output = 0.45*yb + 0.55*ya
+        Val MSE: 9.5536, Val MAE: 1.7303, R2: 0.44653159753668414
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
+        Number of Samples: 7451
+        
+        ya
+        Val MSE: 9.2932, Val MAE: 1.7292, R2: 0.4616171211504386
+        Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
+        Number of Samples: 7451
+        
+        yb
+        Val MSE: 9.8263, Val MAE: 1.7446, R2: 0.43072936312387267
+        Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.758
+        Number of Samples: 7451
+
+        """     
+        #ave_output = Average()([ya, ya, yb, ya, yb])
+        ave_output = yb
+
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
