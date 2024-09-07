@@ -28,7 +28,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class KA_CNN:
+class KA_CNN_V:
     def __init__(self, epochs=50, batch_size=32):
         
         self.epochs = epochs
@@ -252,7 +252,7 @@ def run():
     ]
 
     file_path = datafile[1]
-    model = KA_CNN()
+    model = KA_CNN_V()
 
     train = True
     test = False
