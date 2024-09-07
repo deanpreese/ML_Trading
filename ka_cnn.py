@@ -55,15 +55,22 @@ class KA_CNN:
 
         """
         set x 
-        Val MSE: 9.3376, Val MAE: 1.7260, R2: 0.45904197704603666
-        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.7587
+        Val MSE: 9.4128, Val MAE: 1.7266, R2: 0.45468417949459394
+        Total Wins: 5643, Total Losses: 1808, Win Percentage: 0.7573
         Number of Samples: 7451
         
-        
-        Val MSE: 9.5018, Val MAE: 1.7274, R2: 0.449529568922427
-        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.7587
+        set y
+        Val MSE: 9.3983, Val MAE: 1.7231, R2: 0.455524814695764
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.7586
         Number of Samples: 7451
-        
+
+
+          
+        Val MSE: 9.5570, Val MAE: 1.7217, R2: 0.4463316928161727
+        Total Wins: 5654, Total Losses: 1797, Win Percentage: 0.7588
+        Number of Samples: 7451          
+          
+                
         """
 
 
@@ -74,6 +81,8 @@ class KA_CNN:
         hidden_units = 32                
         reshaped_inputs = Reshape((input_dim, 1))(inputs)
         
+        univariate_outputs_x = []
+        univariate_outputs_y = []
         univariate_outputs = []
         for i in range(input_dim):
             
@@ -87,15 +96,17 @@ class KA_CNN:
             x = MaxPooling1D(pool_size=1, strides=1)(x)
             
             #set y
-            y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-            y = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            x = LSTM(64, return_sequences=True, activation='relu')(x)
+            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
+            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
             y = MaxPooling1D(pool_size=1, strides=1)(y)
             
+            x_out = LSTM(32, return_sequences=False, activation='relu')(x)
+            y_out = LSTM(32, return_sequences=False, activation='relu')(y)
             
-            x = LSTM(32, return_sequences=False, activation='relu')(y)
-            univariate_outputs.append(x)
+            xy_output = Average()([x_out, y_out])
+           
+            univariate_outputs.append(xy_output)
 
         # Combine univariate outputs using Concatenate
         concatenated_outputs = Concatenate(axis=1)(univariate_outputs)
@@ -128,7 +139,8 @@ class KA_CNN:
     
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
+        X = df.drop(columns=['output'])
+        X = X.values
         y = df['output'].values
 
         # Reshape X to ensure it has the correct shape for LSTM
