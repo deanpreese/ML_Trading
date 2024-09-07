@@ -69,7 +69,10 @@ class KA_CNN:
         Val MSE: 9.5570, Val MAE: 1.7217, R2: 0.4463316928161727
         Total Wins: 5654, Total Losses: 1797, Win Percentage: 0.7588
         Number of Samples: 7451          
-          
+        
+        Val MSE: 9.6148, Val MAE: 1.7292, R2: 0.44298634784465896
+        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.7580
+        Number of Samples: 7451          
                 
         """
 
