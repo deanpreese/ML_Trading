@@ -5,17 +5,18 @@ import tensorflow as tf
 import joblib 
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Average, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.layers import Input, Conv1D, Average, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, BatchNormalization, LSTMCell, TimeDistributed, StackedRNNCells, RNN, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.regularizers import l2
 
-from ml_model.model_stats import gen_reg_stats_x 
+from ml_model.model_stats import gen_reg_stats_x, gen_class_stats 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 from xgboost import XGBRegressor
@@ -49,43 +50,18 @@ class KA_CNN:
         self.drop_out = 0.2
         self.l2_reg = l2(0.02)
         self.initializer = GlorotUniform(seed=42)
+
+
+    def build_model(self, input_shape, model_type):
         
-
-    def build_model(self, input_shape):
-
-        """
-        set x 
-        Val MSE: 9.4128, Val MAE: 1.7266, R2: 0.45468417949459394
-        Total Wins: 5643, Total Losses: 1808, Win Percentage: 0.7573
-        Number of Samples: 7451
-        
-        set y
-        Val MSE: 9.3983, Val MAE: 1.7231, R2: 0.455524814695764
-        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.7586
-        Number of Samples: 7451
-
-
-          
-        Val MSE: 9.5570, Val MAE: 1.7217, R2: 0.4463316928161727
-        Total Wins: 5654, Total Losses: 1797, Win Percentage: 0.7588
-        Number of Samples: 7451          
-        
-        Val MSE: 9.6148, Val MAE: 1.7292, R2: 0.44298634784465896
-        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.7580
-        Number of Samples: 7451          
-                
-        """
-
-
         l2_reg = l2(0.01)
         inputs = Input(shape=input_shape)
                 
         input_dim = inputs.shape[1]               
-        hidden_units = 32                
+        hidden_units = 16 
+        output_units = 16               
         reshaped_inputs = Reshape((input_dim, 1))(inputs)
         
-        univariate_outputs_x = []
-        univariate_outputs_y = []
         univariate_outputs = []
         for i in range(input_dim):
             
@@ -102,30 +78,34 @@ class KA_CNN:
             y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
             y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
             y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            y = MaxPooling1D(pool_size=1, strides=1)(y)
+            x = MaxPooling1D(pool_size=1, strides=1)(y)
             
-            x_out = LSTM(32, return_sequences=False, activation='relu')(x)
-            y_out = LSTM(32, return_sequences=False, activation='relu')(y)
+            x_out = LSTM(hidden_units, return_sequences=False, activation='relu')(x)
+            y_out = LSTM(hidden_units, return_sequences=False, activation='relu')(y)
             
             xy_output = Average()([x_out, y_out])
-           
+            #xy_output = 0.2*x_out + 0.8*y_out
+            #xy_output = x_out
+            
             univariate_outputs.append(xy_output)
 
-        # Combine univariate outputs using Concatenate
         concatenated_outputs = Concatenate(axis=1)(univariate_outputs)
-        
-        # Reshape the concatenated outputs to fit the expected input shape of the Attention layer
         reshaped_attention_input = Reshape((input_dim, hidden_units))(concatenated_outputs)
         attention_output = MultiHeadAttention(num_heads=input_dim//2, key_dim=input_dim//2, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
-        
-        # Flatten and final Dense layers
+                        
+        #attention_output = MultiHeadAttention(num_heads=4, key_dim=8, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
+
         flattened_output = Reshape((-1,))(attention_output)
-        dense_output = Dense(hidden_units, activation='relu')(flattened_output)
+        dense_output = Dense(output_units, activation='relu')(flattened_output)
     
-        # Averaging and interaction layers
         sum_output = Add()(univariate_outputs)
-        sum_output = Dense(hidden_units, activation='relu')(sum_output)
-        ave_output = Average()([sum_output, dense_output, sum_output])
+        sum_output = Dense(output_units, activation='relu')(sum_output)
+
+        #ave_output = Average()([sum_output, dense_output, sum_output])
+        #ave_output = Average()([sum_output, dense_output])
+        ave_output = 0.5*sum_output + 0.5*dense_output
+                
+        
         outputs = Dense(1)(ave_output)
         
         self.model = Model(inputs, outputs)
@@ -137,19 +117,28 @@ class KA_CNN:
     
         return self.model  
         
+
+        
     
-    def train_model(self, file_path):
+    def train_model(self, file_path, model_type):
     
+        y_pred = None
         df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output'])
+        
+        if model_type == "C":
+            df = df.drop(columns=['output'])
+            X = df.drop(columns=['outputC'])
+            y = df['outputC'].values
+            
+        else:    
+            df = df.drop(columns=['outputC'])
+            X = df.drop(columns=['output'])
+            y = df['output'].values            
+                
+        
         X = X.values
-        y = df['output'].values
-
-        # Reshape X to ensure it has the correct shape for LSTM
+        
         X = X.reshape(X.shape[0], X.shape[1], 1)
-
-        # Split into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
         self.X_train = X_train
@@ -160,8 +149,24 @@ class KA_CNN:
         input_shape = (X_train.shape[1], X_train.shape[2])
         #(14, 1)
         
-        
-        model = self.build_model(input_shape)
+        model = self.build_model(input_shape, model_type)
+
+        if model_type == "R":
+            self.model.compile(optimizer=Adam(learning_rate=0.001), 
+                loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+
+        else:
+            c_metrics = ['BinaryAccuracy', 'AUC', 'MeanSquaredError','accuracy', tf.keras.metrics.R2Score()]
+            
+            self.model.compile(optimizer=Adam(learning_rate=0.001), 
+                             loss='binary_crossentropy', 
+                             metrics=c_metrics)
+                
+            
+        self.model.summary()
+    
+        dot_img_file = os.path.join(self.checkpoint_dir, 'kan_cnn_plot.png')
+        tf.keras.utils.plot_model(self.model, to_file=dot_img_file, show_shapes=True)
 
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss", factor=0.2,
@@ -172,6 +177,15 @@ class KA_CNN:
 
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
         
+        """
+        Val MSE: 9.6242, Val MAE: 1.7241, R2: 0.4424378036541311
+        Total Wins: 5658, Total Losses: 1793, Win Percentage: 0.7594
+        Number of Samples: 7451
+        
+        
+        """
+        
+        
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
             self.checkpoint_model, 
                 monitor='val_loss', 
@@ -179,13 +193,21 @@ class KA_CNN:
                         save_weights_only=False, mode='min')
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=150, 
+                                initial_epoch=0, epochs=250, 
                                 batch_size=32, callbacks=[
                                     early_stopping,
                                     reduce_lr,
                                     model_checkpoint])
-
-        y_pred = model.predict(X_test)
+        
+        if model_type == "C":
+            self.evaluate_classes(model, X_test, y_test)
+            
+        else:
+            y_pred = model.predict(X_test)
+            self.evaluate_model(y_pred)
+            #self.plot_training_history(history_out)
+        
+        
         return history_out, y_pred
 
 
@@ -240,6 +262,14 @@ class KA_CNN:
         plt.show()
         
         
+    def evaluate_classes(self, model, X_test, y_test):
+        predictions = model.predict(X_test)
+        perf, correct, total, tn, fp, fn, tp, mse, rmse, mae, r2 = gen_class_stats( y_test, predictions)
+        print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.4f}")
+        print(f"Number of Samples: {total}")
+        print(f"TP {tp}   TN {tn}   FP {fp}   FN {fn}")     
+
         
 def run():
 
@@ -253,24 +283,25 @@ def run():
         'new_model_Z_lucky13_3070_oos.csv',
         'new_model_Z_lucky13_3070.csv', #7,
         'data/Lucky13_3070_oos_3.csv',   
-        'data/Lucky13_3070_3.csv',  #8
+        'data/Lucky13_3070_3.csv',  #9
         'data/Lucky13_3070_oos_5.csv',   
-        'data/Lucky13_3070_5.csv',  #10
-        'data/new_model_HLC_lucky13.csv', #11
+        'data/Lucky13_3070_5.csv',  #11
+        'data/new_model_HLC_lucky13.csv', #12
+        'data/R_HLC_lucky13.csv', #13
     ]
 
-    file_path = datafile[1]
+    file_path = datafile[0]
     model = KA_CNN()
 
+    model_type = "R"
     train = True
     test = False
     single_item = False
 
     if train:
         file_path = datafile[1]
-        history_out, y_pred = model.train_model(file_path)
-        model.evaluate_model(y_pred)
-        model.plot_training_history(history_out)
+        history_out, y_pred = model.train_model(file_path, model_type)
+        
 
     if test:
         file_path = datafile[0]

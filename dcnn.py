@@ -18,7 +18,6 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-from ml_model.model_stats import gen_reg_stats_x 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -50,13 +49,19 @@ class DCNN:
     def build_model(self, input_shape):
         inputs = Input(shape=input_shape)
         
+        """
+        Val MSE: 9.6736, Val MAE: 1.7372, R2: 0.43957903361088335
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451
+        """
+        
+        
         a = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(inputs)
         a = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(a)
         a = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(a)
         a = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(a)
         a = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(a)
         a = MaxPooling1D(pool_size=1, strides=1)(a)
-        
         ya= Dropout(self.drop_out)(a)
         ya = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(ya)
         ya = Dropout(self.drop_out)(ya)
@@ -65,6 +70,12 @@ class DCNN:
         ya = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(ya)
         
         #------
+        """
+        Val MSE: 9.5551, Val MAE: 1.7324, R2: 0.4464408265137443
+        Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.758
+        Number of Samples: 7451        
+        """
+
 
         b = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
         b = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(b)
@@ -72,22 +83,19 @@ class DCNN:
         b = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(b)
         b = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(b)
         b = MaxPooling1D(pool_size=1, strides=1)(b)
-        
         yb = Dropout(self.drop_out)(b)
         yb = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yb)
         yb = Dropout(self.drop_out)(yb)
         yb = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(yb)
         yb = Dropout(self.drop_out)(yb)
         yb = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yb)
-        
-        #------
+
+        """
+        Val MSE: 9.5089, Val MAE: 1.7515, R2: 0.44911964082560996
+        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.758
+        Number of Samples: 7451
         """
 
-        Val MSE: 9.3427, Val MAE: 1.7374, R2: 0.4587484286692699
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451
-    
-        """
         
         c = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)       
         c = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(c)
@@ -95,59 +103,39 @@ class DCNN:
         c = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(c)
         c = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(c)
         #c = MaxPooling1D(pool_size=1, strides=1)(c)
-        
         yc = Dropout(self.drop_out)(c)
         yc = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yc)
         yc = Dropout(self.drop_out)(yc)
         yc = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(yc)
         yc = Dropout(self.drop_out)(yc)
-        
         yc = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yc)
         
         
-        """
-        ave_output = Average()([ya, yb])
-        Val MSE: 9.4009, Val MAE: 1.7269, R2: 0.45537637866248615
-        Total Wins: 5653, Total Losses: 1798, Win Percentage: 0.759
-        Number of Samples: 7451
-
-        ave_output = 0.4*yb + 0.6*ya
-        Val MSE: 9.4056, Val MAE: 1.7313, R2: 0.45510589571598137
-        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
-        Number of Samples: 7451      
-
-        ave_output = Average()([ya, ya, yb])
-        Val MSE: 9.3818, Val MAE: 1.7219, R2: 0.45647946626513114
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451    
-
-        ave_output = 0.45*yb + 0.55*ya
-        Val MSE: 9.5536, Val MAE: 1.7303, R2: 0.44653159753668414
-        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
-        Number of Samples: 7451
-        
-        ya
-        Val MSE: 9.2932, Val MAE: 1.7292, R2: 0.4616171211504386
-        Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
-        Number of Samples: 7451
-        
-        yb
-        Val MSE: 9.8263, Val MAE: 1.7446, R2: 0.43072936312387267
-        Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.758
-        Number of Samples: 7451
-
-
-        yc
-        Val MSE: 9.6029, Val MAE: 1.7328, R2: 0.4436736806245658
-        Total Wins: 5649, Total Losses: 1802, Win Percentage: 0.758
-        Number of Samples: 7451
-
-
-        """     
-        
         #ave_output = yc
-        ave_output = Average()([ yb, yc])
+
+        #ave_output = Average()([ ya, yb])
+        """
+        Val MSE: 9.5467, Val MAE: 1.7547, R2: 0.4469300808047476
+        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.758
+        Number of Samples: 7451
+        """
         
+        #ave_output = Average()([ ya, yc])
+        """
+        Val MSE: 9.5334, Val MAE: 1.7632, R2: 0.4476983736403275
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451
+        """
+
+        #ave_output = Average()([ yb, yc])
+        """
+        Val MSE: 9.4510, Val MAE: 1.7274, R2: 0.452472066066524
+        Total Wins: 5642, Total Losses: 1809, Win Percentage: 0.757
+        Number of Samples: 7451        
+        """
+
+
+        ave_output = Average()([ yb, yc])
         
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)

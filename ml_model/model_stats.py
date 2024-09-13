@@ -17,8 +17,14 @@ def calc_mse_rmse_mae( y_test, predicted_values):
 
 
 def gen_class_stats( y_test, predicted_values):
+        
+    sig_predicted_values = predicted_values        
+    sig_predicted_values[sig_predicted_values > 0.5] = 1
+    sig_predicted_values[sig_predicted_values < 0.5] = 0
     
-    tn, fp, fn, tp = confusion_matrix(y_test, predicted_values).ravel()
+    tn, fp, fn, tp = confusion_matrix(y_test, sig_predicted_values).ravel()
+    mse, rmse, mae =  calc_mse_rmse_mae( y_test, sig_predicted_values)
+    r2 = r2_score(y_test, sig_predicted_values)
     
     correct1 = 0 
     total = 0
@@ -35,7 +41,7 @@ def gen_class_stats( y_test, predicted_values):
         total = total + 1    
 
     perf = round((correct1)/total,4)
-    return perf, total, tn, fp, fn, tp
+    return perf, correct1, total, tn, fp, fn, tp, mse, rmse, mae, r2
 
 
 def gen_reg_stats_x( y_test, predicted_values):

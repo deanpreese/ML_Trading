@@ -243,6 +243,54 @@ def run():
     print(" ")
 
 
+    df1_html = importance_df_sorted_r.to_html()
+    df2_html = importance_df_sorted_c.to_html()
+    df3_html = important_features_r
+    df4_html = performance_df_r.to_html()
+    df5_html = important_features_c
+    df6_html = performance_df_c.to_html()
+        
+    # Convert each DataFrame to HTML with titles and spacing
+    html_string = """
+    <html>
+    <head><title>Permutations DataFrames</title></head>
+    <body>
+    <h1>Report of Multiple DataFrames</h1>
+
+    <h2>importance_df_sorted_r</h2>
+    {df1_html}
+    <br><br> 
+    <h2>importance_df_sorted_c</h2>
+    {df2_html}
+    <br><br>
+    <h2>important_features_r</h2>
+    {df3_html}
+    <br><br> 
+    <h2>performance_df_r</h2>
+    {df4_html}
+    <br><br> 
+    <h2>important_features_c/h2>
+    {df5_html}
+    <br><br> 
+    <h2>performance_df_c</h2>
+    {df6_html}
+    <br><br>
+
+    </body>
+    </html>
+    """.format(
+            df1_html=df1_html
+           , df2_html=df2_html
+           , df3_html=df3_html
+           , df4_html=df4_html
+           , df5_html=df5_html
+            , df6_html=df6_html
+           )
+
+    # Save the final HTML string to a file
+    with open('multiple_dataframes.html', 'w') as f:
+        f.write(html_string)
+
 if __name__ == "__main__":
     run()
 

@@ -75,3 +75,17 @@ def sequence_and_normalize(file_path, timesteps):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     
     return featrure_dims, X_train, X_test, y_train, y_test, scalers
+
+
+def sequence_and_split(file_path, timesteps):
+    
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['outputC'])
+    X = df.drop(columns=['output'])
+    featrure_dims = len(X.columns)
+    
+    X, y = create_sequences(df, timesteps)
+    X, scalers = normalize_sequences(X)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    
+    return featrure_dims, X_train, X_test, y_train, y_test
