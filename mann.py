@@ -140,7 +140,6 @@ def main():
     
     print(y_train.shape)
     #(26072,)
-
     
     input_size = X_train.shape[1]
     hidden_size = 256
