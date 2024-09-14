@@ -57,6 +57,27 @@ class C_KAN:
         return X_train_scaled, X_val_scaled, X_test_scaled, y_train, y_val, y_test, scaler
 
 
+
+    def create_feature_model(self, input_shape):
+        
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        inx = LSTM(16, return_sequences=True, activation='relu')(reshaped_inputs)
+        #inx = Dropout(self.drop_out)(inx)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+       # x = Dropout(self.drop_out)(x)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        #x = Dropout(self.drop_out)(x)
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        x = LSTM(16, return_sequences=False, activation='relu')(x)
+        #x = Dropout(self.drop_out)(x)
+        smx_out = Dense(1, activation='linear')(x) 
+        subx_model = Model(input, smx_out)
+        
+        return subx_model
+
+
     def create_custom_model(self, num_features):
         inputs = Input(shape=(num_features,))
         
@@ -84,25 +105,6 @@ class C_KAN:
         return self.model
 
 
-    def create_feature_model(self, input_shape):
-        
-        input = Input(shape=input_shape)
-        input_dim = input.shape[1]  
-        reshaped_inputs = Reshape((input_dim, 1))(input)
-        inx = LSTM(16, return_sequences=True, activation='relu')(reshaped_inputs)
-        #inx = Dropout(self.drop_out)(inx)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-       # x = Dropout(self.drop_out)(x)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = MaxPooling1D(pool_size=1, strides=1)(x)
-        x = LSTM(16, return_sequences=False, activation='relu')(x)
-        #x = Dropout(self.drop_out)(x)
-        smx_out = Dense(1, activation='linear')(x) 
-        subx_model = Model(input, smx_out)
-        
-        return subx_model
-    
     
 
     def compile_and_train_model(self, X_train, y_train, X_val, y_val):
