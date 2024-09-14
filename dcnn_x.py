@@ -37,8 +37,9 @@ class DCNN:
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'dcnn_model.keras')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_x_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'dcnn_x_model.keras')
+        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn_x.png')
 
 
         self.drop_out = 0.2
@@ -50,120 +51,42 @@ class DCNN:
         inputs = Input(shape=input_shape)
         
         """
-        Val MSE: 9.6736, Val MAE: 1.7372, R2: 0.43957903361088335
+        x + y + z
+        
+        Val MSE: 9.2033, Val MAE: 1.7239, R2: 0.46682218820730337
         Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
         Number of Samples: 7451
-        """
         
+        """        
         
-        a = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(inputs)
-        a = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(a)
-        a = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(a)
-        a = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(a)
-        a = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(a)
-        a = MaxPooling1D(pool_size=1, strides=1)(a)
-        ya= Dropout(self.drop_out)(a)
-        ya = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(ya)
-        ya = Dropout(self.drop_out)(ya)
-        ya = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(ya)
-        ya = Dropout(self.drop_out)(ya)
-        ya = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(ya)
-        
-        #------
-        """
-        Val MSE: 9.5551, Val MAE: 1.7324, R2: 0.4464408265137443
-        Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.758
-        Number of Samples: 7451        
-        """
-
-
-        b = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
-        b = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(b)
-        b = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(b)
-        b = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(b)
-        b = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(b)
-        b = MaxPooling1D(pool_size=1, strides=1)(b)
-        yb = Dropout(self.drop_out)(b)
-        yb = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yb)
-        yb = Dropout(self.drop_out)(yb)
-        yb = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(yb)
-        yb = Dropout(self.drop_out)(yb)
-        yb = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yb)
-
-        """
-        Val MSE: 9.5089, Val MAE: 1.7515, R2: 0.44911964082560996
-        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.758
-        Number of Samples: 7451
-        """
-
-        
-        c = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)       
-        c = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(c)
-        c = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(c)
-        c = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(c)
-        c = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(c)
-        #c = MaxPooling1D(pool_size=1, strides=1)(c)
-        yc = Dropout(self.drop_out)(c)
-        yc = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(yc)
-        yc = Dropout(self.drop_out)(yc)
-        yc = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(yc)
-        yc = Dropout(self.drop_out)(yc)
-        yc = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(yc)
-        
-        # -----
-        
-        x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)       
+        x = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(inputs)       
         x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(x)
         x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
+
+        #b = MaxPooling1D(pool_size=1, strides=1)(x)
+        #a = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(b)                
+         
+        #c = MaxPooling1D(pool_size=1, strides=1)(x)
+        #c = Dropout(self.drop_out)(c)
+        #c = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(c)
                 
-        #x = MaxPooling1D(pool_size=1, strides=1)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(128,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        #x = Dropout(self.drop_out)(x)
+        y = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        y = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(y)
         
-        x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
-               
+        #z = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(y)
+         
+        d = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(y) 
         
-        #ave_output = yc
-
-        #ave_output = Average()([ ya, yb])
-        """
-        Val MSE: 9.5467, Val MAE: 1.7547, R2: 0.4469300808047476
-        Total Wins: 5648, Total Losses: 1803, Win Percentage: 0.758
-        Number of Samples: 7451
-        """
-        
-        #ave_output = Average()([ ya, yc])
-        """
-        Val MSE: 9.5334, Val MAE: 1.7632, R2: 0.4476983736403275
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451
-        """
-
-        #ave_output = Average()([ yb, yc])
-        """
-        Val MSE: 9.4510, Val MAE: 1.7274, R2: 0.452472066066524
-        Total Wins: 5642, Total Losses: 1809, Win Percentage: 0.757
-        Number of Samples: 7451        
-        """
-
-
-        #ave_output = Average()([ yb, yc])
-        
-        ave_output = x
-        
-        outputs = Dense(1)(ave_output)  
+        outputs = Dense(1)(d)  
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
         model.summary(expand_nested=True,show_trainable=True)
         
             
-        dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn.png')
-        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+        
+        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, show_shapes=True)
     
         
         print(" ")

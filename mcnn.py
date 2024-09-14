@@ -18,7 +18,7 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-#tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
@@ -83,6 +83,10 @@ class DCNN:
         #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
         #x = Dropout(self.drop_out)(x)
+        
+        x = MultiHeadAttention(num_heads=4, key_dim=8, kernel_regularizer=self.l2_reg)(x, x)
+        
+        
         x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
         #x = Dropout(self.drop_out)(x)
         x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
@@ -113,14 +117,10 @@ class DCNN:
         d = self.build_sub_model_c(inputs)
         e = self.build_sub_model_b(inputs)
         #f = self.build_sub_model_c(inputs)
+        
         #ave_output = Average()([ a, b, c, d, e, f ])
 
-        ao_1 = MultiHeadAttention(num_heads=4, key_dim=4, kernel_regularizer=self.l2_reg)(a, b)
-        #ao_2 = MultiHeadAttention(num_heads=4, key_dim=16, kernel_regularizer=self.l2_reg)(ao_1, c)
-        #ave_output = Average()([ a, b, c, d, e ])
-        
-        ave_output = ao_1
-
+        ave_output = Average()([ a, b, c, d, e ])
         outputs = Dense(1 )(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
