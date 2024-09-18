@@ -2,204 +2,85 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import joblib 
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, Conv1D, Reshape, Multiply, LSTM, Dense, Dropout, Flatten, Bidirectional, MaxPooling2D
+from tensorflow.keras.callbacks import EarlyStopping,  ReduceLROnPlateau
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
-
-from tensorflow.keras.layers import Lambda
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Average, GlobalAveragePooling1D, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.regularizers import l2
 
+
+from ml_model.data_func  import sequence_and_split3D, sequence_and_split
 from ml_model.model_stats import gen_reg_stats_x 
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class DCNN:
-    def __init__(self, epochs=50, batch_size=32):
-        
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.model = None
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-        
-        self.checkpoint_dir = 'checkpoints/'
-        self.trained_dir = 'trained_models/'
-       
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_x_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'dcnn_x_model.keras')
-        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn_x.png')
+def create_model(timesteps, features):
 
-
-        self.drop_out = 0.2
-        self.l2_reg = l2(0.01)
-        self.initializer = GlorotUniform(seed=42)
-        
-
-    def build_model(self, input_shape):
-        inputs = Input(shape=input_shape)
-        
-        """
-        x + y + z
-        
-        Val MSE: 9.2033, Val MAE: 1.7239, R2: 0.46682218820730337
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451
-        
-        """        
-        
-        x = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(inputs)       
-        x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(x)
-        x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
-
-        #b = MaxPooling1D(pool_size=1, strides=1)(x)
-        #a = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(b)                
-         
-        #c = MaxPooling1D(pool_size=1, strides=1)(x)
-        #c = Dropout(self.drop_out)(c)
-        #c = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(c)
-                
-        y = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        y = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(y)
-        
-        #z = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(y)
-         
-        d = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(y) 
-        
-        outputs = Dense(1)(d)  
-        model = Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
-        model.summary(expand_nested=True,show_trainable=True)
-        
-            
-        
-        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, show_shapes=True)
+    drop_out = 0.4
+    l2_reg = l2(0.01)
+    initializer = GlorotUniform(seed=42)
     
-        
-        print(" ")
-        print(" ----- ")
-        print(" ")
-        self.model = model
-        return model        
-                
-        
-        
-    def train_model(self, file_path):
+
+    input_shape = (timesteps, features, 1)
+    inputs = Input(shape=input_shape)
     
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values
-
-        # Reshape X to ensure it has the correct shape for LSTM
-        X = X.reshape(X.shape[0], X.shape[1], 1)
-
-        # Split into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    x = Conv2D(filters=64, kernel_size=(5,5), activation='relu', padding="same")(inputs)
+    x = Dropout(drop_out)(x)
+    #x = Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding="same" )(x)
+    #x = Dropout(drop_out)(x)
+    x = MaxPooling2D(pool_size=(2,1))(x)
+    x = Reshape((input_shape[1], -1))(x)
     
-        self.X_train = X_train
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_test = y_test
+    x = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=initializer)(x)  
+    x = Dropout(drop_out)(x)     
+    x = LSTM(64, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
+    x = Dropout(drop_out)(x)
+    x = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=initializer)(x)
+    x = Dropout(drop_out)(x)
+    x = LSTM(32, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
+    x = Dropout(drop_out)(x)
+    x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=initializer)(x)
+    x = Dropout(drop_out)(x)
+    x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=l2_reg, return_sequences=True, kernel_initializer=initializer))(x)
+    x = Dropout(drop_out)(x)
+    x = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=l2_reg, kernel_initializer=initializer))(x)
+    #x = Dense(16, activation='relu', kernel_regularizer=l2_reg, kernel_initializer=initializer)(x) 
     
-        input_shape = (X_train.shape[1], X_train.shape[2])
-        #(14, 1)
+    attention = Dense(64, activation='softmax', kernel_initializer=initializer, name='attention')(x)
+    weighted = Multiply()([x, attention])
+    x = Dropout(drop_out)(weighted)
         
-        
-        model = self.build_model(input_shape)
-
-        reduce_lr = ReduceLROnPlateau(
-            monitor="val_loss", factor=0.2,
-            patience=5, verbose=1,
-            mode="auto", min_delta=0.000001,
-            cooldown=0, min_lr=0,
-        )
-
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-            self.checkpoint_model, 
-                monitor='val_loss', 
-                    save_best_only=True, 
-                        save_weights_only=False, mode='min')
-        
-        history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=150, 
-                                batch_size=32, callbacks=[
-                                    early_stopping,
-                                    reduce_lr,
-                                    model_checkpoint])
-
-        y_pred = model.predict(X_test)
-        return history_out, y_pred
-
-
-    def evaluate_model(self, y_pred):
-        correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
-        print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
-        print(f"Number of Samples: {total}")
+    x = Dense(8, activation='relu', kernel_regularizer=l2_reg, kernel_initializer=initializer)(x) 
     
-    
-    def load_saved_model(self, mode):
-        
-        if mode == "run":
-           self.model = tf.keras.models.load_model(self.trained_model)
-        
-        if mode == "train":
-           self.model = tf.keras.models.load_model(self.checkpoint_model)
-           
+    outputs = Dense(1)(x)
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
 
-    def run_batch_test(self, file_path):
+
+def evaluate_model(y_test, y_pred):
+    correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(y_test, y_pred)
+    print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
+    print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
+    print(f"Number of Samples: {total}")
+
+
+def main():
+
+    checkpoint_dir = 'checkpoints/'
+    trained_dir = 'trained_models/'
     
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
-               
-        self.X_test = X
-        self.y_test = y
-        y_pred = self.model.predict(self.X_test)
-        
-        
-        self.evaluate_model(y_pred)
-        
-        
-    def plot_training_history(self, history):
-        
-        plt.figure(figsize=(12, 6))
-        plt.subplot(1, 2, 1)
-        plt.plot(history.history['loss'], label='Training Loss')
-        plt.plot(history.history['val_loss'], label='Validation Loss')
-        plt.title('Loss over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss (MSE)')
-        plt.legend()
-        plt.subplot(1, 2, 2)
-        plt.plot(history.history['mae'], label='Training MAE')
-        plt.plot(history.history['val_mae'], label='Validation MAE')
-        plt.title('MAE over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('MAE')
-        plt.legend()
-        plt.show()
-        
-        
-        
-def run():
+    checkpoint_model = os.path.join(checkpoint_dir, 'dcnn_x_model.keras')
+    trained_model = os.path.join(trained_dir, 'dcnn_x_model.keras')
+    dot_img_file = os.path.join(checkpoint_dir, 'dcnn_x.png')
+
 
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
@@ -217,53 +98,71 @@ def run():
         'data/new_model_HLC_lucky13.csv', #11
     ]
 
-    file_path = datafile[1]
-    model = DCNN()
+    file_path = datafile[3]
 
-    train = True
-    test = False
-    single_item = False
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['outputC'])
+    X = df.drop(columns=['output']).values
+    y = df['output'].values
 
-    if train:
-        file_path = datafile[1]
-        history_out, y_pred = model.train_model(file_path)
-        model.evaluate_model(y_pred)
-        #model.plot_training_history(history_out)
-
-    if test:
-        file_path = datafile[0]
-        model.load_saved_model("train")
-        model.run_batch_test(file_path)
-
-    if single_item:
-        file_path = datafile[0]
-        model.load_saved_model("run")
-
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
-
-        model.X_test = X
-        model.y_test = y
-
-        yn = False
-        count = 0
-        ycount = 0
-
-        y_pred = []
-
-        for i in range(len(y)):
-            x_val = X[i]
-            x_val = x_val.reshape((1, 14, 1)) 
-            y_val = model.model.predict(x_val)
-            
-            y_pred.append(y_val[0][0])
-            print(y_val[0][0])
-
-        model.evaluate_model(y_pred)
+    time_steps = 3
+    feature_dims, X_train, X_val, y_train, y_val = sequence_and_split3D(file_path, time_steps)
+    
+    # Create the model
+    model = create_model(time_steps, feature_dims)
+    
+    #model.compile(optimizer=Adam(learning_rate=0.0009), loss='mse',  metrics=['mae', tf.keras.metrics.R2Score()])
+    model.compile(optimizer=Adam(learning_rate=0.00085), loss='mse',  metrics=['mae'])
         
+    model.summary(expand_nested=True,show_trainable=True)
+    tf.keras.utils.plot_model(model, to_file=dot_img_file,             
+        show_shapes=True, 
+        show_dtype=False, 
+        show_layer_names=True,
+        expand_nested=True,
+        show_layer_activations=False,
+        show_trainable=True)
+
+    # Define early stopping callback
+    early_stopping = EarlyStopping(
+        monitor='val_loss', patience=10, restore_best_weights=True
+    )
+
+    reduce_lr = ReduceLROnPlateau(
+            monitor="val_loss", 
+            factor=0.25, patience=3, verbose=1,
+            #mode="auto", 
+            #min_delta=0.000001,
+            #cooldown=0, 
+            min_lr=0.0001,
+        )
+
+
+    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+        checkpoint_model, 
+            monitor='val_loss', 
+                save_best_only=True, 
+                    save_weights_only=False, mode='min')
+    
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), 
+                            initial_epoch=0, epochs=150, 
+                            batch_size=64, callbacks=[
+                                early_stopping,
+                                reduce_lr,
+                                model_checkpoint])
+
+    y_pred = model.predict(X_val)
+    evaluate_model(y_val, y_pred)
+
+    # Plot training history
+    plt.figure(figsize=(8, 6))
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Model Loss During Training')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
-    run()            
-        
+    main()

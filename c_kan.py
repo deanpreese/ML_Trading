@@ -104,7 +104,6 @@ class C_KAN:
         self.model = Model(inputs=inputs, outputs=output)
         return self.model
 
-
     
 
     def compile_and_train_model(self, X_train, y_train, X_val, y_val):
@@ -277,6 +276,23 @@ if __name__ == "__main__":
     
     
 '''
+ATR21    0.5159254670143127
+ATR53    0.3380168378353119
+SDKC91    0.3322390019893646
+SDBB91    0.23089399933815002
+ATR54    0.22894202172756195
+RSI    0.10666730999946594
+STOK1    -0.13799570500850677
+ATR2    -0.3211486041545868
+ATR52    -0.33030328154563904
+SDLR310    -0.33175864815711975
+ATR51    -0.3567757308483124
+ROC    -0.4366353154182434
+ATR5    -0.5043916702270508
+SDKC9    -0.6410184502601624
 
+Pred MSE: 9.2080,  MAE: 1.7145, R2: 0.46654953925608544
+Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.7583
+Number of Samples: 7451
 
 ''' 

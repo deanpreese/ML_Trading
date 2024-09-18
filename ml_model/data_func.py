@@ -32,8 +32,6 @@ def full_split_and_scale(pd_data, col_offset, size_test, random_state, output_co
     return X_train, X_test, y_train, y_test, input_features
 
 
-
-
 def create_sequences(df, seq_length):
     print("Create Sequences")
     xs, ys = [], [] 
@@ -46,12 +44,21 @@ def create_sequences(df, seq_length):
     return np.array(xs), np.array(ys)
 
 def normalize_sequences(sequences):
-    print("normalize sequences")
+    print("Normalize sequences")
     scalers_out = {}
     for i in range(sequences.shape[0]):
         scalers_out[i] = MinMaxScaler((-1,1))
         sequences[i] = scalers_out[i].fit_transform(sequences[i])
     return sequences, scalers_out
+
+def scale_sequences(sequences):
+    print("Scale sequences")
+    scalers_out = {}
+    for i in range(sequences.shape[0]):
+        scalers_out[i] = StandardScaler()
+        sequences[i] = scalers_out[i].fit_transform(sequences[i])
+    return sequences, scalers_out
+
 
 # Function to reverse scaling
 def reverse_scaling(preds, scalers, seq_length, feature_dim):
@@ -82,10 +89,38 @@ def sequence_and_split(file_path, timesteps):
     df = pd.read_csv(file_path)
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output'])
-    featrure_dims = len(X.columns)
+    feature_dims = len(X.columns)
     
     X, y = create_sequences(df, timesteps)
-    X, scalers = normalize_sequences(X)
+    X, scalers = scale_sequences(X)
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     
-    return featrure_dims, X_train, X_test, y_train, y_test
+    return feature_dims, X_train, X_test, y_train, y_test
+
+
+def sequence_and_split3D(file_path, timesteps):
+    
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['outputC'])
+    X = df.drop(columns=['output'])
+    feature_dims = len(X.columns)
+    
+    X, y = create_sequences(df, timesteps)
+    
+    X, scalers = scale_sequences(X)
+    #X, scalers = normalize_sequences(X)
+    """
+    The reshaped data has the shape (number of samples, number of time steps, number of features, 1)
+    , where:
+    X_train.shape[0] is the number of samples in the training set.
+    X_train.shape[1] is the number of time steps (sequence length).
+    X_train.shape[2] is the number of features per time step.
+    1 is the single channel dimension.
+    """
+    
+    X = X.reshape((X.shape[0], timesteps, feature_dims, 1))
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    
+    return feature_dims, X_train, X_test, y_train, y_test

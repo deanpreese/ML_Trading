@@ -163,7 +163,6 @@ def main():
     )
 
     mann_model = MANNModel(input_size, hidden_size, output_size, memory_size, memory_dim)
-    #optimizer_mann = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
     optimizer_mann = tf.keras.optimizers.Adam(learning_rate=initial_lr)
 
 
