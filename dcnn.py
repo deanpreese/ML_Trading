@@ -42,7 +42,7 @@ class DCNN:
         self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn_x.png')
 
 
-        self.drop_out = 0.2
+        self.drop_out = 0.3
         self.l2_reg = l2(0.01)
         self.initializer = GlorotUniform(seed=42)
         
@@ -86,7 +86,8 @@ class DCNN:
         x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
         x = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x) 
                 
-        ave_output = Average()([ h, x ])
+        #ave_output = Average()([ h, x ])
+        ave_output = x
         
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
@@ -219,13 +220,13 @@ def run():
         'new_model_Z_lucky13_3070_oos.csv',
         'new_model_Z_lucky13_3070.csv', #7,
         'data/Lucky13_3070_oos_3.csv',   
-        'data/Lucky13_3070_3.csv',  #8
+        'data/Lucky13_3070_3.csv',  #9
         'data/Lucky13_3070_oos_5.csv',   
-        'data/Lucky13_3070_5.csv',  #10
-        'data/new_model_HLC_lucky13.csv', #11
+        'data/Lucky13_3070_5.csv',  #11
+        'data/new_model_HLC_lucky13.csv', #12
     ]
 
-    file_path = datafile[1]
+    file_path = datafile[7]
     model = DCNN()
 
     train = True

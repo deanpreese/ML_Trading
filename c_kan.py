@@ -268,7 +268,7 @@ def main():
     train_mae, val_mae, test_mae = c_kan.evaluate_model(X_train, y_train, X_val, y_val, X_test, y_test, y_pred, cols)
     
     # Visualizations
-    #c_kan.combined_pßlots(history, num_features, y_test, y_pred)
+    c_kan.combined_plots(history, num_features, y_test, y_pred)
 
 
 if __name__ == "__main__":
