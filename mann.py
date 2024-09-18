@@ -52,8 +52,9 @@ def evaluate_model(y_test, y_pred):
 def train_model(model, optimizer, x_train, y_train, num_epochs):
     loss_fn = tf.keras.losses.MeanSquaredError()
     r2_fn = tf.keras.metrics.R2Score()
+    mae_fn = tf.keras.metrics.MeanAbsoluteError()
     
-    history = {'loss': [], 'r2': []}
+    history = {'loss': [], 'r2': [], 'mae':[]}
     best_loss = np.inf
     patience = 10
     patience_counter = 0
@@ -65,15 +66,17 @@ def train_model(model, optimizer, x_train, y_train, num_epochs):
             predictions = model(x_train)
             loss = loss_fn(y_train, predictions)
             r2 = r2_fn(y_train, predictions)
+            mae = mae_fn(y_train,)
 
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         
         history['loss'].append(loss)  
         history['r2'].append(r2)
+        history["mae"].append(mae)
 
         if (epoch+1) % 2 == 0:
-            print(f"Epoch {epoch+1}/{num_epochs}  Patience: {patience_counter}  Loss {loss:4f}   R2 {r2:4f}   lr {optimizer.learning_rate.numpy()}")
+            print(f"Epoch {epoch+1}/{num_epochs}  Patience: {patience_counter}  MSE {loss:4f}  MAE {mae:4f}   R2 {r2:4f}   lr {optimizer.learning_rate.numpy()}")
 
         if loss < best_loss - min_delta:
             best_loss = loss

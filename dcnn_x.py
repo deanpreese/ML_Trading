@@ -25,17 +25,16 @@ tf.random.set_seed(42)
 def create_model(timesteps, features):
 
     drop_out = 0.4
-    l2_reg = l2(0.01)
+    l2_reg = l2(0.04)
     initializer = GlorotUniform(seed=42)
-    
 
     input_shape = (timesteps, features, 1)
     inputs = Input(shape=input_shape)
     
     x = Conv2D(filters=64, kernel_size=(5,5), activation='relu', padding="same")(inputs)
     x = Dropout(drop_out)(x)
-    #x = Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding="same" )(x)
-    #x = Dropout(drop_out)(x)
+    x = Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding="same" )(x)
+    x = Dropout(drop_out)(x)
     x = MaxPooling2D(pool_size=(2,1))(x)
     x = Reshape((input_shape[1], -1))(x)
     
@@ -98,14 +97,14 @@ def main():
         'data/new_model_HLC_lucky13.csv', #11
     ]
 
-    file_path = datafile[3]
+    file_path = datafile[7]
 
     df = pd.read_csv(file_path)
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output']).values
     y = df['output'].values
 
-    time_steps = 3
+    time_steps = 7
     feature_dims, X_train, X_val, y_train, y_val = sequence_and_split3D(file_path, time_steps)
     
     # Create the model
