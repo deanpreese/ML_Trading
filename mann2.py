@@ -140,16 +140,16 @@ datafile = [
 ]
 
 file_path = datafile[1]
-time_steps = 24
+time_steps = 12
 feature_dims, X_train, X_test, y_train, y_test, scalers = sequence_and_normalize(file_path, time_steps)
 
-print(X_train.shape)
+#print(X_train.shape)
 #(26072, 7, 14)
-print(y_train.shape)
+#print(y_train.shape)
 #(26072,)
-print(X_test.shape)
+#print(X_test.shape)
 #(11169, 24, 14)
-print(y_test.shape)
+#print(y_test.shape)
 #(11169,)
 
 # Parameters
@@ -157,22 +157,21 @@ batch_size = 32
 input_dim = X_train.shape[2]   
 memory_size = 256
 memory_vector_dim = 256
-controller_units = 100
+controller_units = 64
 
 # Initialize the NTM cell
 ntm_cell = NTMCell(memory_size, memory_vector_dim, controller_units)
-
-# Wrap the NTM cell in an RNN layer
 ntm_layer = tf.keras.layers.RNN(ntm_cell, return_sequences=True)
-
-# Build the model for regression
 inputs_placeholder = tf.keras.Input(shape=(time_steps, input_dim))
 ntm_outputs = ntm_layer(inputs_placeholder)
-# Output layer for regression
 
+x = tf.keras.layers.LSTM(64, activation='relu', return_sequences=True)(ntm_outputs)
+x = tf.keras.layers.LSTM(32, activation='relu', return_sequences=False)(x)
+x = tf.keras.layers.Dense(16, activation='relu')(x) 
+         
 print(f"NTM OUT {ntm_outputs.shape}")
 
-final_output = tf.keras.layers.Dense(1)(ntm_outputs)  # No activation (linear activation by default)
+final_output = tf.keras.layers.Dense(1)(x)  # No activation (linear activation by default)
 
 model = tf.keras.Model(inputs=inputs_placeholder, outputs=final_output)
 
@@ -186,37 +185,35 @@ model.summary(expand_nested=True,show_trainable=True)
 # Add early stopping callback
 early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
+reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor="val_loss", factor=0.2,
+    patience=5, verbose=1,
+    mode="auto", min_delta=0.000001,
+    cooldown=0, min_lr=0,
+)
+
 # Train the model
 history = model.fit(X_train, y_train,
                     validation_data=(X_test, y_test),
                     epochs=100,
                     batch_size=batch_size,
-                    callbacks=[early_stopping],
+                    callbacks=[early_stopping, reduce_lr],
                     verbose=1)
 
 
-# Step 1: Make predictions on the validation set
 predictions = model.predict(X_test)
 
-print(f"Predicitons Shape  {predictions.shape}")
+#print(f"Predicitons Shape  {predictions.shape}")
+#print(f" Pred Shape {predictions.shape} " )
+#print(f" Target Shape {y_test.shape}")
 
-# Step 3: Compute evaluation metrics on the validation set
-# Reshape predictions and targets to 1D arrays
-#predictions_flat = predictions.reshape(predictions.shape[0],-1)
-predictions_flat = predictions[:, 0, 0]
-targets_val_flat = y_test.reshape(-1)
-
+predictions_flat = predictions.reshape(-1)
 #print(f" Pred Flat {predictions_flat.shape} " )
-#print(f" Target Flat {targets_val_flat.shape}")
 
 # Calculate MSE and MAE
-mse = mean_squared_error(targets_val_flat, predictions_flat)
-mae = mean_absolute_error(targets_val_flat, predictions_flat)
-
-#print(f"Validation MSE: {mse}")
-#print(f"Validation MAE: {mae}")
-
-evaluate_model(targets_val_flat, predictions_flat )
+mse = mean_squared_error(y_test, predictions_flat)
+mae = mean_absolute_error(y_test, predictions_flat)
+evaluate_model(y_test, predictions_flat )
 
 """
 # Step 4: Visualize predictions vs. actual targets

@@ -31,31 +31,27 @@ def create_model(timesteps, features):
     input_shape = (timesteps, features, 1)
     inputs = Input(shape=input_shape)
     
-    x = Conv2D(filters=64, kernel_size=(5,5), activation='relu', padding="same")(inputs)
+    x = Conv2D(filters=64, kernel_size=4, activation='relu', padding="same")(inputs)
     x = Dropout(drop_out)(x)
-    x = Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding="same" )(x)
+    x = Conv2D(filters=32, kernel_size=3, activation='relu', padding="same" )(x)
     x = Dropout(drop_out)(x)
-    x = MaxPooling2D(pool_size=(2,1))(x)
+    #x = MaxPooling2D(pool_size=(2,1))(x)
     x = Reshape((input_shape[1], -1))(x)
     
-    x = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=initializer)(x)  
-    x = Dropout(drop_out)(x)     
-    x = LSTM(64, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
-    x = Dropout(drop_out)(x)
-    x = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=initializer)(x)
-    x = Dropout(drop_out)(x)
-    x = LSTM(32, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
-    x = Dropout(drop_out)(x)
-    x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=initializer)(x)
-    x = Dropout(drop_out)(x)
-    x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=l2_reg, return_sequences=True, kernel_initializer=initializer))(x)
-    x = Dropout(drop_out)(x)
-    x = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=l2_reg, kernel_initializer=initializer))(x)
-    #x = Dense(16, activation='relu', kernel_regularizer=l2_reg, kernel_initializer=initializer)(x) 
+    x = Conv1D(filters=64, kernel_size=2,  activation='relu', kernel_initializer=initializer)(x)       
+    #x = LSTM(64, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
+    x = Conv1D(filters=32, kernel_size=2,  activation='relu', kernel_initializer=initializer)(x)
+    #x = LSTM(32, kernel_regularizer=l2_reg, activation='relu', return_sequences=True, kernel_initializer=initializer)(x)
+    #x = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=initializer)(x)
+    #x = Bidirectional(LSTM(32, kernel_regularizer=l2_reg, return_sequences=True, kernel_initializer=initializer))(x)
+    #x = Bidirectional(LSTM(64, kernel_regularizer=l2_reg, return_sequences=True, kernel_initializer=initializer))(x)
     
-    attention = Dense(64, activation='softmax', kernel_initializer=initializer, name='attention')(x)
-    weighted = Multiply()([x, attention])
-    x = Dropout(drop_out)(weighted)
+    #x = MaxPooling1D(pool_size=1, strides=1)(x)
+    
+    x = Bidirectional(LSTM(32, kernel_regularizer=l2_reg, kernel_initializer=initializer))(x)
+    x = Dense(32, activation='relu', kernel_regularizer=l2_reg,  kernel_initializer=initializer)(x) 
+    attention_x = Dense(32, activation='softmax', kernel_initializer=initializer, name='attention_x')(x)
+    x = Multiply()([x, attention_x])                
         
     x = Dense(8, activation='relu', kernel_regularizer=l2_reg, kernel_initializer=initializer)(x) 
     
@@ -97,14 +93,14 @@ def main():
         'data/new_model_HLC_lucky13.csv', #11
     ]
 
-    file_path = datafile[7]
+    file_path = datafile[1]
 
     df = pd.read_csv(file_path)
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output']).values
     y = df['output'].values
 
-    time_steps = 7
+    time_steps = 24
     feature_dims, X_train, X_val, y_train, y_val = sequence_and_split3D(file_path, time_steps)
     
     # Create the model

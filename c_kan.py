@@ -63,14 +63,14 @@ class C_KAN:
         input = Input(shape=input_shape)
         input_dim = input.shape[1]  
         reshaped_inputs = Reshape((input_dim, 1))(input)
-        inx = LSTM(16, return_sequences=True, activation='relu')(reshaped_inputs)
+        inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
         #inx = Dropout(self.drop_out)(inx)
         x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
        # x = Dropout(self.drop_out)(x)
         x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
         #x = Dropout(self.drop_out)(x)
         x = MaxPooling1D(pool_size=1, strides=1)(x)
-        x = LSTM(16, return_sequences=False, activation='relu')(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
         #x = Dropout(self.drop_out)(x)
         smx_out = Dense(1, activation='linear')(x) 
         subx_model = Model(input, smx_out)
@@ -90,13 +90,19 @@ class C_KAN:
         
         concatenated_outputs = Concatenate(axis=1)(feature_outputs)
         reshaped_attention_input = Reshape((num_features, 1))(concatenated_outputs)
+        
         attention = Dense(num_features, activation='softmax', kernel_initializer=self.initializer, name='attention')(reshaped_attention_input)
         weighted = Multiply()([reshaped_attention_input, attention])
         
-        weighted = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(weighted)
+        weighted = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+    
+        attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
+        weighted = Multiply()([weighted, attention2])
+        
+        #weighted = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(weighted)
         
         weighted = Reshape((-1,))(weighted)
-        aggregated = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+        aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
         aggregated = Dropout(self.drop_out)(aggregated)
         
         output = Dense(1, activation='linear')(aggregated)
