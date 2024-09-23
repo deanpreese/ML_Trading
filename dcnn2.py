@@ -24,7 +24,7 @@ tf.random.set_seed(42)
 
 
 class M_CNN:
-    def __init__(self, epochs=50, batch_size=32):
+    def __init__(self, epochs=50, batch_size=256):
         
         self.epochs = epochs
         self.batch_size = batch_size

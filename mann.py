@@ -66,7 +66,7 @@ def train_model(model, optimizer, x_train, y_train, num_epochs):
             predictions = model(x_train)
             loss = loss_fn(y_train, predictions)
             r2 = r2_fn(y_train, predictions)
-            mae = mae_fn(y_train,)
+            mae = mae_fn(y_train,predictions)
 
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
