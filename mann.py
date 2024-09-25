@@ -8,7 +8,7 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 def set_seeds():
     """Set random seeds for reproducibility."""
-    tf.config.set_visible_devices([], 'GPU')
+    #tf.config.set_visible_devices([], 'GPU')
     np.random.seed(42)
     tf.random.set_seed(42)
 
@@ -170,7 +170,7 @@ def main():
 
 
     print("Training MANN Model...")
-    train_model(mann_model, optimizer_mann, X_test, y_test, num_epochs=1000)
+    train_model(mann_model, optimizer_mann, X_test, y_test, num_epochs=5000)
 
     y_pred_mann = predict(mann_model, X_test)
     print("\nMANN")

@@ -132,16 +132,17 @@ def run():
                 'data/Lucky13_3070_3.csv',  #8
                 'data/Lucky13_3070_oos_5.csv',   
                 'data/Lucky13_3070_5.csv',  #10
+                'data/Lucky13_EX.csv', #11
                 
         ]
 
-        dtx = pd.read_csv(datafile[10])
+        dtx = pd.read_csv(datafile[1])
 
         split_test_size_value = 0.7          
-        min_features_used = 5
-        max_features_used = 11
+        min_features_used = 8
+        max_features_used = 12
         step_features_used = 1
-        total_cycles_used = 50
+        total_cycles_used = 100
 
         p_df, experiment_id_parent = run_models(dtx, ens_r, 
                                                 split_test_size_value, min_features_used, max_features_used, 
