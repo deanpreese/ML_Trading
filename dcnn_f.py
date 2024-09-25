@@ -37,9 +37,9 @@ class DCNN:
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'dcnn_model.keras')
-        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn.png')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_f_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'dcnn_f_model.keras')
+        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn_f.png')
 
         self.drop_out = 0.3
         self.l2_reg = l2(0.01)
@@ -169,9 +169,29 @@ class DCNN:
         #feat_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
         #df = df[feat_list]
         
+        cols = [
+                #'SDLR310', 'SDBB91', 'SDKC91', 'SDKC9','ROC', 
+                #'ATR54', 
+                'ATR53', 'ATR52', 'ATR51', 
+                'ATR5', 'ATR21', 'ATR2', 'RSI', 'STOK1', 
+                
+                
+                
+                #'FOSC2', 'FOSC1', 'FOSC', 
+                'ADX2', 'ADX1', 'ADX', 
+                #'EMAL10103', 'EMAL10102', 'EMAL10101', 
+                #'EMAL21213', 'EMAL21212', 'EMAL21211', 
+                #'SDLR93', 'SDLR92', 'SDLR91', 'SDLR9', 
+                'output', 
+                #'outputC'
+                ]
+        
+        df = df[cols]
+        
+        
         
         df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
+        #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
         
         X = df.drop(columns=['output']).values
         y = df['output'].values
@@ -288,10 +308,10 @@ def run():
     if train:
         
         #for i in range(3):
-            file_path = datafile[1]
+            file_path = datafile[3]
             history_out, y_pred = model.train_model(file_path)
             mse = model.evaluate_model(y_pred)
-            #model.plot_training_history(history_out)
+            model.plot_training_history(history_out)
             
             #model_file = f"dcnn_{mse}_model.keras"
             #file_path = os.path.join(model.checkpoint_dir, model_file)

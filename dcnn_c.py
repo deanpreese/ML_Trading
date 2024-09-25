@@ -16,6 +16,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
 
+from ml_model.model_stats import gen_reg_stats_x, gen_class_stats 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 tf.config.set_visible_devices([], 'GPU')
@@ -23,7 +24,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class DCNN:
+class DCNN_C:
     def __init__(self, epochs=50, batch_size=32):
         
         self.epochs = epochs
@@ -157,7 +158,7 @@ class DCNN:
                         save_weights_only=False, mode='min')
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=200, 
+                                initial_epoch=0, epochs=3000, 
                                 batch_size=32, callbacks=[
                                     early_stopping,
                                     reduce_lr,
@@ -182,6 +183,10 @@ class DCNN:
         print(classification_report(y_true_classes, y_pred_classes))
         print("Confusion Matrix:")
         print(confusion_matrix(y_true_classes, y_pred_classes))
+        
+        perf, correct1, total, tn, fp, fn, tp, mse, rmse, mae, r2 = gen_class_stats( self.y_test, y_pred)
+        
+        return mse
     
     def load_saved_model(self, mode):
         
@@ -243,18 +248,25 @@ def run():
         
     ]
 
-    model = DCNN()
+    model = DCNN_C()
 
     train = True
     test = False
     single_item = False
 
+
     if train:
         
-        file_path = datafile[1]
-        history_out = model.train_model(file_path)
-        model.plot_training_history(history_out)
+        for i in range(15):
+            file_path = datafile[1]
+            model.train_model(file_path)
+            mse = model.evaluate_model()
+            #model.plot_training_history(history_out)
             
+            model_file = f"dcnn_c_{mse}_model.keras"
+            file_path = os.path.join(model.checkpoint_dir, model_file)
+            model.model.save(file_path)
+        
 
     if test:
         file_path = datafile[0]
