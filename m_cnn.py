@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Average, GlobalAveragePooling1D, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.layers import Input, Conv1D, Average, Multiply, GlobalAveragePooling1D, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
 from sklearn.model_selection import train_test_split
@@ -36,17 +36,15 @@ class DCNN:
         
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
-       
         self.checkpoint_model = os.path.join(self.checkpoint_dir, 'mcnn_model.keras')
         self.trained_model = os.path.join(self.trained_dir, 'mcnn_model.keras')
         self.dot_img_file = os.path.join(self.checkpoint_dir, 'mcnn.png')
-
 
         self.drop_out = 0.2
         self.l2_reg = l2(0.01)
         self.initializer = GlorotUniform(seed=42)
         
-    def build_sub_model_a(self, inputs):        
+    def build_sub_model_a(self, inputs, output_units):        
         x = Conv1D(filters=64, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(inputs)
         x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(x)
@@ -54,73 +52,73 @@ class DCNN:
         x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
         x = MaxPooling1D(pool_size=1, strides=1)(x)
         x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(32,kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
         x = Dropout(self.drop_out)(x)
         x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(x)
         x = Dropout(self.drop_out)(x)
-        x = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)        
+        x = Dense(output_units, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)        
         return x
     
-    def build_sub_model_b(self, inputs):        
+    def build_sub_model_b(self, inputs, output_units):        
         x = Conv1D(filters=64, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(inputs)       
         x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
         x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
         x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(32,kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
         x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(16, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
         x = Dropout(self.drop_out)(x)
-        x = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
+        x = Dense(output_units, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
         return x
 
 
-    def build_sub_model_c(self, inputs):        
-        x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
-        #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = Dropout(self.drop_out)(x)
+    def build_sub_model_c(self, inputs, output_units):        
+            
+        x = Conv1D(filters=64, kernel_size=4,  activation='relu', kernel_initializer=self.initializer)(inputs)       
+        x = Conv1D(filters=32, kernel_size=3,  activation='relu', kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(64, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
         
-        x = MultiHeadAttention(num_heads=4, key_dim=8, kernel_regularizer=self.l2_reg)(x, x)
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
         
-        
-        x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
-        x = Dropout(self.drop_out)(x)
-        x = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
+        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(x) 
+        attention_x = Dense(32, activation='softmax', kernel_initializer=self.initializer)(x)
+        x = Multiply()([x, attention_x])                
+        x = Dense(output_units, activation='relu', kernel_regularizer=self.l2_reg, name="x_out", kernel_initializer=self.initializer)(x) 
         return x
 
-    def build_sub_model_d(self, inputs):        
-        x = Conv1D(filters=32, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
-        #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Bidirectional(LSTM(16,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
-        x = Dropout(self.drop_out)(x)
-        x = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer)(x)
-        return x
+    def build_sub_model_d(self, inputs, output_units):        
+         
+        h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
+        h = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(h)
+        h = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(h)
+        h = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(h)
+        h = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(h)
+
+        h = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(h)         
+        attention_h = Dense(32, activation='softmax', kernel_initializer=self.initializer)(h)
+        h = Multiply()([h, attention_h])                
+        h = Dense(output_units, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h) 
+        
+        return h
 
     def build_model(self, input_shape):
         inputs = Input(shape=input_shape)
         
-        a = self.build_sub_model_a(inputs)
-        b = self.build_sub_model_b(inputs)
-        c = self.build_sub_model_a(inputs)
-        d = self.build_sub_model_c(inputs)
-        e = self.build_sub_model_b(inputs)
-        #f = self.build_sub_model_c(inputs)
+        output_units = 4
+        
+        #a = self.build_sub_model_a(inputs, output_units)
+        #b = self.build_sub_model_b(inputs, output_units)
+        c = self.build_sub_model_c(inputs, output_units)
+        d = self.build_sub_model_d(inputs, output_units)
         
         #ave_output = Average()([ a, b, c, d, e, f ])
 
-        ave_output = Average()([ a, b, c, d, e ])
+        ave_output = Average()([c, d ])
         outputs = Dense(1 )(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])

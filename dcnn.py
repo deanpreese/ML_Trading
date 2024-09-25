@@ -41,31 +41,18 @@ class DCNN:
         self.trained_model = os.path.join(self.trained_dir, 'dcnn_x_model.keras')
         self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn_x.png')
 
-
         self.drop_out = 0.3
         self.l2_reg = l2(0.01)
-        self.initializer = GlorotUniform(seed=42)
-        
+        self.initializer = GlorotUniform(seed=42)        
+    
+    
+    def build_model_h(self, inputs):
 
-    def build_model(self, input_shape):
-        inputs = Input(shape=input_shape)
-        
-        """
+        """ 
         H
         Val MSE: 9.1925, Val MAE: 1.7172, R2: 0.46744909954386704
         Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
         Number of Samples: 7451
-                
-        X        
-        Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451    
-        
-        ave_output = Average()([ h, x ])
-        Val MSE: 9.5295, Val MAE: 1.7265, R2: 0.44792373427988874
-        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
-        Number of Samples: 7451            
-                
         """        
 
         h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
@@ -79,11 +66,23 @@ class DCNN:
         h = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(h)         
         attention_h = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_h')(h)
         h = Multiply()([h, attention_h])                
-        #h = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h)         
-                
-                
-                
-        x = Conv1D(filters=64, kernel_size=4,  activation='relu', kernel_initializer=self.initializer)(inputs)       
+        h = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h)           
+        
+        return h        
+        
+        
+    def build_model_x(self, inputs):
+        
+        """
+
+        X        
+        Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451    
+        
+        """        
+        
+        x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
         #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
         x = Conv1D(filters=32, kernel_size=3,  activation='relu', kernel_initializer=self.initializer)(x)
         #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
@@ -98,10 +97,47 @@ class DCNN:
         attention_x = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_x')(x)
         x = Multiply()([x, attention_x])                
         x = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="x_out", kernel_initializer=self.initializer)(x) 
+                     
+        return x
+    
+    
+    def build_model_z(self, inputs):
+
+        """ 
+    
+        """        
+
+        z = Conv1D(filters=256, kernel_size=4, strides=2, activation='relu', kernel_initializer=self.initializer)(inputs) 
+        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
+        z = Conv1D(filters=128, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(z)
+        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
+        z = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(z)
+        
+        z = Bidirectional(LSTM(64,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(z)
+        
+        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
+        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(z)
+        
+        z = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(z)
+
+        z = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(z)         
+        attention_z = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_z')(z)
+        z = Multiply()([z, attention_z])                
+        z = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(z)           
+        
+        return z
+    
+    
+
+    def build_model(self, input_shape):
+        
+        inputs = Input(shape=input_shape)
+        
+        #x = self.build_model_x(inputs)
+        h = self.build_model_h(inputs)
+        #z = self.build_model_z(inputs)
                 
-        #ave_output = Average()([ h, x , h])
-        #ave_output = Average()([ h, x ])
-        ave_output = x
+        ave_output = h
         
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
@@ -122,15 +158,25 @@ class DCNN:
         
     def train_model(self, file_path):
     
+        print(f"Loading {file_path}" )
+    
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
+            
+        #descriptive_stats = df.describe()
+        #descriptive_stats.to_csv('descriptive_statistics.csv', index=True)
+
+        #feat_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
+        #df = df[feat_list]
+        
+        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
+        
         X = df.drop(columns=['output']).values
         y = df['output'].values
 
-        # Reshape X to ensure it has the correct shape for LSTM
-        X = X.reshape(X.shape[0], X.shape[1], 1)
 
-        # Split into train and test sets
+        X = X.reshape(X.shape[0], X.shape[1], 1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
         self.X_train = X_train
@@ -140,7 +186,6 @@ class DCNN:
     
         input_shape = (X_train.shape[1], X_train.shape[2])
         #(14, 1)
-        
         
         model = self.build_model(input_shape)
 
@@ -197,8 +242,7 @@ class DCNN:
         self.X_test = X
         self.y_test = y
         y_pred = self.model.predict(self.X_test)
-        
-        
+
         self.evaluate_model(y_pred)
         
         
@@ -228,20 +272,12 @@ def run():
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
-        'data/ndata_diff_lucky13_3070_oos.csv', 
-        'data/ndata_diff_lucky13_3070.csv', #3
-        'data/ndata_lucky_13_lag_3070_oos.csv', 
-        'data/ndata_lucky13_lag_3070.csv', #5
-        'new_model_Z_lucky13_3070_oos.csv',
-        'new_model_Z_lucky13_3070.csv', #7,
-        'data/Lucky13_3070_oos_3.csv',   
-        'data/Lucky13_3070_3.csv',  #9
-        'data/Lucky13_3070_oos_5.csv',   
-        'data/Lucky13_3070_5.csv',  #11
-        'data/new_model_HLC_lucky13.csv', #12
+        'data/Lucky13_EX_oos.csv',  
+        'data/Lucky13_EX.csv',  #3
+        
     ]
 
-    file_path = datafile[1]
+    #file_path = datafile[13]
     model = DCNN()
 
     train = True
@@ -250,14 +286,15 @@ def run():
 
     if train:
         
-        for i in range(3):
+        #for i in range(3):
             file_path = datafile[1]
             history_out, y_pred = model.train_model(file_path)
             mse = model.evaluate_model(y_pred)
             #model.plot_training_history(history_out)
-            model_file = f"dcnn_{mse}_model.keras"
-            file_path = os.path.join(model.checkpoint_dir, model_file)
-            model.model.save(file_path)
+            
+            #model_file = f"dcnn_{mse}_model.keras"
+            #file_path = os.path.join(model.checkpoint_dir, model_file)
+            #model.model.save(file_path)
             
 
     if test:
