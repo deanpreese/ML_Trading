@@ -34,8 +34,10 @@ def execute_sql_query():
                     WHERE exp.name NOT LIKE '%output%' 
                     AND exp.lifecycle_stage = 'active' 
                     AND met.key = 'Perf'
-                    AND met.value > 0.8
+                    AND exp.experiment_id = 268
+                    AND met.value > 0.7
                     ORDER BY met.value DESC
+                    LIMIT 100
                 """
                 
                 cursor.execute(sql_query)

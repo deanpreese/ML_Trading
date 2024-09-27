@@ -243,9 +243,8 @@ def run():
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_EX_oos.csv',  
-        'data/Lucky13_EX.csv',  #3
-        
+        'data/Lucky13_EX_3070_oos.csv',  
+        'data/Lucky13_EX_3070.csv',  #3
     ]
 
     model = DCNN_C()
@@ -258,7 +257,7 @@ def run():
     if train:
         
         for i in range(15):
-            file_path = datafile[1]
+            file_path = datafile[3]
             model.train_model(file_path)
             mse = model.evaluate_model()
             #model.plot_training_history(history_out)

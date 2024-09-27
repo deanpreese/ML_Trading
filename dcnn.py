@@ -143,10 +143,16 @@ class DCNN:
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
         model.summary(expand_nested=True,show_trainable=True)
-            
-        
-        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, show_shapes=True)
-    
+ 
+        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+            )   
+ 
         
         print(" ")
         print(" ----- ")
@@ -166,12 +172,30 @@ class DCNN:
         #descriptive_stats = df.describe()
         #descriptive_stats.to_csv('descriptive_statistics.csv', index=True)
 
-        #feat_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
-        #df = df[feat_list]
+        #Lucky13  ALL Cols
+        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+
+        #f_13_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
         
         
-        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
+        #Lucky 13 EX All Cols
+        f_13_ex = ['RSI', 'ATR2', 'STOK1', 'ATR21', 'SDLR310', 'FOSC1', 'ATR5', 'ADX2', 'SDKC9', 'ATR54', 'SDBB91', 
+                   'SDLR93', 'ROC', 'EMAL10101', 'ADX1', 'EMAL10103', 'EMAL21211', 'FOSC2', 'ATR51', 'SDLR91', 
+                   'SDLR92', 'SDLR9', 'EMAL21213', 'EMAL21212', 'ATR53', 'ATR52', 'SDKC91', 'EMAL10102', 'FOSC', 'ADX']
+        
+        #Val MSE: 9.3862, Val MAE: 1.7522, R2: 0.4562254910904875
+        #Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
+        #Number of Samples: 7451
+        #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
+        #        'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output']       
+        
+        
+        #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output']
+        #df = df[f_list]
+
+
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
         
         X = df.drop(columns=['output']).values
         y = df['output'].values
@@ -273,9 +297,8 @@ def run():
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_EX_oos.csv',  
-        'data/Lucky13_EX.csv',  #3
-        
+        'data/Lucky13_EX_3070_oos.csv',  
+        'data/Lucky13_EX_3070.csv',  #33
     ]
 
     #file_path = datafile[13]
@@ -288,7 +311,7 @@ def run():
     if train:
         
         #for i in range(3):
-            file_path = datafile[1]
+            file_path = datafile[3]
             history_out, y_pred = model.train_model(file_path)
             mse = model.evaluate_model(y_pred)
             #model.plot_training_history(history_out)

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import Input, Conv1D, Average, Conv2D, Reshape, Concatenate, Multiply, BatchNormalization, Bidirectional, Add, Dense, Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.layers import Input, Conv1D, Average, Conv2D, LeakyReLU, Reshape, Concatenate, Multiply, BatchNormalization, Bidirectional, Add, Dense, Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
 from sklearn.model_selection import train_test_split
@@ -22,7 +22,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class C_KAN:
+class C_KANX:
     def __init__(self, epochs=50, batch_size=32):
         
         self.epochs = epochs
@@ -36,9 +36,9 @@ class C_KAN:
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'c_kan_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'c_kan_model.keras')
-        self.model_plot = os.path.join(self.checkpoint_dir, 'c_kan_model.png')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'c_kan_x_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'c_kan_x_model.keras')
+        self.model_plot = os.path.join(self.checkpoint_dir, 'c_kan_x_model.png')
 
         self.drop_out = 0.2
         self.l2_reg = l2(0.01)
@@ -78,31 +78,119 @@ class C_KAN:
         return subx_model
 
 
-    def create_custom_model(self, num_features):
-        inputs = Input(shape=(num_features,))
+    def create_feature_model2(self, input_shape):
         
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = Dense(64, activation='relu')(x)
+        x = Dense(32, activation='relu')(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        smx_out = Dense(1, activation='linear')(x) 
+        subx_model = Model(input, smx_out)
+        
+        return subx_model
+
+    def create_feature_model3(self, input_shape):
+        
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        smx_out = Dense(1, activation='sigmoid')(x) 
+        subx_model = Model(input, smx_out)
+        
+        return subx_model
+
+
+    def create_feature_model4(self, input_shape):
+        
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        #inx = Dropout(self.drop_out)(inx)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+        x = LeakyReLU(negative_slope=0.5)(x)
+        #x = Dropout(self.drop_out)(x)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = LeakyReLU(negative_slope=0.5)(x)
+        #x = Dropout(self.drop_out)(x)
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        #x = Dropout(self.drop_out)(x)
+        smx_out = Dense(1, activation='linear')(x) 
+        subx_model = Model(input, smx_out)
+        
+        return subx_model
+
+
+    def create_custom_model(self, num_features, cols ):
+        inputs = Input(shape=(num_features,))
+                
         feature_outputs = []
         for i in range(num_features):
             feature_input = inputs[:, i:i+1]
-            feature_model = self.create_feature_model((1,))
-            feature_output = feature_model(feature_input)
-            feature_outputs.append(feature_output)
-        
+            
+            if i % 2 == 0:
+                fm = self.create_feature_model((1,))
+                fmx = fm(feature_input)
+                #feature_outputs.append(fmx)
+                
+                fm2 = self.create_feature_model2((1,))
+                fm2x = fm2(feature_input)
+                feature_outputs.append(fm2x)
+                
+                fm3 = self.create_feature_model3((1,))
+                fm3x = fm3(feature_input)
+                #feature_outputs.append(fm3x)
+                
+                fm4 = self.create_feature_model4((1,))
+                fm4x = fm4(feature_input)
+                #feature_outputs.append(fm4x)
+                
+                
+                
+            else:
+                fm = self.create_feature_model((1,))
+                fmx = fm(feature_input)
+                feature_outputs.append(fmx)
+                
+                fm2 = self.create_feature_model2((1,))
+                fm2x = fm2(feature_input)
+                #feature_outputs.append(fm2x)
+                
+                fm3 = self.create_feature_model3((1,))
+                fm3x = fm3(feature_input)
+                #feature_outputs.append(fm3x)
+                
+                fm4 = self.create_feature_model4((1,))
+                fm4x = fm4(feature_input)
+                #feature_outputs.append(fm4x)
+                
+            
+            
+       
         concatenated_outputs = Concatenate(axis=1)(feature_outputs)
-        reshaped_attention_input = Reshape((num_features, 1))(concatenated_outputs)
+        reshaped_attention_input = Reshape((len(feature_outputs), 1))(concatenated_outputs)
         
-        attention = Dense(num_features, activation='softmax', kernel_initializer=self.initializer, name='attention')(reshaped_attention_input)
-        weighted = Multiply()([reshaped_attention_input, attention])
+        #attention = Dense(num_features, activation='softmax', kernel_initializer=self.initializer, name='attention')(reshaped_attention_input)
+        #weighted = Multiply()([reshaped_attention_input, attention])
+
+       # weighted = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+       # attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
+       # weighted = Multiply()([weighted, attention2])
         
-        weighted = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
-    
-        attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
-        weighted = Multiply()([weighted, attention2])
+       # weighted = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(weighted)
         
-        #weighted = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(weighted)
+        #weighted = Reshape((-1,))(weighted)
         
-        weighted = Reshape((-1,))(weighted)
-        aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+        weighted = LSTM(32, return_sequences=False, activation='relu')(reshaped_attention_input)
+        
+        aggregated = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+        #aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
         aggregated = Dropout(self.drop_out)(aggregated)
         
         output = Dense(1, activation='linear')(aggregated)
@@ -112,13 +200,22 @@ class C_KAN:
 
     
 
-    def compile_and_train_model(self, X_train, y_train, X_val, y_val):
+    def train_model(self, X_train, y_train, X_val, y_val):
 
         self.model.compile(optimizer=Adam(learning_rate=0.001), 
                 loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
 
         self.model.summary()
-        tf.keras.utils.plot_model(self.model, to_file=self.model_plot, show_shapes=True)
+        
+        tf.keras.utils.plot_model(self.model, to_file=self.model_plot, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+            )   
+ 
 
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss", factor=0.2,
@@ -240,91 +337,27 @@ def main():
     ]
 
 
-    file_path = datafile[3]
+    file_path = datafile[1]
     
     df = pd.read_csv(file_path)
     
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output'])
     
-    #f_list_1 = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211']
-    #f_list_2 = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','SDKC9','EMAL10101','EMAL21211']
-    # -------------
-    """
-    EMAL10101    0.7401326298713684
-    ATR5    0.0806027501821518
-    SDKC9    0.07023896276950836
-    ATR2    0.03370505943894386
-    RSI    -0.05959158390760422
-    EMAL21211    -0.09019336849451065
-    FOSC1    -0.8226608037948608
-    STOK1    -0.9214245676994324
-
-    Pred MSE: 9.6925,  MAE: 1.7139, R2: 0.43848463918781433
-    Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.7583
-    Number of Samples: 7451
-    """    
-    #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'FOSC1','SDKC9','EMAL10101','EMAL21211']
-    
-    # -------------
-    
-    """
-    EMAL10101    1.4390603303909302
-    ATR5    -0.19079947471618652
-    SDKC9    -0.2084088921546936
-    ATR2    -0.23090490698814392
-    RSI    -0.24596644937992096
-    STOK1    -0.5598383545875549
-    FOSC1    -1.1665395498275757
-
-    Pred MSE: 9.3457,  MAE: 1.7175, R2: 0.4585709418134549
-    Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.7586
-    Number of Samples: 7451
-    """
-    #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'FOSC1','SDKC9','EMAL10101']
-    # -------------
-    
-    """
-    Pred MSE: 9.3898,  MAE: 1.7091, R2: 0.45602141823229514
-    Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.7583
-    Number of Samples: 7451
-    """
-    #f_list =['FOSC2','ATR5','SDLR9','EMAL10103','EMAL10102','RSI','SDKC9','ADX1']
-    # -------------
-    
-    """
-    ATR53    0.4926847517490387
-    FOSC    0.3459359109401703
-    STOK1    0.2840467393398285
-    ADX1    -0.3786262571811676
-    RSI    -0.3890722393989563
-    ATR51    -0.39143791794776917
-    ADX    -0.4002196192741394
-    ROC    -0.7536682486534119
-    SDLR93    -0.7613633275032043
-    SDLR9    -0.8744818568229675
-
-    Pred MSE: 9.5863,  MAE: 1.7423, R2: 0.4446327521792879
-    Total Wins: 5649, Total Losses: 1802, Win Percentage: 0.7582
-    Number of Samples: 7451
-    """
-    f_list = ['ATR51','ADX1','STOK1','SDLR9','ROC','FOSC','ATR53','RSI','ADX','SDLR93']    
-        
-    X = X[f_list]
-    
     cols = X.columns
     X = X.values
     y = df['output'].values
 
-    c_kan = C_KAN()
+    c_kan = C_KANX()
     
     # Preprocess data
     X_train, X_val, X_test, y_train, y_val, y_test, scaler = c_kan.preprocess_data(X, y)
     
     # Create and train model
     num_features = X_train.shape[1]
-    model = c_kan.create_custom_model(num_features)
-    history = c_kan.compile_and_train_model(X_train, y_train, X_val, y_val)
+    
+    model = c_kan.create_custom_model(num_features, cols )
+    history = c_kan.train_model(X_train, y_train, X_val, y_val)
     
     # Load best model and evaluate
     best_model = c_kan.load_saved_model('train')
@@ -339,24 +372,3 @@ if __name__ == "__main__":
     main()
     
     
-'''
-ATR21    0.5159254670143127
-ATR53    0.3380168378353119
-SDKC91    0.3322390019893646
-SDBB91    0.23089399933815002
-ATR54    0.22894202172756195
-RSI    0.10666730999946594
-STOK1    -0.13799570500850677
-ATR2    -0.3211486041545868
-ATR52    -0.33030328154563904
-SDLR310    -0.33175864815711975
-ATR51    -0.3567757308483124
-ROC    -0.4366353154182434
-ATR5    -0.5043916702270508
-SDKC9    -0.6410184502601624
-
-Pred MSE: 9.2080,  MAE: 1.7145, R2: 0.46654953925608544
-Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.7583
-Number of Samples: 7451
-
-''' 
