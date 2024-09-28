@@ -180,10 +180,11 @@ def run():
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_EX_3070_oos.csv',  
         'data/Lucky13_EX_3070.csv',  #3
+        'data/new_model_Z_lucky13_3070.csv' #4
     ]
 
-    df = pd.read_csv(datafile[3])
-    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+    df = pd.read_csv(datafile[1])
+    df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     
     #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
     #            'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output','outputC'] 

@@ -100,7 +100,7 @@ def main():
     X = df.drop(columns=['output']).values
     y = df['output'].values
 
-    time_steps = 24
+    time_steps = 100
     feature_dims, X_train, X_val, y_train, y_val = sequence_and_split3D(file_path, time_steps)
     
     # Create the model

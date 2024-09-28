@@ -98,8 +98,11 @@ class C_KANX:
         input_dim = input.shape[1]  
         reshaped_inputs = Reshape((input_dim, 1))(input)
         x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = Conv1D(filters=64, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Dense(32, activation='relu')(x)
         x = LSTM(32, return_sequences=False, activation='relu')(x)
-        smx_out = Dense(1, activation='sigmoid')(x) 
+        smx_out = Dense(1, activation='linear')(x) 
         subx_model = Model(input, smx_out)
         
         return subx_model
@@ -110,17 +113,10 @@ class C_KANX:
         input = Input(shape=input_shape)
         input_dim = input.shape[1]  
         reshaped_inputs = Reshape((input_dim, 1))(input)
-        inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
-        #inx = Dropout(self.drop_out)(inx)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-        x = LeakyReLU(negative_slope=0.5)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        x = LeakyReLU(negative_slope=0.5)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = LSTM(64, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = LSTM(16, return_sequences=True, activation='relu')(reshaped_inputs)
         x = LSTM(32, return_sequences=False, activation='relu')(x)
-        #x = Dropout(self.drop_out)(x)
         smx_out = Dense(1, activation='linear')(x) 
         subx_model = Model(input, smx_out)
         
@@ -129,19 +125,22 @@ class C_KANX:
 
     def create_custom_model(self, num_features, cols ):
         inputs = Input(shape=(num_features,))
-                
+                        
         feature_outputs = []
+        
+        feature_out2 = []
+        
         for i in range(num_features):
             feature_input = inputs[:, i:i+1]
             
             if i % 2 == 0:
                 fm = self.create_feature_model((1,))
                 fmx = fm(feature_input)
-                #feature_outputs.append(fmx)
+                feature_outputs.append(fmx)
                 
                 fm2 = self.create_feature_model2((1,))
                 fm2x = fm2(feature_input)
-                feature_outputs.append(fm2x)
+                #feature_outputs.append(fm2x)
                 
                 fm3 = self.create_feature_model3((1,))
                 fm3x = fm3(feature_input)
@@ -170,27 +169,53 @@ class C_KANX:
                 fm4x = fm4(feature_input)
                 #feature_outputs.append(fm4x)
                 
-            
-            
+        """
+        
+        fm2 fm2
+        Pred MSE: 9.3930,  MAE: 1.7156, R2: 0.4558341042881192
+        Total Wins: 5650, Total Losses: 1801, Win Percentage: 0.7583
+        Number of Samples: 7451
+        
+        fm fm 
+        Pred MSE: 9.3575,  MAE: 1.7223, R2: 0.45789258420416235
+        Total Wins: 5655, Total Losses: 1796, Win Percentage: 0.7590
+        Number of Samples: 7451
+        
+        fm fm2
+        Pred MSE: 9.2911,  MAE: 1.7146, R2: 0.4617352746151301
+        Total Wins: 5649, Total Losses: 1802, Win Percentage: 0.7582
+        Number of Samples: 7451
+
+        fm2 fm
+        Pred MSE: 9.2303,  MAE: 1.7231, R2: 0.4652587946029154
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.7584
+        Number of Samples: 7451
+
+
+        fm fm3
+        
+        Pred MSE: 9.2050,  MAE: 1.7147, R2: 0.46672499932302003
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.7586
+        Number of Samples: 7451
+
+        """
        
         concatenated_outputs = Concatenate(axis=1)(feature_outputs)
-        reshaped_attention_input = Reshape((len(feature_outputs), 1))(concatenated_outputs)
+        rs = Reshape((len(feature_outputs), 1))(concatenated_outputs)
+        x = Dense(len(feature_outputs), activation='softmax', kernel_initializer=self.initializer, name='attention')(rs)
+        x = Multiply()([rs, x])
         
-        #attention = Dense(num_features, activation='softmax', kernel_initializer=self.initializer, name='attention')(reshaped_attention_input)
-        #weighted = Multiply()([reshaped_attention_input, attention])
-
-       # weighted = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
-       # attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
-       # weighted = Multiply()([weighted, attention2])
+        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
+    
+        #attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
+        #weighted = Multiply()([weighted, attention2])
         
-       # weighted = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(weighted)
+        #x = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(x)
+        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=False, kernel_initializer=self.initializer)(x)
+        #x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
         
-        #weighted = Reshape((-1,))(weighted)
-        
-        weighted = LSTM(32, return_sequences=False, activation='relu')(reshaped_attention_input)
-        
-        aggregated = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
-        #aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(weighted)
+        x = Reshape((-1,))(x)
+        aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         aggregated = Dropout(self.drop_out)(aggregated)
         
         output = Dense(1, activation='linear')(aggregated)
@@ -258,20 +283,20 @@ class C_KANX:
         val_scores = self.model.evaluate(X_val, y_val, verbose=0)
         test_scores =self.model.evaluate(X_test, y_test, verbose=0)
         
-        attention_layer = self.model.get_layer('attention')
-        feature_weights = attention_layer.get_weights()[0]
-        feature_importance = np.mean(feature_weights, axis=0)
+        #attention_layer = self.model.get_layer('attention')
+        #feature_weights = attention_layer.get_weights()[0]
+        #feature_importance = np.mean(feature_weights, axis=0)
 
         correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(y_test, y_pred)
         print("")
 
-        fi = list(feature_importance)
-        cols_fi = list(zip(cols, fi))
-        sorted_fi = sorted(cols_fi, key=lambda x: x[1], reverse=True)
+        #fi = list(feature_importance)
+        #cols_fi = list(zip(cols, fi))
+        #sorted_fi = sorted(cols_fi, key=lambda x: x[1], reverse=True)
 
         # Print the sorted feature importance
-        for col, importance in sorted_fi:
-            print(f"{col}    {importance}") 
+        #for col, importance in sorted_fi:
+        #    print(f"{col}    {importance}") 
         
         #print(" ")
         #print(f"Train Loss: {train_scores[0]}, MAE: {train_scores[1]}, R2: {train_scores[2]}")
@@ -306,14 +331,14 @@ class C_KANX:
         axes[0, 1].legend()
 
         # Subplot 3: Feature Importance
-        attention_layer = self.model.get_layer('attention')
-        feature_weights = attention_layer.get_weights()[0]
-        feature_importance = np.mean(feature_weights, axis=0)
+        #attention_layer = self.model.get_layer('attention')
+        #feature_weights = attention_layer.get_weights()[0]
+        #feature_importance = np.mean(feature_weights, axis=0)
         
-        axes[1, 0].bar(range(num_features), feature_importance)
-        axes[1, 0].set_title('Feature Importance')
-        axes[1, 0].set_xlabel('Feature Index')
-        axes[1, 0].set_ylabel('Importance')
+        #axes[1, 0].bar(range(num_features), feature_importance)
+        #axes[1, 0].set_title('Feature Importance')
+        #axes[1, 0].set_xlabel('Feature Index')
+        #axes[1, 0].set_ylabel('Importance')
 
         # Subplot 4: Actual vs Predicted
         axes[1, 1].scatter(y_true, y_pred, alpha=0.5)
@@ -340,6 +365,7 @@ def main():
     file_path = datafile[1]
     
     df = pd.read_csv(file_path)
+    df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output'])
@@ -365,7 +391,7 @@ def main():
     train_mae, val_mae, test_mae = c_kan.evaluate_model(X_train, y_train, X_val, y_val, X_test, y_test, y_pred, cols)
     
     # Visualizations
-    c_kan.combined_plots(history, num_features, y_test, y_pred)
+    #c_kan.combined_plots(history, num_features, y_test, y_pred)
 
 
 if __name__ == "__main__":
