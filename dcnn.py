@@ -199,7 +199,7 @@ class DCNN:
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
                                 initial_epoch=0, epochs=200, 
-                                batch_size=32, callbacks=[
+                                batch_size=128, callbacks=[
                                     early_stopping,
                                     reduce_lr,
                                     model_checkpoint])
@@ -213,7 +213,7 @@ class DCNN:
         print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
         print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
         print(f"Number of Samples: {total}")
-        return mse
+        return mse, mae
     
     
     def load_saved_model(self, mode):
@@ -281,10 +281,10 @@ def run():
         for i in range(20):
             file_path = datafile[1]
             history_out, y_pred = model.train_model(file_path)
-            mse = model.evaluate_model(y_pred)
+            mse, mae = model.evaluate_model(y_pred)
             #model.plot_training_history(history_out)
             
-            model_file = f"dcnn_{mse}_model.keras"
+            model_file = f"dcnn_{mse}_{mae}_model.keras"
             file_path = os.path.join(model.checkpoint_dir, model_file)
             model.model.save(file_path)
             
