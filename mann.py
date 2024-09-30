@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import pandas as pd
 import matplotlib.pyplot as plt
 from ml_model.model_stats import gen_reg_stats_x, gen_class_stats
 from ml_model.data_func import sequence_and_normalize
@@ -8,7 +9,7 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 def set_seeds():
     """Set random seeds for reproducibility."""
-    #tf.config.set_visible_devices([], 'GPU')
+    tf.config.set_visible_devices([], 'GPU')
     np.random.seed(42)
     tf.random.set_seed(42)
 
@@ -81,6 +82,9 @@ def train_model(model, optimizer, x_train, y_train, num_epochs):
         if loss < best_loss - min_delta:
             best_loss = loss
             patience_counter = 0
+            
+            model.save("mann.keras")
+            
         else:
             patience_counter += 1
 
@@ -93,13 +97,6 @@ def train_model(model, optimizer, x_train, y_train, num_epochs):
             break
         
     return history
-
-
-
-
-
-def predict(model, x):
-    return model(x).numpy()
 
 
 def plot_results(y_test, y_pred_lstm, y_pred_mann):
@@ -136,7 +133,7 @@ def main():
 
     file_path = datafile[1]
     time_steps = 24
-    feature_dims, X_train, X_test, y_train, y_test, scalers = sequence_and_normalize(file_path, time_steps)
+    feature_dims, X_train, X_test, y_train, y_test, scaler = sequence_and_normalize(file_path, time_steps)
 
     print(X_train.shape)
     #(26072, 7, 14)
@@ -172,12 +169,29 @@ def main():
     print("Training MANN Model...")
     train_model(mann_model, optimizer_mann, X_test, y_test, num_epochs=5000)
 
-    y_pred_mann = predict(mann_model, X_test)
+
+    y_pred_mann=  mann_model(X_test).numpy()
     print("\nMANN")
     evaluate_model(y_test, y_pred_mann)
 
-    # Plot results
-    #plot_results(y_test, y_pred_lstm, y_pred_mann)
+    run_oos = True
+
+    if run_oos:
+        
+            file_path = datafile[0]
+            
+            df = pd.read_csv(file_path)
+            df = df.drop(columns=['outputC'])
+            X = df.drop(columns=['output']).values
+            y = df['output'].values 
+                
+            X_test = scaler.transform(X)
+            y_test = y
+            
+            y_pred  =  mann_model(X_test).numpy()
+            evaluate_model( y_test, y_pred)
+
+            
 
 
 if __name__ == "__main__":

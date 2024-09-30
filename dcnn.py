@@ -74,12 +74,10 @@ class DCNN:
     def build_model_x(self, inputs):
         
         """
-
         X        
         Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
         Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
         Number of Samples: 7451    
-        
         """        
         
         x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
@@ -101,42 +99,12 @@ class DCNN:
         return x
     
     
-    def build_model_z(self, inputs):
-
-        """ 
-    
-        """        
-
-        z = Conv1D(filters=256, kernel_size=4, strides=2, activation='relu', kernel_initializer=self.initializer)(inputs) 
-        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
-        z = Conv1D(filters=128, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(z)
-        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
-        z = Conv1D(filters=32, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(z)
-        
-        z = Bidirectional(LSTM(64,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(z)
-        
-        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(z)
-        #z = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', kernel_initializer=self.initializer)(z)
-        
-        z = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(z)
-
-        z = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(z)         
-        attention_z = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_z')(z)
-        z = Multiply()([z, attention_z])                
-        z = Dense(16, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(z)           
-        
-        return z
-    
-    
 
     def build_model(self, input_shape):
         
         inputs = Input(shape=input_shape)
-        
         #x = self.build_model_x(inputs)
         h = self.build_model_h(inputs)
-        #z = self.build_model_z(inputs)
-                
         ave_output = h
         
         outputs = Dense(1)(ave_output)  
@@ -310,15 +278,15 @@ def run():
 
     if train:
         
-        #for i in range(3):
-            file_path = datafile[3]
+        for i in range(20):
+            file_path = datafile[1]
             history_out, y_pred = model.train_model(file_path)
             mse = model.evaluate_model(y_pred)
             #model.plot_training_history(history_out)
             
-            #model_file = f"dcnn_{mse}_model.keras"
-            #file_path = os.path.join(model.checkpoint_dir, model_file)
-            #model.model.save(file_path)
+            model_file = f"dcnn_{mse}_model.keras"
+            file_path = os.path.join(model.checkpoint_dir, model_file)
+            model.model.save(file_path)
             
 
     if test:

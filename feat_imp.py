@@ -12,7 +12,7 @@ from lightgbm import LGBMRegressor, LGBMClassifier
 from catboost import CatBoostRegressor, CatBoostClassifier
 
 from ml_model.model_stats import gen_reg_stats
-
+from ml_model.data_func import simple_split_and_scale
 
 def calc_importances_and_baseline(models, X_train, y_train, X_test, y_test, features):
 
@@ -180,10 +180,12 @@ def run():
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_EX_3070_oos.csv',  
         'data/Lucky13_EX_3070.csv',  #3
-        'data/new_model_Z_lucky13_3070.csv' #4
+        'data/new_model_Z_lucky13_3070.csv', #4
+        'data/ReFried_5M_ALL.csv' #5
+        
     ]
 
-    df = pd.read_csv(datafile[1])
+    df = pd.read_csv(datafile[5])
     df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     
     #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
@@ -204,8 +206,13 @@ def run():
     
     threshold = 75
 
-    X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
-    X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
+
+    X_train_c, X_test_c, y_train_c, y_test_c = simple_split_and_scale(X, y, 0.2, 42)
+    X_train_r, X_test_r, y_train_r, y_test_r = simple_split_and_scale(X, y2, 0.2, 42)
+    
+
+    #X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
+    #X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
     
     models_c = {
         #'RandomForestClassifier' :RandomForestClassifier(random_state=42, verbose=2, n_jobs=-1),
