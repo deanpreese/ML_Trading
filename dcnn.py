@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 import joblib 
 import matplotlib.pyplot as plt
-
+import pywt
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model
@@ -103,9 +103,9 @@ class DCNN:
     def build_model(self, input_shape):
         
         inputs = Input(shape=input_shape)
-        #x = self.build_model_x(inputs)
-        h = self.build_model_h(inputs)
-        ave_output = h
+        x = self.build_model_x(inputs)
+        #h = self.build_model_h(inputs)
+        ave_output = x
         
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
@@ -137,9 +137,12 @@ class DCNN:
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
             
-        #descriptive_stats = df.describe()
-        #descriptive_stats.to_csv('descriptive_statistics.csv', index=True)
-
+        wavelet = 'cmor'
+        scales = np.arange(1, 128)
+        coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
+        df['output'] = np.mean(np.abs(coefficients), axis=0)
+        
+        
         #Lucky13  ALL Cols
         f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
@@ -162,6 +165,8 @@ class DCNN:
         #df = df[f_list]
 
 
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
         
@@ -199,64 +204,43 @@ class DCNN:
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
                                 initial_epoch=0, epochs=200, 
-                                batch_size=128, callbacks=[
+                                batch_size=64, callbacks=[
                                     early_stopping,
                                     reduce_lr,
                                     model_checkpoint])
 
         y_pred = model.predict(X_test)
-        return history_out, y_pred
+        return history_out, y_pred, y_test
 
 
-    def evaluate_model(self, y_pred):
-        correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
-        print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
-        print(f"Number of Samples: {total}")
-        return mse, mae
+def evaluate_model(y_pred, y_test):
+    correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(y_test, y_pred)
+    print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
+    print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
+    print(f"Number of Samples: {total}")
+    return mse, mae
+
     
+        
+        
+def plot_training_history(history):
     
-    def load_saved_model(self, mode):
-        
-        if mode == "run":
-           self.model = tf.keras.models.load_model(self.trained_model)
-        
-        if mode == "train":
-           self.model = tf.keras.models.load_model(self.checkpoint_model)
-           
-
-    def run_batch_test(self, file_path):
-    
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
-               
-        self.X_test = X
-        self.y_test = y
-        y_pred = self.model.predict(self.X_test)
-
-        self.evaluate_model(y_pred)
-        
-        
-    def plot_training_history(self, history):
-        
-        plt.figure(figsize=(12, 6))
-        plt.subplot(1, 2, 1)
-        plt.plot(history.history['loss'], label='Training Loss')
-        plt.plot(history.history['val_loss'], label='Validation Loss')
-        plt.title('Loss over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss (MSE)')
-        plt.legend()
-        plt.subplot(1, 2, 2)
-        plt.plot(history.history['mae'], label='Training MAE')
-        plt.plot(history.history['val_mae'], label='Validation MAE')
-        plt.title('MAE over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('MAE')
-        plt.legend()
-        plt.show()
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Loss over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss (MSE)')
+    plt.legend()
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['mae'], label='Training MAE')
+    plt.plot(history.history['val_mae'], label='Validation MAE')
+    plt.title('MAE over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('MAE')
+    plt.legend()
+    plt.show()
         
         
         
@@ -266,7 +250,9 @@ def run():
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_EX_3070_oos.csv',  
-        'data/Lucky13_EX_3070.csv',  #33
+        'data/Lucky13_EX_3070.csv',  #3
+        'data/Lucky13_ALL_oos.csv',  #4
+        'data/Lucky13_ALL.csv',  #5
     ]
 
     #file_path = datafile[13]
@@ -278,22 +264,33 @@ def run():
 
     if train:
         
-        for i in range(20):
-            file_path = datafile[1]
-            history_out, y_pred = model.train_model(file_path)
-            mse, mae = model.evaluate_model(y_pred)
+        #for i in range(20):
+            file_path = datafile[5]
+            history_out, y_pred, y_test = model.train_model(file_path)
+            mse, mae = evaluate_model(y_pred, y_test)
             #model.plot_training_history(history_out)
             
-            model_file = f"dcnn_{mse}_{mae}_model.keras"
-            file_path = os.path.join(model.checkpoint_dir, model_file)
-            model.model.save(file_path)
+            #model_file = f"dcnn_{mse}_{mae}_model.keras"
+            #file_path = os.path.join(model.checkpoint_dir, model_file)
+            #model.model.save(file_path)
             
 
     if test:
+        
         file_path = datafile[0]
-        model.load_saved_model("train")
-        model.run_batch_test(file_path)
+        
+        loaded_model = tf.keras.models.load_model(model.trained_model)
+        
+        file_path = datafile[0]
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values 
 
+        y_pred = loaded_model.predict(X)
+        evaluate_model( y, y_pred)
+        
+        
     if single_item:
         file_path = datafile[0]
         model.load_saved_model("run")

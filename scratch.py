@@ -1,250 +1,328 @@
+import os
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, r2_score, roc_auc_score, mean_squared_error
-from catboost import CatBoostClassifier
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+import tensorflow as tf
+import joblib 
 import matplotlib.pyplot as plt
-from sklearn.inspection import permutation_importance
-
-from xgboost import XGBRegressor, XGBClassifier
-from lightgbm import LGBMRegressor, LGBMClassifier
-from catboost import CatBoostRegressor, CatBoostClassifier
-
-from ml_model.model_stats import gen_reg_stats
 
 
-def calc_importances_and_baseline(models, X_train, y_train, X_test, y_test, features):
+from tensorflow.keras.layers import Lambda
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv1D, Average, Multiply, GlobalAveragePooling1D, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.initializers import GlorotUniform
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.regularizers import l2
 
-    importance_df = pd.DataFrame(features, columns=['Feature'])
-    baseline_data =[]
-    
-    # Train models, calculate importances, and store results
-    for name, model in models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        model_r2 = r2_score(y_test,y_pred)
-        mse = mean_squared_error(y_test, y_pred)
+from ml_model.model_stats import gen_reg_stats_x, gen_class_stats 
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
+tf.config.set_visible_devices([], 'GPU')
+np.random.seed(42)
+tf.random.set_seed(42)
+
+
+class DCNN:
+    def __init__(self, epochs=50, batch_size=32):
         
-        if "Regressor" in name:
-            perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred)
-            baseline_performance = perf
-        else:           
-            baseline_performance = accuracy_score(y_test, y_pred)
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.model = None
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
+        
+        self.checkpoint_dir = 'checkpoints/'
+        self.trained_dir = 'trained_models/'
+       
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'dcnn_model.keras')
+        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn.png')
+
+        self.drop_out = 0.3
+        self.l2_reg = l2(0.01)
+        self.initializer = GlorotUniform(seed=42)        
+    
+    
+    def build_model_h(self, inputs):
+
+        """ 
+        H
+        Val MSE: 9.1925, Val MAE: 1.7172, R2: 0.46744909954386704
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
+        Number of Samples: 7451
+        """        
+
+        h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
+        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
+        h = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(h)
+        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
+        h = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(h)
+        h = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(h)
+        h = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(h)
+
+        h = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(h)         
+        attention_h = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_h')(h)
+        h = Multiply()([h, attention_h])                
+        h = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h)           
+        
+        return h        
+        
+        
+    def build_model_x(self, inputs):
+        
+        """
+        X        
+        Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451    
+        """        
+        
+        x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
+        #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=32, kernel_size=3,  activation='relu', kernel_initializer=self.initializer)(x)
+        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(64, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
+        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(x) 
+        attention_x = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_x')(x)
+        x = Multiply()([x, attention_x])                
+        x = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="x_out", kernel_initializer=self.initializer)(x) 
+                     
+        return x
+    
+    
+
+    def build_model(self, input_shape):
+        
+        inputs = Input(shape=input_shape)
+        x = self.build_model_x(inputs)
+        #h = self.build_model_h(inputs)
+        ave_output = x
+        
+        outputs = Dense(1)(ave_output)  
+        model = Model(inputs=inputs, outputs=outputs)
+        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+        model.summary(expand_nested=True,show_trainable=True)
+ 
+        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+            )   
+ 
+        
+        print(" ")
+        print(" ----- ")
+        print(" ")
+        self.model = model
+        return model        
+                
+        
+        
+    def train_model(self, file_path):
+    
+        print(f"Loading {file_path}" )
+    
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
             
-        baseline_data.append({'Model': name, 'Baseline Performance': baseline_performance, 'R2': model_r2, 'MSE':mse })
-        print(f"Baseline {baseline_performance}")        
-        print(f"Calculating Importances ... ")        
+        #descriptive_stats = df.describe()
+        #descriptive_stats.to_csv('descriptive_statistics.csv', index=True)
+
+        #Lucky13  ALL Cols
+        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+
+        #f_13_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
         
-        perm_importances = permutation_importance(model, X_test, y_test, n_repeats=30, random_state=42)
-        perm_means = perm_importances.importances_mean
-        perm_stds = perm_importances.importances_std
         
-        # Calculate standard feature importance from the model
-        if name == 'CatBoost':
-            standard_importances = model.get_feature_importance()
-        else:
-            standard_importances = model.feature_importances_
+        #Lucky 13 EX All Cols
+        f_13_ex = ['RSI', 'ATR2', 'STOK1', 'ATR21', 'SDLR310', 'FOSC1', 'ATR5', 'ADX2', 'SDKC9', 'ATR54', 'SDBB91', 
+                   'SDLR93', 'ROC', 'EMAL10101', 'ADX1', 'EMAL10103', 'EMAL21211', 'FOSC2', 'ATR51', 'SDLR91', 
+                   'SDLR92', 'SDLR9', 'EMAL21213', 'EMAL21212', 'ATR53', 'ATR52', 'SDKC91', 'EMAL10102', 'FOSC', 'ADX']
         
-        # Store results in DataFrame
-        importance_df[f'{name} Permutation Importance Mean'] = perm_means
-        importance_df[f'{name} Permutation Importance Std'] = perm_stds
-        importance_df[f'{name} Standard Importance'] = standard_importances
-
-    # Compute composite importance
-    importance_df['Composite Permutation Importance Mean'] = importance_df[
-        [f'{name} Permutation Importance Mean' for name in models.keys()]
-    ].mean(axis=1)
-
-    importance_df['Composite Standard Importance'] = importance_df[
-        [f'{name} Standard Importance' for name in models.keys()]
-    ].mean(axis=1)
-
-    importance_df_sorted = importance_df.sort_values(by='Composite Permutation Importance Mean', ascending=False)
-    
-    baseline_df = pd.DataFrame(baseline_data)
-    print(baseline_df)
-    
-    return importance_df_sorted, baseline_df
-    
-    
-def plot_importances(models, importance_df_sorted):
-    
-    # Plot the importances
-    fig, ax = plt.subplots(2, 2, figsize=(20, 16), sharey=True)
-    for i, (name, _) in enumerate(models.items()):
-        ax[i // 2, i % 2].barh(importance_df_sorted['Feature'], importance_df_sorted[f'{name} Permutation Importance Mean'], 
-                            xerr=importance_df_sorted[f'{name} Permutation Importance Std'], color='skyblue')
-        ax[i // 2, i % 2].set_xlabel('Permutation Importance')
-        ax[i // 2, i % 2].set_title(f'{name} Permutation Importance')
-
-    # Composite Importance plot
-    ax[1, 1].barh(importance_df_sorted['Feature'], importance_df_sorted['Composite Permutation Importance Mean'], color='lightgreen')
-    ax[1, 1].set_xlabel('Composite Permutation Importance')
-    ax[1, 1].set_title('Composite Permutation Importance')
-    plt.tight_layout()
-    plt.show()    
-    
-
-def select_features(importance_df_sorted, threshold_v):    
-
-    # Define thresholds for feature selection
-    threshold_mean = np.percentile(importance_df_sorted['Composite Permutation Importance Mean'], threshold_v)  # top 25% permutation importance mean
-    threshold_standard = np.percentile(importance_df_sorted['Composite Standard Importance'], threshold_v)  # top 25% standard importance
-
-    # Select features that are consistently important
-    important_features = importance_df_sorted[
-        (importance_df_sorted['Composite Permutation Importance Mean'] > threshold_mean) & 
-        (importance_df_sorted['Composite Standard Importance'] > threshold_standard)
-    ]['Feature'].tolist()
-    return important_features
-    
-def retrain_models(models, important_features, X_train, X_test, y_train, y_test, baseline_df):    
-    
-    composite_results = []
-    for name, model in models.items():
-        X_train_selected = X_train[important_features]
-        X_test_selected = X_test[important_features]
-
-        model.fit(X_train_selected, y_train)
+        #Val MSE: 9.3862, Val MAE: 1.7522, R2: 0.4562254910904875
+        #Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
+        #Number of Samples: 7451
+        #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
+        #        'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output']       
         
-        # Evaluate the new model
-        y_pred_selected = model.predict(X_test_selected)
-        sel_mse = mean_squared_error(y_test, y_pred_selected)
-        sel_model_r2 = r2_score(y_test,y_pred_selected)
         
-        if "Regressor" in name:
-            perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred_selected)
-            selected_performance = perf
-        else:           
-            selected_performance = accuracy_score(y_test, y_pred_selected)
-        
-        baseline_perf = baseline_df[baseline_df['Model'] == name]['Baseline Performance'].values[0]
-        base_r2 = baseline_df[baseline_df['Model'] == name]['R2'].values[0]
-        base_mse = baseline_df[baseline_df['Model'] == name]['MSE'].values[0]
-        
-        composite_results.append({'Model': name, 'Base Perf': baseline_perf, 'Sel Feat Perf': selected_performance,  'Base R2': base_r2, 'Sel R2': sel_model_r2, 'Base MSE': base_mse, 'Sel MSE': sel_mse})
-        #print(f'{name} Selected Features Performance: {selected_performance:.4f}')
-
-    # Convert results to DataFrame and plot performance comparison
-    performance_df = pd.DataFrame(composite_results) 
-    return performance_df   
-    
-def plot_new_results(performance_df):
-    # Set the figure size
-    plt.figure(figsize=(10, 6))
-    
-    # Set the bar width
-    bar_width = 0.35
-    
-    # Set the positions of the bars on the x-axis
-    r1 = np.arange(len(performance_df))
-    r2 = [x + bar_width for x in r1]
-    
-    # Create the bars for baseline performance
-    plt.bar(r1, performance_df['Baseline Performance'], color='skyblue', width=bar_width, edgecolor='grey', label='Baseline Performance')
-    
-    # Create the bars for selected features performance
-    plt.bar(r2, performance_df['Selected Features Performance'], color='lightgreen', width=bar_width, edgecolor='grey', label='Selected Features Performance')
-    
-    # Add labels to the x-axis
-    plt.xlabel('Models', fontweight='bold')
-    plt.xticks([r + bar_width/2 for r in range(len(performance_df))], performance_df['Model'])
-    
-    # Add the labels, title, and legend
-    plt.ylabel('Accuracy')
-    plt.title('Model Performance Comparison')
-    plt.legend()
-    
-    # Show the plot
-    plt.tight_layout()
-    plt.show()
+        #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output']
+        #df = df[f_list]
 
 
-def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
+        
+        X = df.drop(columns=['output']).values
+        y = df['output'].values
+
+
+        X = X.reshape(X.shape[0], X.shape[1], 1)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    importance_df_sorted, baseline_df = calc_importances_and_baseline(models, X_train, y_train, X_test, y_test, columns)
-    #plot_importances(models, importance_df_sorted)
-    important_features = select_features(importance_df_sorted, threshold)    
-    performance_df = retrain_models(models, important_features, X_train, X_test, y_train, y_test, baseline_df)   
-    #plot_new_results(performance_df)
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
     
-    return importance_df_sorted, important_features, performance_df 
+        input_shape = (X_train.shape[1], X_train.shape[2])
+        #(14, 1)
+        
+        model = self.build_model(input_shape)
+
+        reduce_lr = ReduceLROnPlateau(
+            monitor="val_loss", factor=0.2,
+            patience=5, verbose=1,
+            mode="auto", min_delta=0.000001,
+            cooldown=0, min_lr=0,
+        )
+
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+            self.checkpoint_model, 
+                monitor='val_loss', 
+                    save_best_only=True, 
+                        save_weights_only=False, mode='min')
+        
+        history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
+                                initial_epoch=0, epochs=200, 
+                                batch_size=128, callbacks=[
+                                    early_stopping,
+                                    reduce_lr,
+                                    model_checkpoint])
+
+        y_pred = model.predict(X_test)
+        return history_out, y_pred
+
+
+    def evaluate_model(self, y_pred):
+        correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
+        print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
+        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
+        print(f"Number of Samples: {total}")
+        return mse, mae
     
     
-# --------------
+    def load_saved_model(self, mode):
+        
+        if mode == "run":
+           self.model = tf.keras.models.load_model(self.trained_model)
+        
+        if mode == "train":
+           self.model = tf.keras.models.load_model(self.checkpoint_model)
+           
+
+    def run_batch_test(self, file_path):
+    
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values 
+               
+        self.X_test = X
+        self.y_test = y
+        y_pred = self.model.predict(self.X_test)
+
+        self.evaluate_model(y_pred)
+        
+        
+    def plot_training_history(self, history):
+        
+        plt.figure(figsize=(12, 6))
+        plt.subplot(1, 2, 1)
+        plt.plot(history.history['loss'], label='Training Loss')
+        plt.plot(history.history['val_loss'], label='Validation Loss')
+        plt.title('Loss over Epochs')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss (MSE)')
+        plt.legend()
+        plt.subplot(1, 2, 2)
+        plt.plot(history.history['mae'], label='Training MAE')
+        plt.plot(history.history['val_mae'], label='Validation MAE')
+        plt.title('MAE over Epochs')
+        plt.xlabel('Epochs')
+        plt.ylabel('MAE')
+        plt.legend()
+        plt.show()
+        
+        
+        
 def run():
 
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_EX_3070_oos.csv',  
-        'data/Lucky13_EX_3070.csv',  #3
+        'data/Lucky13_EX_3070.csv',  #33
     ]
 
+    #file_path = datafile[13]
+    model = DCNN()
 
-    df = pd.read_csv(datafile[3])
-    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-    
-    
-    X = df
-    X = X.drop(columns=['output', 'outputC'])
-    
-    #cols = ['RSI', 'ROC', 'ATR2', 'STOK1', 'EMAL10101', 'EMAL21211', 'SDKC91']
-    #X=X[cols]
-    
-    y = df['outputC'].values
-    y2 = df['output'].values
-    
-    threshold = 75
+    train = True
+    test = False
+    single_item = False
 
-    X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
-    X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
-    
-    models_c = {
-        #'RandomForestClassifier' :RandomForestClassifier(random_state=42, verbose=2, n_jobs=-1),
-        #'LightGBM': LGBMClassifier(random_state=42, verbose=2, n_jobs=-1),
-        #'XGBoost': XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss', verbosity=2),
-        'CatBoost': CatBoostClassifier(random_state=42, verbose=2)
-    }
+    if train:
+        
+        for i in range(20):
+            file_path = datafile[1]
+            history_out, y_pred = model.train_model(file_path)
+            mse, mae = model.evaluate_model(y_pred)
+            #model.plot_training_history(history_out)
+            
+            model_file = f"dcnn_{mse}_{mae}_model.keras"
+            file_path = os.path.join(model.checkpoint_dir, model_file)
+            model.model.save(file_path)
+            
 
-    models_r = {
-        #'RandomForestRegressor' :RandomForestRegressor(random_state=42, verbose=2, n_jobs=-1),
-        #'LightGBMRegressor': LGBMRegressor(random_state=42, verbose=2, n_jobs=-1),
-        #'XGBoostRegressor': XGBRegressor(random_state=42, use_label_encoder=False, verbosity=2),
-        'CatBoostRegressor': CatBoostRegressor(random_state=42, verbose=2)
-    }
+    if test:
+        file_path = datafile[0]
+        model.load_saved_model("train")
+        model.run_batch_test(file_path)
 
-    importance_df_sorted_r, important_features_r, performance_df_r  = gen_results(models_r, X_train_r, y_train_r, X_test_r, y_test_r, X.columns, threshold)
-    importance_df_sorted_c, important_features_c, performance_df_c  = gen_results(models_c, X_train_c, y_train_c, X_test_c, y_test_c, X.columns, threshold)
-       
-    print("------------------------------------------------------------")
-    print(" ")
-    print("Regressor Sorted Importance")
-    print(" ")
-    print(importance_df_sorted_r)
-    print(" ")
-    print("Classifier Sorted Importance")
-    print(" ")
-    print(importance_df_sorted_c)
-    print(" ")
-     
-    print(" ")
-    print(f"Features Selected based on threshold of {threshold} percent")
-    print(" ")
-    print("Regressor Selected Features")
-    print(important_features_r)
-    print("Perf Results")
-    print(performance_df_r)
-    print(" ")
-    print("Classifier Selected Features")
-    print(important_features_c)
-    print("Perf Results")
-    print(performance_df_c)
-    print(" ")
+    if single_item:
+        file_path = datafile[0]
+        model.load_saved_model("run")
 
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values 
 
+        model.X_test = X
+        model.y_test = y
+
+        yn = False
+        count = 0
+        ycount = 0
+
+        y_pred = []
+
+        for i in range(len(y)):
+            x_val = X[i]
+            x_val = x_val.reshape((1, 14, 1)) 
+            y_val = model.model.predict(x_val)
+            
+            y_pred.append(y_val[0][0])
+            print(y_val[0][0])
+
+        model.evaluate_model(y_pred)
+        
 
 if __name__ == "__main__":
-    run()
-
+    run()            
+        

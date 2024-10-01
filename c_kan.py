@@ -159,7 +159,7 @@ def train_model(model_class,  X_train, y_train, X_val, y_val):
     
     history_out = model_class.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
                             initial_epoch=0, epochs=200, verbose=1,
-                            batch_size=128, callbacks=[
+                            batch_size=64, callbacks=[
                                 early_stopping,
                                 reduce_lr,
                                 model_checkpoint])      
