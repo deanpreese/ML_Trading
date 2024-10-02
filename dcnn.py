@@ -18,22 +18,16 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x, gen_class_stats 
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
+from ml_model.data_func import split_three_ways
+
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
 
 class DCNN:
-    def __init__(self, epochs=50, batch_size=32):
-        
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.model = None
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-        
+    def __init__(self):
+
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
@@ -103,28 +97,12 @@ class DCNN:
     def build_model(self, input_shape):
         
         inputs = Input(shape=input_shape)
-        x = self.build_model_x(inputs)
-        #h = self.build_model_h(inputs)
-        ave_output = x
+        #x = self.build_model_x(inputs)
+        h = self.build_model_h(inputs)
+        ave_output = h
         
         outputs = Dense(1)(ave_output)  
         model = Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
-        model.summary(expand_nested=True,show_trainable=True)
- 
-        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, 
-            show_shapes=True, 
-            show_dtype=True,
-            show_layer_names=True,
-            expand_nested=True,
-            show_layer_activations=True,
-            show_trainable=True
-            )   
- 
-        
-        print(" ")
-        print(" ----- ")
-        print(" ")
         self.model = model
         return model        
                 
@@ -137,55 +115,39 @@ class DCNN:
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
             
-        wavelet = 'cmor'
-        scales = np.arange(1, 128)
-        coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
-        df['output'] = np.mean(np.abs(coefficients), axis=0)
+        #wavelet = 'cmor'
+        #scales = np.arange(1, 128)
+        #coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
+        #df['output'] = np.mean(np.abs(coefficients), axis=0)
         
         
         #Lucky13  ALL Cols
         f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
-        #f_13_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
-        
-        
-        #Lucky 13 EX All Cols
-        f_13_ex = ['RSI', 'ATR2', 'STOK1', 'ATR21', 'SDLR310', 'FOSC1', 'ATR5', 'ADX2', 'SDKC9', 'ATR54', 'SDBB91', 
-                   'SDLR93', 'ROC', 'EMAL10101', 'ADX1', 'EMAL10103', 'EMAL21211', 'FOSC2', 'ATR51', 'SDLR91', 
-                   'SDLR92', 'SDLR9', 'EMAL21213', 'EMAL21212', 'ATR53', 'ATR52', 'SDKC91', 'EMAL10102', 'FOSC', 'ADX']
-        
-        #Val MSE: 9.3862, Val MAE: 1.7522, R2: 0.4562254910904875
-        #Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
-        #Number of Samples: 7451
-        #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
-        #        'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output']       
-        
-        
-        #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output']
-        #df = df[f_list]
-
-
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
         
         X = df.drop(columns=['output']).values
         y = df['output'].values
-
-
         X = X.reshape(X.shape[0], X.shape[1], 1)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-        self.X_train = X_train
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_test = y_test
-    
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)    
         input_shape = (X_train.shape[1], X_train.shape[2])
         #(14, 1)
         
         model = self.build_model(input_shape)
+
+        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+        model.summary(expand_nested=True,show_trainable=True)
+ 
+        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+            )   
+ 
 
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss", factor=0.2,
@@ -203,23 +165,26 @@ class DCNN:
                         save_weights_only=False, mode='min')
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=200, 
+                                initial_epoch=0, epochs=2000, 
                                 batch_size=64, callbacks=[
                                     early_stopping,
                                     reduce_lr,
                                     model_checkpoint])
 
         y_pred = model.predict(X_test)
-        return history_out, y_pred, y_test
+        return history_out, y_pred, y_test, X_test
 
 
-def evaluate_model(y_pred, y_test):
+def evaluate_model( y_test, y_pred):
+    
     correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(y_test, y_pred)
-    print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
-    print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
-    print(f"Number of Samples: {total}")
-    return mse, mae
-
+    print(" ")
+    print(f"Pred MSE: {mse},  MAE: {mae}, R2: {r2}")
+    print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.4f}")
+    print(f"Number of Samples: {total}")        
+    print(" ")        
+    
+    return rmse, mse, mae, r2
     
         
         
@@ -256,41 +221,40 @@ def run():
     ]
 
     #file_path = datafile[13]
-    model = DCNN()
+    dcnn = DCNN()
 
     train = True
-    test = False
+    run_oos = False
     single_item = False
 
     if train:
         
-        #for i in range(20):
-            file_path = datafile[5]
-            history_out, y_pred, y_test = model.train_model(file_path)
-            mse, mae = evaluate_model(y_pred, y_test)
-            #model.plot_training_history(history_out)
+        for i in range(10):
+            file_path = datafile[1]
+            history_out, y_pred, y_test, X_test = dcnn.train_model(file_path)
+
+            # Load best model and evaluate
+            best_model = tf.keras.models.load_model(dcnn.checkpoint_model)
+            y_pred = best_model.predict(X_test)
+            rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
             
-            #model_file = f"dcnn_{mse}_{mae}_model.keras"
-            #file_path = os.path.join(model.checkpoint_dir, model_file)
-            #model.model.save(file_path)
+            model_file = f"dcnn_{mse}_{mae}_model.keras"
+            file_path = os.path.join(dcnn.checkpoint_dir, model_file)
+            best_model.save(file_path)
             
 
-    if test:
-        
-        file_path = datafile[0]
-        
-        loaded_model = tf.keras.models.load_model(model.trained_model)
-        
+    if run_oos:
         file_path = datafile[0]
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
         X = df.drop(columns=['output']).values
         y = df['output'].values 
 
-        y_pred = loaded_model.predict(X)
+        oos_model = tf.keras.models.load_model(dcnn.checkpoint_model)
+        y_pred = oos_model.predict(X)
         evaluate_model( y, y_pred)
-        
-        
+
+    """  
     if single_item:
         file_path = datafile[0]
         model.load_saved_model("run")
@@ -318,7 +282,7 @@ def run():
             print(y_val[0][0])
 
         model.evaluate_model(y_pred)
-        
+        """  
 
 if __name__ == "__main__":
     run()            

@@ -17,6 +17,8 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x, gen_class_stats
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
+from ml_model.data_func import split_three_ways
+
 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
@@ -71,7 +73,7 @@ class C_KANX:
         return subx_model
 
    
-    def create_custom_model(self, input_shape ):
+    def create_model(self, input_shape ):
         
         inputs = Input(shape=input_shape)
         feature_outputs = []
@@ -123,49 +125,78 @@ class C_KANX:
 
     
 
-def train_model(model_class,  X_train, y_train, X_val, y_val):
+    def train_model(self, file_path):
 
-    model_class.model.compile(optimizer=Adam(learning_rate=0.001), 
-            loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+        print(f"Loading {file_path}" )
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+            
+        #wavelet = 'cmor'
+        #scales = np.arange(1, 128)
+        #coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
+        #df['output'] = np.mean(np.abs(coefficients), axis=0)
+        
+        #Lucky13  ALL Cols
+        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
-    model_class.model.summary()
-    
-    tf.keras.utils.plot_model(model_class.model, to_file=model_class.model_plot, 
-        show_shapes=True, 
-        show_dtype=True,
-        show_layer_names=True,
-        expand_nested=True,
-        show_layer_activations=True,
-        show_trainable=True
-        )   
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        
+        X = df.drop(columns=['output']).values
+        y = df['output'].values
+
+        X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
+
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
+
+        input_shape = (X_train.shape[1], 1)
+        #(14, 1)
+
+        self.create_model(input_shape )
+
+        self.model.compile(optimizer=Adam(learning_rate=0.001), 
+                loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+
+        self.model.summary()
+        
+        tf.keras.utils.plot_model(self.model, to_file=self.model_plot, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+            )   
 
 
-    reduce_lr = ReduceLROnPlateau(
-        monitor="val_loss", factor=0.2,
-        patience=5, verbose=1,
-        mode="auto", min_delta=0.000001,
-        cooldown=0, min_lr=0,
-    )
+        reduce_lr = ReduceLROnPlateau(
+            monitor="val_loss", factor=0.2,
+            patience=5, verbose=1,
+            mode="auto", min_delta=0.000001,
+            cooldown=0, min_lr=0,
+        )
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-    
-    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-        model_class.checkpoint_model, 
-            monitor='val_loss', 
-                verbose=0,
-                save_best_only=True, 
-                    save_weights_only=False, mode='min')
-    
-    
-    history_out = model_class.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
-                            initial_epoch=0, epochs=200, verbose=1,
-                            batch_size=64, callbacks=[
-                                early_stopping,
-                                reduce_lr,
-                                model_checkpoint])      
-    
-    return history_out
-
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        
+        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+            self.checkpoint_model, 
+                monitor='val_loss', 
+                    verbose=0,
+                    save_best_only=True, 
+                        save_weights_only=False, mode='min')
+        
+        
+        history_out = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
+                                initial_epoch=0, epochs=2000, verbose=1,
+                                batch_size=64, callbacks=[
+                                    early_stopping,
+                                    reduce_lr,
+                                    model_checkpoint])      
+        
+        y_pred = self.model.predict(X_test)
+        return history_out, y_pred, y_test, X_test, scaler
 
 
 
@@ -211,80 +242,55 @@ def combined_plots(history, y_true, y_pred):
 
 
 
-def process_data(X, y):
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-    
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_val_scaled = scaler.transform(X_val)
-    X_test_scaled = scaler.transform(X_test)
-    
-    return X_train_scaled, X_val_scaled, X_test_scaled, y_train, y_val, y_test, scaler
-
-   
-    
-
-
 def main():
-
+    
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_EX_3070_oos.csv',  
         'data/Lucky13_EX_3070.csv',  #3
+        'data/Lucky13_ALL_oos.csv',  #4
+        'data/Lucky13_ALL.csv',  #5
     ]
 
+
+    train = True
     run_oos = False
 
-    for i in range(10):
+    sc_temp = None
 
-        file_path = datafile[1]
+    if train:
 
-        df = pd.read_csv(file_path)
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        for i in range(10):
 
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output'])
+            file_path = datafile[1]
+            c_kan = C_KANX()
+            history_out, y_pred, y_test, X_test, scaler = c_kan.train_model(file_path)
 
-        cols = X.columns
-        X = X.values
-        y = df['output'].values
-
-        c_kan = C_KANX()
-
-        # Preprocess data
-        X_train, X_val, X_test, y_train, y_val, y_test, scaler = process_data(X, y)
-        input_shape = (X_train.shape[1], 1)
-        #(14, 1)
-
-        c_kan.create_custom_model(input_shape )
-        history = train_model(c_kan,  X_train, y_train, X_val, y_val)
-
-        # Load best model and evaluate
-        best_model = tf.keras.models.load_model(c_kan.checkpoint_model)
-        y_pred = best_model.predict(X_test)
-        rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
-        
-        model_file = f"c_kan_{mse}_{mae}_model.keras"
-        file_path = os.path.join(c_kan.checkpoint_dir, model_file)
-        best_model.save(file_path)
-        
-
-        if run_oos:
-            file_path = datafile[0]
-            df = pd.read_csv(file_path)
-            df = df.drop(columns=['outputC'])
-            X = df.drop(columns=['output']).values
-            y = df['output'].values 
-                
-            X_test = scaler.transform(X)
-            y_test = y
-            
+            # Load best model and evaluate
+            best_model = tf.keras.models.load_model(c_kan.checkpoint_model)
             y_pred = best_model.predict(X_test)
-            evaluate_model( y_test, y_pred)
-
+            rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
+            
+            model_file = f"c_kan_{mse}_{mae}_model.keras"
+            file_path = os.path.join(c_kan.checkpoint_dir, model_file)
+            best_model.save(file_path)
+            
+            sc_temp = scaler
+        
+    if run_oos:
+        file_path = datafile[0]
+        df = pd.read_csv(file_path)
+        df = df.drop(columns=['outputC'])
+        X = df.drop(columns=['output']).values
+        y = df['output'].values 
+            
+        oos_model = tf.keras.models.load_model(c_kan.checkpoint_model)
+        X_test = sc_temp.transform(X)
+        y_test = y
+        
+        y_pred = oos_model.predict(X_test)
+        evaluate_model( y_test, y_pred)
             
 
 

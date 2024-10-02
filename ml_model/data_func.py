@@ -15,6 +15,13 @@ def generate_combinations(data_list, min=3, max=7):
     return all_combinations
 
 
+def split_three_ways(X,y):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+
 def simple_split_and_scale(X, y, test_size, random_state):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     X_train.columns = X_train.columns.str.replace('[^+a-zA-Z0-9]', '_')

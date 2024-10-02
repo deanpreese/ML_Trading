@@ -1,328 +1,346 @@
-import os
-import numpy as np
+
+
 import pandas as pd
-import tensorflow as tf
-import joblib 
+import numpy as np
+from datetime import datetime
 import matplotlib.pyplot as plt
+from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
+from darts.models import NHiTSModel, NBEATSModel
+from darts.models import LightGBMModel, XGBModel, CatBoostModel
+from torchmetrics import MetricCollection
+from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
+from darts.utils.likelihood_models import QuantileRegression, LaplaceLikelihood, DirichletLikelihood, ContinuousBernoulliLikelihood
+from darts.metrics import mae, mape, rmse, coefficient_of_variation, dtw_metric
+from torchmetrics.regression import SpearmanCorrCoef, PearsonCorrCoef, R2Score, MeanAbsoluteError 
+from torchmetrics.regression import MeanSquaredError, PearsonCorrCoef, MeanAbsolutePercentageError, CosineSimilarity
+
+from scipy.stats import mode
+
+import joblib
+
+from sklearn.metrics import confusion_matrix, precision_score, recall_score
 
 
-from tensorflow.keras.layers import Lambda
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv1D, Average, Multiply, GlobalAveragePooling1D, Reshape, Concatenate, ConvLSTM1D, Flatten, SeparableConv1D, LayerNormalization, Bidirectional, Add, Dense,  Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.initializers import GlorotUniform
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.regularizers import l2
 
-from ml_model.model_stats import gen_reg_stats_x, gen_class_stats 
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
-
-tf.config.set_visible_devices([], 'GPU')
-np.random.seed(42)
-tf.random.set_seed(42)
-
-
-class DCNN:
-    def __init__(self, epochs=50, batch_size=32):
-        
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.model = None
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-        
-        self.checkpoint_dir = 'checkpoints/'
-        self.trained_dir = 'trained_models/'
-       
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'dcnn_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'dcnn_model.keras')
-        self.dot_img_file = os.path.join(self.checkpoint_dir, 'dcnn.png')
-
-        self.drop_out = 0.3
-        self.l2_reg = l2(0.01)
-        self.initializer = GlorotUniform(seed=42)        
+def process_train_test_data(data, feature_columns, target_column, split):
+    print("Processing data...")
+    series = TimeSeries.from_dataframe(data).astype(np.float32)   
+    train, test = series.split_after(split)
+    X_train = train.drop_columns(target_column)
+    X_test = test.drop_columns(target_column)
+    y_train = train.drop_columns(feature_columns)
+    y_test = test.drop_columns(feature_columns)
     
+    scaler = Scaler()
+    X_train = scaler.fit_transform(X_train) 
+    X_test = scaler.transform(X_test.astype(np.float32))   
     
-    def build_model_h(self, inputs):
-
-        """ 
-        H
-        Val MSE: 9.1925, Val MAE: 1.7172, R2: 0.46744909954386704
-        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
-        Number of Samples: 7451
-        """        
-
-        h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
-        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
-        h = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(h)
-        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
-        h = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(h)
-        h = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(h)
-        h = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(h)
-
-        h = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(h)         
-        attention_h = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_h')(h)
-        h = Multiply()([h, attention_h])                
-        h = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h)           
-        
-        return h        
-        
-        
-    def build_model_x(self, inputs):
-        
-        """
-        X        
-        Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
-        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
-        Number of Samples: 7451    
-        """        
-        
-        x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
-        #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=32, kernel_size=3,  activation='relu', kernel_initializer=self.initializer)(x)
-        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
-        x = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
-        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        x = Bidirectional(LSTM(64, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        
-        x = MaxPooling1D(pool_size=1, strides=1)(x)
-        
-        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
-        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(x) 
-        attention_x = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_x')(x)
-        x = Multiply()([x, attention_x])                
-        x = Dense(8, activation='relu', kernel_regularizer=self.l2_reg, name="x_out", kernel_initializer=self.initializer)(x) 
-                     
-        return x
+    #print("X_train shape: ", X_train.all_values().shape)
+    #print("X_test shape: ", X_test.all_values().shape)
+    #print("y_train shape: ", y_train.all_values().shape)
+    #print("y_test shape: ", y_test.all_values().shape)
     
+    return X_train, X_test, y_train, y_test, scaler
+
+
+def calc_r(predictions, actuals, model_name):
+    correct = 0 
+    total = 0
+    
+    forecast_results = predictions
+    test_series = actuals
+    
+    for i in range(len(forecast_results)):
+        
+        predicted_output = forecast_results[i].values()[0][0]
+        target_output = test_series[i].values()[0][0]
+
+        if ( target_output > 0 and predicted_output > 0):
+            correct += 1 
+
+        if ( target_output < 0 and predicted_output < 0):
+            correct += 1 
+        
+        if ( target_output == 0 and predicted_output == 0):
+            correct += 1     
+
+        total +=  1    
+
+    perf = round((correct)/total,4)
+    print(f"Total {total}  Correct {correct}  Percent {perf}")
+    
+    return total, correct, perf
+
+
+def calc_c(predictions, actuals, model_name):
+    correct = 0 
+    total = 0
+   
+    forecast_results = predictions
+    test_series = actuals
+    
+    for i in range(len(forecast_results)):
+        predicted_output = forecast_results[i].values()[0][0]
+        target_output = test_series[i].values()[0][0]
+
+        if ( target_output > 0 and predicted_output > 0.5):
+            correct += 1 
+
+        if ( target_output == 0 and predicted_output < 0.5):
+            correct += 1      
+
+        total +=  1    
+
+    perf = round((correct)/total,4)
+    print(f"Classification Results:  {model_name} Total {total}  Correct {correct}  Percent {perf}")
+    
+    return total, correct, perf
     
 
-    def build_model(self, input_shape):
+def plot_model(test_series, output_chunk, model, past_covariates=None, future_covariates=None):
+    
+    last_x_rows = 100
+    like_results = model.historical_forecasts(series=test_series, 
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        start=0.8, 
+        retrain=False,
+        verbose=True, 
+        predict_likelihood_parameters=True,
+        forecast_horizon=output_chunk)        
+
+    forecast_results = forecast_results[-last_x_rows:]
+    test_series = test_series[-last_x_rows:]
+    like_results = like_results[-last_x_rows:]   
+    
+    plt.figure(figsize=(12, 6))
+    test_series.plot(label='actual', color='black')
+    like_results.plot(low_quantile=0.2, high_quantile=0.8, label="20-80th percentiles", color='green')
+    forecast_results.plot(label='backtest (n=10)', color='red')
+    plt.show()
+
+
+def gen_forecast(test_series, output_chunk, model, past_covariates=None, future_covariates=None):
+    
+    forecast_results = model.historical_forecasts(series=test_series, 
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        #start=0.8, 
+        retrain=False,
+        verbose=True,
+        #last_points_only=True, 
+        predict_likelihood_parameters=False,
+        forecast_horizon=output_chunk)
+    return forecast_results    
+
+
+
+def build_cat(input_sequence_len, output_chunk_length, cov_lags=None):
+    model = CatBoostModel(
+        lags=input_sequence_len,
+        lags_past_covariates=cov_lags,
+        #likelihood='poisson',
+        output_chunk_length=output_chunk_length
+    )
+    return model
+
+
+def build_xgb(input_sequence_len, output_chunk_length, cov_lags=None):
+    model = XGBModel(
+        lags=input_sequence_len,
+        lags_past_covariates=cov_lags,
+        #likelihood='poisson',
+        output_chunk_length=output_chunk_length
+    )
+    return model
+
+
+def build_lightGBM(input_sequence_len, output_chunk_length, cov_lags=None):
+    model = LightGBMModel(
+        lags=input_sequence_len,
+        lags_past_covariates=cov_lags,
+        #likelihood='poisson',
+        output_chunk_length=output_chunk_length,
+        verbose=-1
+    )
+    return model
+
+
+def ensemble_model(all_predict_data, actuals, forecast_len):
+    
+    print("Ensemble model...")
+    actuals = actuals[-forecast_len:]
+
+    correct_ave = 0
+    correct_maj = 0
+    correct_ccc = 0
+    total = 0
+
+    for y in range(len(actuals)):
         
-        inputs = Input(shape=input_shape)
-        x = self.build_model_x(inputs)
-        #h = self.build_model_h(inputs)
-        ave_output = x
+        target_output = actuals[y].values()[0][0]
+        comb_pred = 0
+        w_comb_pred =0
         
-        outputs = Dense(1)(ave_output)  
-        model = Model(inputs=inputs, outputs=outputs)
-        model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
-        model.summary(expand_nested=True,show_trainable=True)
- 
-        tf.keras.utils.plot_model(model, to_file=self.dot_img_file, 
-            show_shapes=True, 
-            show_dtype=True,
-            show_layer_names=True,
-            expand_nested=True,
-            show_layer_activations=True,
-            show_trainable=True
-            )   
- 
-        
-        print(" ")
-        print(" ----- ")
-        print(" ")
-        self.model = model
-        return model        
+        total += 1
+        wt_p = 0
                 
-        
-        
-    def train_model(self, file_path):
-    
-        print(f"Loading {file_path}" )
-    
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
+        for v in range(len(all_predict_data)):
             
-        #descriptive_stats = df.describe()
-        #descriptive_stats.to_csv('descriptive_statistics.csv', index=True)
+            predict = all_predict_data[v]            
+            pre_val = predict[y].values()[0][0]
+            comb_pred += pre_val
+            w_comb_pred += pre_val*.52    
 
-        #Lucky13  ALL Cols
-        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+        ave_p = comb_pred/len(all_predict_data)
+        wt_p = w_comb_pred/len(all_predict_data)
 
-        #f_13_list = ['STOK1','ATR54','SDKC9','ATR53','RSI','ATR2','ATR52','ATR51', 'output']
+        if ( target_output > 0 and (ave_p > 0.5  or wt_p > 0.5)):
+            correct_ccc += 1
         
-        
-        #Lucky 13 EX All Cols
-        f_13_ex = ['RSI', 'ATR2', 'STOK1', 'ATR21', 'SDLR310', 'FOSC1', 'ATR5', 'ADX2', 'SDKC9', 'ATR54', 'SDBB91', 
-                   'SDLR93', 'ROC', 'EMAL10101', 'ADX1', 'EMAL10103', 'EMAL21211', 'FOSC2', 'ATR51', 'SDLR91', 
-                   'SDLR92', 'SDLR9', 'EMAL21213', 'EMAL21212', 'ATR53', 'ATR52', 'SDKC91', 'EMAL10102', 'FOSC', 'ADX']
-        
-        #Val MSE: 9.3862, Val MAE: 1.7522, R2: 0.4562254910904875
-        #Total Wins: 5647, Total Losses: 1804, Win Percentage: 0.758
-        #Number of Samples: 7451
-        #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
-        #        'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output']       
-        
-        
-        #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output']
-        #df = df[f_list]
+        if ( target_output == 0 and (ave_p < 0.5 or wt_p < 0.5)):
+            correct_ccc += 1
 
-
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        #df = df[((df['STOK1'] > 20) & (df['STOK1'] < 40))|(df['STOK1'] > 60) & (df['STOK1'] < 80)]   
+        if ( target_output > 0 and ave_p > 0.5):
+            correct_ave += 1
+             
+        if ( target_output == 0 and ave_p < 0.5):
+            correct_ave += 1
         
-        X = df.drop(columns=['output']).values
-        y = df['output'].values
+        if ( target_output > 0 and wt_p > 0.5):
+            correct_maj += 1
 
-
-        X = X.reshape(X.shape[0], X.shape[1], 1)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        if ( target_output == 0 and wt_p < 0.5):
+            correct_maj += 1
+                  
+            
+    perf_ave = round((correct_ave)/total,4)
+    perf_maj = round((correct_maj)/total,4)
+    perf_cc = round((correct_ccc)/total,4)
     
-        self.X_train = X_train
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_test = y_test
+    return perf_ave, perf_maj, perf_cc, total
+        
+        
+        
+def main(input_chunk_length, output_chunk_length):    
     
-        input_shape = (X_train.shape[1], X_train.shape[2])
-        #(14, 1)
-        
-        model = self.build_model(input_shape)
-
-        reduce_lr = ReduceLROnPlateau(
-            monitor="val_loss", factor=0.2,
-            patience=5, verbose=1,
-            mode="auto", min_delta=0.000001,
-            cooldown=0, min_lr=0,
-        )
-
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        
-        model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-            self.checkpoint_model, 
-                monitor='val_loss', 
-                    save_best_only=True, 
-                        save_weights_only=False, mode='min')
-        
-        history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=200, 
-                                batch_size=128, callbacks=[
-                                    early_stopping,
-                                    reduce_lr,
-                                    model_checkpoint])
-
-        y_pred = model.predict(X_test)
-        return history_out, y_pred
-
-
-    def evaluate_model(self, y_pred):
-        correct, perf, total, mse, rmse, mae, r2 = gen_reg_stats_x(self.y_test, y_pred)
-        print(f"Val MSE: {mse}, Val MAE: {mae}, R2: {r2}")
-        print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.3f}")
-        print(f"Number of Samples: {total}")
-        return mse, mae
-    
-    
-    def load_saved_model(self, mode):
-        
-        if mode == "run":
-           self.model = tf.keras.models.load_model(self.trained_model)
-        
-        if mode == "train":
-           self.model = tf.keras.models.load_model(self.checkpoint_model)
-           
-
-    def run_batch_test(self, file_path):
-    
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
-               
-        self.X_test = X
-        self.y_test = y
-        y_pred = self.model.predict(self.X_test)
-
-        self.evaluate_model(y_pred)
-        
-        
-    def plot_training_history(self, history):
-        
-        plt.figure(figsize=(12, 6))
-        plt.subplot(1, 2, 1)
-        plt.plot(history.history['loss'], label='Training Loss')
-        plt.plot(history.history['val_loss'], label='Validation Loss')
-        plt.title('Loss over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss (MSE)')
-        plt.legend()
-        plt.subplot(1, 2, 2)
-        plt.plot(history.history['mae'], label='Training MAE')
-        plt.plot(history.history['val_mae'], label='Validation MAE')
-        plt.title('MAE over Epochs')
-        plt.xlabel('Epochs')
-        plt.ylabel('MAE')
-        plt.legend()
-        plt.show()
-        
-        
-        
-def run():
-
     datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_EX_3070_oos.csv',  
-        'data/Lucky13_EX_3070.csv',  #33
-    ]
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/ndata_diff_lucky13_3070_oos.csv', 
+                'data/ndata_diff_lucky13_3070.csv', #3
+                'data/ndata_lucky_13_lag_3070_oos.csv', 
+                'data/ndata_lucky13_lag_3070.csv', #5
+                'new_model_Z_lucky13_3070_oos.csv',
+                'new_model_Z_lucky13_3070.csv' #7,
+                'data/Lucky13_3070_oos_3.csv',   
+                'data/Lucky13_3070_3.csv',  #9
+                'data/Lucky13_3070_oos_5.csv',   
+                'data/Lucky13_3070_5.csv',  #11
+                
+        ]
 
-    #file_path = datafile[13]
-    model = DCNN()
 
-    train = True
-    test = False
-    single_item = False
+    data = pd.read_csv(datafile[1])
+    
+    X = data
+    X = X.drop(columns=['output', 'outputC'])
+    feature_columns = list(X.columns)
+    target_column = 'outputC'  # Replace with your actual target column name
+    #input_chunk_length = 9
+    #output_chunk_length = 1
+    test_split = 0.80
 
-    if train:
-        
-        for i in range(20):
-            file_path = datafile[1]
-            history_out, y_pred = model.train_model(file_path)
-            mse, mae = model.evaluate_model(y_pred)
-            #model.plot_training_history(history_out)
-            
-            model_file = f"dcnn_{mse}_{mae}_model.keras"
-            file_path = os.path.join(model.checkpoint_dir, model_file)
-            model.model.save(file_path)
-            
 
-    if test:
-        file_path = datafile[0]
-        model.load_saved_model("train")
-        model.run_batch_test(file_path)
+    #(data, feature_columns, target_column, split):
+    X_train, X_test, y_train, y_test, scaler = process_train_test_data(data, feature_columns, target_column, test_split)
+    
+    print("Training model...")
+ 
+    cov_lags_in = None
+    cov_lags_in = input_chunk_length
+    past_train_covariates_in = None
+    past_train_covariates_in = X_train 
+    past_test_covariates_in = None
+    past_test_covariates_in = X_test 
 
-    if single_item:
-        file_path = datafile[0]
-        model.load_saved_model("run")
+    model_cat = build_cat(input_chunk_length, output_chunk_length, cov_lags=cov_lags_in)
+    model_cat.fit(y_train, past_covariates=past_train_covariates_in)
+    model_xgb = build_xgb(input_chunk_length, output_chunk_length, cov_lags=cov_lags_in)
+    model_xgb.fit(y_train, past_covariates=past_train_covariates_in)
+    model_lgb = build_lightGBM(input_chunk_length, output_chunk_length, cov_lags=cov_lags_in)
+    model_lgb.fit(y_train, past_covariates=past_train_covariates_in)
+    forecast_results_cat = gen_forecast(y_test, output_chunk_length, model_cat, past_covariates=past_test_covariates_in, future_covariates=None)
+    forecast_results_xgb = gen_forecast(y_test, output_chunk_length, model_xgb, past_covariates=past_test_covariates_in, future_covariates=None)
+    forecast_results_lgb = gen_forecast(y_test, output_chunk_length, model_lgb, past_covariates=past_test_covariates_in, future_covariates=None)
+    
 
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
 
-        model.X_test = X
-        model.y_test = y
-
-        yn = False
-        count = 0
-        ycount = 0
-
-        y_pred = []
-
-        for i in range(len(y)):
-            x_val = X[i]
-            x_val = x_val.reshape((1, 14, 1)) 
-            y_val = model.model.predict(x_val)
-            
-            y_pred.append(y_val[0][0])
-            print(y_val[0][0])
-
-        model.evaluate_model(y_pred)
-        
-
+    #model_cat2 = build_cat(input_chunk_length, output_chunk_length, cov_lags=None)
+    #model_cat2.fit(y_train, past_covariates=None)
+    model_xgb2 = build_xgb(input_chunk_length, output_chunk_length, cov_lags=None)
+    model_xgb2.fit(y_train, past_covariates=None)
+    model_lgb2 = build_lightGBM(input_chunk_length, output_chunk_length, cov_lags=None)
+    model_lgb2.fit(y_train, past_covariates=None)
+    #forecast_results_cat2 = gen_forecast(y_test, output_chunk_length, model_cat2, past_covariates=None, future_covariates=None)
+    forecast_results_xgb2 = gen_forecast(y_test, output_chunk_length, model_xgb2, past_covariates=None, future_covariates=None)
+    forecast_results_lgb2 = gen_forecast(y_test, output_chunk_length, model_lgb2, past_covariates=None, future_covariates=None)
+     
+    
+    forecast_results_len = len(forecast_results_xgb)
+    predict_data = [forecast_results_lgb, forecast_results_xgb,forecast_results_cat, forecast_results_lgb2, forecast_results_xgb2 ]
+    perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data, y_test, forecast_results_len)
+    
+     
+    #forecast_results_len = len(forecast_results_xgb)
+    #predict_data = [forecast_results_lgb, forecast_results_xgb,forecast_results_cat]
+    #perf_ave, perf_maj, perf_cc, total = ensemble_model(predict_data, y_test, forecast_results_len)
+    
+    #plot_model(y_test, output_chunk_length, model_hits, past_covariates=None, future_covariates=None)
+    
+    e_rmse_xgb = rmse(y_test, forecast_results_xgb)
+    e_rmse_lgb = rmse(y_test, forecast_results_lgb)
+    e_rmse_cat = rmse(y_test, forecast_results_cat)
+    
+    print(" ")
+    print(f"RMSE LGB: {e_rmse_lgb}")
+    print(f"RMSE XGB: {e_rmse_xgb}")
+    print(f"RMSE CAT: {e_rmse_cat}")
+    #print(" Regression Results XGB :")    
+    #total_rx, correct_rx, perf_rx = calc_r(forecast_results_xgb, y_test)
+    print(" Classification Results XGB:")
+    total_rc, correct_rc, perf_rc = calc_c(forecast_results_xgb, y_test, 'XGB')
+    #print(" Regression Results LGB:")    
+    #total_lr, correct_lr, perf_lr = calc_r(forecast_results_lgb, y_test)
+    print(" Classification Results LGB:")
+    total_lc, correct_lc, perf_lc = calc_c(forecast_results_lgb, y_test, 'LGB')
+    #print(" Regression Results CAT:")    
+    #total_rcat, correct_rcat, perf_rcat = calc_r(forecast_results_lgb, y_test)
+    print(" Classification Results CAT:")
+    total_ccat, correct_ccat, perf_ccat = calc_c(forecast_results_cat, y_test, 'CAT')
+    
+    print(" ")
+    print(f"Ensemble Perf Ave: {perf_ave}  Perf Maj: {perf_maj}  CCC {perf_cc}   Total: {total}")
+    print(" ")
+    
+    
+    return input_chunk_length, output_chunk_length, e_rmse_lgb, e_rmse_xgb,e_rmse_cat,0, perf_rc, 0, perf_lc, 0, perf_ccat
+    
+    
 if __name__ == "__main__":
-    run()            
-        
+    
+    output_list = []
+    num_predicts = 1
+    
+    #for o in range(1,3,1):
+    #    for i in range(5,9,1):
+    #        rslts = main(i, num_predicts+o)
+    #        output_list.append(rslts)
+
+    rslts = main(1, 1)
+    
+    #output_list.append(rslts)
+    #out_df = pd.DataFrame(output_list, columns=['input_chunk_length', 'output_chunk_length', 'e_rmse_lgb', 'e_rmse_xgb', 'e_rmse_cat','perf_rx', 'perf_rc', 'perf_lr', 'perf_lc', 'perf_rcat', 'perf_ccat'])
+    #out_df.to_csv('chunk_data__out.csv')
+    #print(out_df)
