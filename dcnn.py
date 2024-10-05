@@ -4,7 +4,6 @@ import pandas as pd
 import tensorflow as tf
 import joblib 
 import matplotlib.pyplot as plt
-import pywt
 
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model
@@ -108,31 +107,8 @@ class DCNN:
                 
         
         
-    def train_model(self, file_path):
+    def train_model(self, input_shape, X_train, X_test, y_train, y_test ):
     
-        print(f"Loading {file_path}" )
-    
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-            
-        #wavelet = 'cmor'
-        #scales = np.arange(1, 128)
-        #coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
-        #df['output'] = np.mean(np.abs(coefficients), axis=0)
-        
-        
-        #Lucky13  ALL Cols
-        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
-
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        
-        X = df.drop(columns=['output']).values
-        y = df['output'].values
-        X = X.reshape(X.shape[0], X.shape[1], 1)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)    
-        input_shape = (X_train.shape[1], X_train.shape[2])
-        #(14, 1)
         
         model = self.build_model(input_shape)
 
@@ -225,13 +201,31 @@ def run():
 
     train = True
     run_oos = False
-    single_item = False
+    run_perf = False
 
     if train:
         
-        for i in range(10):
+        for i in range(5):
             file_path = datafile[1]
-            history_out, y_pred, y_test, X_test = dcnn.train_model(file_path)
+            
+            print(f"Loading {file_path}" )
+            df = pd.read_csv(file_path)
+            df = df.drop(columns=['outputC'])
+            
+            #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
+            #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
+            #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
+            #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
+            
+            X = df.drop(columns=['output']).values
+            y = df['output'].values
+            X = X.reshape(X.shape[0], X.shape[1], 1)
+
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)    
+            input_shape = (X_train.shape[1], X_train.shape[2])
+            #(14, 1)
+                    
+            history_out, y_pred, y_test, X_test = dcnn.train_model(input_shape, X_train, X_test, y_train, y_test )
 
             # Load best model and evaluate
             best_model = tf.keras.models.load_model(dcnn.checkpoint_model)
@@ -243,46 +237,66 @@ def run():
             best_model.save(file_path)
             
 
+    
     if run_oos:
+        
         file_path = datafile[0]
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
         X = df.drop(columns=['output']).values
         y = df['output'].values 
-
-        oos_model = tf.keras.models.load_model(dcnn.checkpoint_model)
-        y_pred = oos_model.predict(X)
+        
+        
+        model_dir = "saved_models/dcnn/"
+        files = os.listdir(model_dir)
+        model_to_load = files[0]
+        model_xxx= os.path.join(model_dir, model_to_load)
+        
+        oos_model = tf.keras.models.load_model(model_xxx)
+        y_pred = oos_model.predict(X, verbose=0)
         evaluate_model( y, y_pred)
 
-    """  
-    if single_item:
+    if run_perf:
         file_path = datafile[0]
-        model.load_saved_model("run")
-
+        
+        model_lower = "dcnn_25.keras"
+        model_upper = "dcnn_75.keras"
+        saved_model_dir = "saved_models"
+            
+        loaded_model_lower= os.path.join(saved_model_dir, model_lower)
+        loaded_model_upper= os.path.join(saved_model_dir, model_upper)
+        perf_model_lower = tf.keras.models.load_model(loaded_model_lower)
+        perf_model_upper = tf.keras.models.load_model(loaded_model_upper)
+        
         df = pd.read_csv(file_path)
         df = df.drop(columns=['outputC'])
-        X = df.drop(columns=['output']).values
-        y = df['output'].values 
-
-        model.X_test = X
-        model.y_test = y
-
-        yn = False
-        count = 0
-        ycount = 0
-
+        
         y_pred = []
-
-        for i in range(len(y)):
-            x_val = X[i]
-            x_val = x_val.reshape((1, 14, 1)) 
-            y_val = model.model.predict(x_val)
+        y_target = []
+        
+        for idx, row in df.iterrows():
             
-            y_pred.append(y_val[0][0])
-            print(y_val[0][0])
+            rsi = row['RSI']
+            target = row['output']
+            
+            if rsi > 20 and rsi < 40:
+                
+                x_val = row[:-1].values
+                x_val = x_val.reshape((1, 14, 1)) 
+                y_val = perf_model_lower.predict(x_val)
+                y_pred.append(y_val[0])
+                y_target.append(target)
+                
+            if rsi > 60 and rsi < 80:
+            
+                x_val = row[:-1].values
+                x_val = x_val.reshape((1, 14, 1)) 
+                y_val = perf_model_upper.predict(x_val, verbose=0)
+                y_pred.append(y_val[0])
+                y_target.append(target)
+                
+        evaluate_model(y_target, y_pred)
 
-        model.evaluate_model(y_pred)
-        """  
 
 if __name__ == "__main__":
     run()            

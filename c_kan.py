@@ -20,7 +20,7 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from ml_model.data_func import split_three_ways
 
 
-#tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
@@ -147,9 +147,9 @@ class C_KANX:
         X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_val = scaler.transform(X_val)
-        X_test = scaler.transform(X_test)
+        #X_train = scaler.fit_transform(X_train)
+        #X_val = scaler.transform(X_val)
+        #X_test = scaler.transform(X_test)
 
         input_shape = (X_train.shape[1], 1)
         #(14, 1)
@@ -262,6 +262,9 @@ def main():
     if train:
 
         for i in range(10):
+
+            np.random.seed(42)
+            tf.random.set_seed(42)
 
             file_path = datafile[1]
             c_kan = C_KANX()
