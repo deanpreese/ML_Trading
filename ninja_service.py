@@ -6,9 +6,6 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from strategy.model_loader import ModelLoader
-from models.ts_mixer_model import TSMixerModel
-from models.cnn_lstm_model import CNN_LSTM
-from models.kan_mixer_model import KANMixerModel
 
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
@@ -25,11 +22,6 @@ model_loader = ModelLoader()
 models_one = []
 models_two = []
 models_three = []
-
-ts_mixer = TSMixerModel(epochs=100, batch_size=32)
-cnn_model = CNN_LSTM()
-kan_mixer = KANMixerModel(epochs=100, batch_size=32)
-
 
 # ----------------------------------------
 def LoadModels(group_id, experiment_id, num_models):
@@ -66,21 +58,26 @@ def get_model_predictions(data_df, models):
     out_data = format_json(output_data)
     return out_data
 
+def gen_zero_predictions():
+    output_data = {
+            "agg_prediction" : 0,
+            "agg_weighted_prediction" : 0,
+            "all_predicts": 0
+        }
+    out_data = format_json(output_data)
+    return out_data
 
-def load_other_models():
-    ts_mixer.load_saved_model("run")
-    cnn_model.load_saved_model("run")
-    kan_mixer.load_saved_model("run")
+
+
 
 # ----------------------------------------
 def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        models_one = LoadModels(0, ["251"], 1)
-        models_two = LoadModels(0, ["253"], 1)
-        models_three = LoadModels(0, ["257"], 1)
-        load_other_models()
+        models_one = LoadModels(0, ["271"], 1)
+        models_two = LoadModels(0, ["271"], 1)
+        models_three = LoadModels(0, ["271"], 1)
 
 
     # ----------------------------------------
@@ -102,12 +99,18 @@ def init_app():
         
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_two)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        if df['RSI'] <  25  |  df['RSI'] > 75:
+            j_out = gen_zero_predictions()
+            j_out = json.dumps(out_data, indent=4)
+        else:
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            out_data = get_model_predictions(df, models_two)
+            j_out = json.dumps(out_data, indent=4)
+            #print(jd)
+        return j_out
         
     # ----------------------------------------
     @app.route('/predict-three', methods=['POST'])
@@ -115,104 +118,18 @@ def init_app():
         
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_three)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
-    
-    # ----------------------------------------
-    @app.route('/predict-kan', methods=['POST'])
-    def predict_kan():
+        df = pd.read_csv(csv_data, header=None, names=column_names)
         
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        
-        X = data_df.values
-        
-        x_val = X.reshape((1, 14, 1)) 
-        y_val = kan_mixer.model.predict(x_val)
-        
-        predicts = [y_val[0][0]]
-        
-        out_data = {
-            "agg_prediction" : round(y_val[0][0],6),
-            "agg_weighted_prediction" : round(y_val[0][0],6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-   # ----------------------------------------
-    @app.route('/predict-cnn', methods=['POST'])
-    def predict_cnn():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        
-        X = data_df.values
-        
-        x_val = X.reshape((1, 14, 1)) 
-        y_val = cnn_model.model.predict(x_val)
-        predicts = [y_val[0][0]]
-        
-        out_data = {
-            "agg_prediction" : round(y_val[0][0],6),
-            "agg_weighted_prediction" : round(y_val[0][0],6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-
-   # ----------------------------------------
-    @app.route('/predict-tsm', methods=['POST'])
-    def predict_tsm():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        X = data_df    
-        
-        #aX = data_df
-        #anom_score = get_anomaly_score(aX)
-        anom_score = False
-        
-        if anom_score == False:
-            X_scaled = ts_mixer.saved_scaler.transform(X)
-            X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
-            y_val = ts_mixer.model.predict(X_scaled)
-            y_raw = y_val[0][0]
+        j_out = None
+        if df['RSI'] <  20  |  df['RSI'] > 80:
+            j_out = gen_zero_predictions()
+            j_out = json.dumps(out_data, indent=4)
         else:
-            y_raw = 0.0            
-            
-        predicts = [y_raw]
-        out_data = {
-            "agg_prediction" : round(y_raw,6),
-            "agg_weighted_prediction" : round(y_raw,6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)        
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-
-
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            out_data = get_model_predictions(df, models_two)
+            j_out = json.dumps(out_data, indent=4)
+            #print(jd)
+        return j_out
 
         
     return app
