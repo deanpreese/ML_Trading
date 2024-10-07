@@ -83,28 +83,6 @@ def run():
                 XGBRFClassifier(),
         ]
 
-        est_list_1 = [ 
-                XGBRegressor(), 
-                XGBClassifier(),
-                XGBClassifier(**mp.lbc_set),
-                CatBoostClassifier(),
-                CatBoostClassifier(**mp.cbc_set),
-        ]
-
-
-        est_list_2 = [
-                XGBRegressor(**mp.xgbr_t),   
-                XGBClassifier(),
-                XGBRFClassifier(**mp.xgc_set),
-                XGBClassifier(**mp.xgbc_t),
-                LGBMClassifier(**mp.lbc_set),
-                LGBMClassifier(**mp.lgbc_t),
-                CatBoostClassifier(**mp.catc_t),
-                XGBRFClassifier(),
-        ]
-
-
-
         ens_r = [
                 #XGBRegressor(), 
                 XGBRegressor(**mp.xgbr_set ), 
@@ -136,15 +114,22 @@ def run():
                 
         ]
 
-        dtx = pd.read_csv(datafile[1])
+        df = pd.read_csv(datafile[1])
+
+        #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
+        #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
+        #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
+        #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
 
         split_test_size_value = 0.7          
         min_features_used = 8
-        max_features_used = 12
+        max_features_used = 13
         step_features_used = 1
-        total_cycles_used = 100
+        total_cycles_used = 10
 
-        p_df, experiment_id_parent = run_models(dtx, ens_r, 
+        p_df, experiment_id_parent = run_models(df, ens_r, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

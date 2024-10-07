@@ -154,7 +154,7 @@ def run():
         df = pd.read_csv(file_path)
         df = df.drop(columns=['output'])  # Drop regression target
             
-        df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  
+        #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  
         #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]  #  
         #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  #  
         #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  #  
@@ -179,7 +179,7 @@ def run():
         input_shape = (X_train.shape[1], X_train.shape[2])
         
         
-        for i in range(1):
+        for i in range(5):
             file_path = datafile[1]
             history_out, y_pred, y_test, X_test = model.train_model(input_shape, X_train, X_test, y_train, y_test )
             mse, mae = evaluate_model( y_pred, y_test)

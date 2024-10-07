@@ -125,40 +125,12 @@ class C_KANX:
 
     
 
-    def train_model(self, file_path):
-
-        print(f"Loading {file_path}" )
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['outputC'])
-            
-        #wavelet = 'cmor'
-        #scales = np.arange(1, 128)
-        #coefficients, _ = pywt.cwt(df['output'].values, scales, wavelet)
-        #df['output'] = np.mean(np.abs(coefficients), axis=0)
+    def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val ):
         
-        #Lucky13  ALL Cols
-        f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
-
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        
-        X = df.drop(columns=['output']).values
-        y = df['output'].values
-
-        X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
-
-        scaler = StandardScaler()
-        #X_train = scaler.fit_transform(X_train)
-        #X_val = scaler.transform(X_val)
-        #X_test = scaler.transform(X_test)
-
-        input_shape = (X_train.shape[1], 1)
-        #(14, 1)
-
         self.create_model(input_shape )
 
         self.model.compile(optimizer=Adam(learning_rate=0.001), 
                 loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
-
         self.model.summary()
         
         tf.keras.utils.plot_model(self.model, to_file=self.model_plot, 
@@ -169,7 +141,6 @@ class C_KANX:
             show_layer_activations=True,
             show_trainable=True
             )   
-
 
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss", factor=0.2,
@@ -196,7 +167,7 @@ class C_KANX:
                                     model_checkpoint])      
         
         y_pred = self.model.predict(X_test)
-        return history_out, y_pred, y_test, X_test, scaler
+        return history_out, y_pred
 
 
 
@@ -261,14 +232,41 @@ def main():
 
     if train:
 
-        for i in range(10):
+        for i in range(1):
 
             np.random.seed(42)
             tf.random.set_seed(42)
 
             file_path = datafile[1]
+
+            print(f"Loading {file_path}" )
+            df = pd.read_csv(file_path)
+            df = df.drop(columns=['outputC'])
+                
+            #Lucky13  ALL Cols
+            f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+
+            #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
+            #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
+            #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
+            #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
+            df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
+            
+            X = df.drop(columns=['output']).values
+            y = df['output'].values
+
+            X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
+
+            #scaler = StandardScaler()
+            #X_train = scaler.fit_transform(X_train)
+            #X_val = scaler.transform(X_val)
+            #X_test = scaler.transform(X_test)
+
+            input_shape = (X_train.shape[1], 1)
+            #(14, 1)
+
             c_kan = C_KANX()
-            history_out, y_pred, y_test, X_test, scaler = c_kan.train_model(file_path)
+            history_out, y_pred = c_kan.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val )
 
             # Load best model and evaluate
             best_model = tf.keras.models.load_model(c_kan.checkpoint_model)
@@ -279,7 +277,11 @@ def main():
             file_path = os.path.join(c_kan.checkpoint_dir, model_file)
             best_model.save(file_path)
             
-            sc_temp = scaler
+            #sc_temp = scaler
+            #scaler_file = f"c_kan_scaler_{mse}_{mae}_model.sc"
+            #sc_file_path = os.path.join(c_kan.checkpoint_dir, scaler_file)
+            #joblib.dump(scaler, sc_file_path) 
+            
         
     if run_oos:
         file_path = datafile[0]

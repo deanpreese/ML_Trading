@@ -97,7 +97,9 @@ class DCNN:
         
         inputs = Input(shape=input_shape)
         #x = self.build_model_x(inputs)
+        
         h = self.build_model_h(inputs)
+        
         ave_output = h
         
         outputs = Dense(1)(ave_output)  

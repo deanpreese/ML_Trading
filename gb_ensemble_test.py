@@ -25,10 +25,13 @@ from strategy.model_loader import ModelLoader
 
 def run_sim(file, models, target):
 
-    data = pd.read_csv(file)                   
-    X = data
+    df = pd.read_csv(file)                   
+    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+    df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+    
+    X = df
     X = X.drop(columns=['output', 'outputC'])
-    y = data[target].values
+    y = df[target].values
     fl_out = list(X.columns)
     start = time.time()
 
@@ -135,8 +138,8 @@ def run_test():
 
     target = 'output'
     model_loader = ModelLoader()
-    models = model_loader.load_composite_strategy(["179"], 2, 0)   
-    run_sim( datafile[1], models, target)
+    models = model_loader.load_composite_strategy(["273"], 1, 0)   
+    run_sim( datafile[0], models, target)
 
 
 if __name__ == "__main__":
