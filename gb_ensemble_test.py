@@ -138,7 +138,7 @@ def run_test():
 
     target = 'output'
     model_loader = ModelLoader()
-    models = model_loader.load_composite_strategy(["264"], 1, 0)   
+    models = model_loader.load_composite_strategy(["286"], 1, 0)   
     run_sim( datafile[0], models, target)
 
 
