@@ -126,9 +126,9 @@ class ModelLoader:
     def load_composite_strategy(self, experiment_id, num_models, group_id): 
         
         print("Querying Runs ...")
-        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cxp DESC"], max_results=num_models)
+        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cxp DESC"], max_results=num_models)
         #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
-        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
+        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
         self.model_group = group_id
         comp_strategies = []
 

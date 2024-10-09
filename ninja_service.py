@@ -22,6 +22,8 @@ model_loader = ModelLoader()
 models_one = []
 models_two = []
 models_three = []
+models_four = []
+models_five = []
 
 # ----------------------------------------
 def LoadModels(group_id, experiment_id, num_models):
@@ -60,12 +62,12 @@ def get_model_predictions(data_df, models):
 
 def gen_zero_predictions():
     output_data = {
-            "agg_prediction" : 0,
-            "agg_weighted_prediction" : 0,
-            "all_predicts": 0
+            "agg_prediction" : float(0.0),
+            "agg_weighted_prediction" : float(0.0),
+            "all_predicts": [float(0.0)]
         }
-    out_data = format_json(output_data)
-    return out_data
+    #out_data = format_json(output_data)
+    return output_data
 
 
 
@@ -75,10 +77,11 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        models_one = LoadModels(0, ["271"], 1)
-        models_two = LoadModels(0, ["271"], 1)
-        models_three = LoadModels(0, ["271"], 1)
-
+        models_one = LoadModels(0, ["286"], 1)
+        models_two = LoadModels(0, ["288"], 1)
+        models_three = LoadModels(0, ["290"], 1)
+        models_four = LoadModels(0, ["292"], 1)
+        models_five = LoadModels(0, ["294"], 1)
 
     # ----------------------------------------
     @app.route('/predict-one', methods=['POST'])
@@ -86,12 +89,18 @@ def init_app():
         
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_one)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+            out_data = gen_zero_predictions()
+            j_out = json.dumps(out_data, indent=4)
+        else:
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            out_data = get_model_predictions(df, models_one)
+            j_out = json.dumps(out_data, indent=4)
+            #print(jd)
+        return j_out
 
     # ----------------------------------------
     @app.route('/predict-two', methods=['POST'])
@@ -102,8 +111,8 @@ def init_app():
         df = pd.read_csv(csv_data, header=None, names=column_names)
         
         j_out = None
-        if df['RSI'] <  25  |  df['RSI'] > 75:
-            j_out = gen_zero_predictions()
+        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+            out_data = gen_zero_predictions()
             j_out = json.dumps(out_data, indent=4)
         else:
             df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
@@ -121,12 +130,57 @@ def init_app():
         df = pd.read_csv(csv_data, header=None, names=column_names)
         
         j_out = None
-        if df['RSI'] <  20  |  df['RSI'] > 80:
-            j_out = gen_zero_predictions()
+        
+        
+        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+            out_data = gen_zero_predictions()
             j_out = json.dumps(out_data, indent=4)
         else:
             df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_two)
+            out_data = get_model_predictions(df, models_three)
+            j_out = json.dumps(out_data, indent=4)
+            #print(jd)
+        return j_out
+
+
+ # ----------------------------------------
+    @app.route('/predict-four', methods=['POST'])
+    def predict_four():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        
+        
+        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+            out_data = gen_zero_predictions()
+            j_out = json.dumps(out_data, indent=4)
+        else:
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            out_data = get_model_predictions(df, models_four)
+            j_out = json.dumps(out_data, indent=4)
+            #print(jd)
+        return j_out
+
+# ----------------------------------------
+    @app.route('/predict-five', methods=['POST'])
+    def predict_five():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        
+        
+        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+            out_data = gen_zero_predictions()
+            j_out = json.dumps(out_data, indent=4)
+        else:
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            out_data = get_model_predictions(df, models_five)
             j_out = json.dumps(out_data, indent=4)
             #print(jd)
         return j_out
