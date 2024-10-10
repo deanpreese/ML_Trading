@@ -106,30 +106,32 @@ def run():
 
 
         ens_x = [
-                #CatBoostRegressor(**mp.cbr_set),
-                CatBoostRegressor(**mp.catr_t),
-                XGBRegressor(**mp.xgbr_set ), 
-                
-                #XGBClassifier(**mp.xgbc_t),
-                #XGBClassifier(**mp.xgc_set),
+                XGBClassifier(**mp.xgbc_t),
+                XGBClassifier(**mp.xgc_set),
                 #LGBMClassifier(**mp.lgbc_t),
                 #CatBoostClassifier(),        
-                
                 CatBoostClassifier(**mp.cbc_set),        
                 CatBoostClassifier(**mp.catc_t),        
-        ]
 
-        ens_x2 = [
                 #CatBoostRegressor(**mp.cbr_set),
                 CatBoostRegressor(**mp.catr_t),
                 XGBRegressor(**mp.xgbr_set ), 
+                #XGBRegressor(), 
+                XGBRegressor(**mp.xgbr_set ), 
+                #XGBRFRegressor(), 
+                #XGBRFRegressor(**mp.xgbrf_set ),
+                #CatBoostRegressor(),  
                 CatBoostRegressor(**mp.cbr_set),
-                
+                #LGBMRegressor(), 
+                #LGBMRegressor(**mp.lbr_set),               
+        ]
+
+
+        ens_c = [
                 #XGBClassifier(**mp.xgbc_t),
-                #XGBClassifier(**mp.xgc_set),
+                XGBClassifier(**mp.xgc_set),
                 #LGBMClassifier(**mp.lgbc_t),
-                
-                CatBoostClassifier(),        
+                #CatBoostClassifier(),        
                 CatBoostClassifier(**mp.cbc_set),        
                 CatBoostClassifier(**mp.catc_t),        
         ]
