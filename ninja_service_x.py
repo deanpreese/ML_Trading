@@ -129,18 +129,18 @@ def init_app():
         
         c_kan_model_dir_upper = "saved_models/c_kan/upper"
         c_kan_model_dir_lower = "saved_models/c_kan/lower"
-        keras_upper_models = load_keras_models(c_kan_model_dir_upper)
-        keras_lower_models = load_keras_models(c_kan_model_dir_lower)    
+        #keras_upper_models = load_keras_models(c_kan_model_dir_upper)
+        #keras_lower_models = load_keras_models(c_kan_model_dir_lower)    
         
         dcnn_model_dir_upper = "saved_models/dcnn_ens/upper"
         dcnn_model_dir_lower = "saved_models/dcnn_ens/lower"
         #keras_upper_models = load_keras_models(dcnn_model_dir_upper)
-        #keras_upper_models = load_keras_models(dcnn_model_dir_lower)    
+        #keras_lower_models = load_keras_models(dcnn_model_dir_lower)    
         
         comp_model_dir_upper = "saved_models/comp/upper"
         comp_model_dir_lower = "saved_models/comp/lower"
-        #keras_upper_models = load_keras_models(comp_model_dir_upper)
-        #keras_upper_models = load_keras_models(comp_model_dir_lower)    
+        keras_upper_models = load_keras_models(comp_model_dir_upper)
+        keras_lower_models = load_keras_models(comp_model_dir_lower)    
         
     
     # ----------------------------------------
