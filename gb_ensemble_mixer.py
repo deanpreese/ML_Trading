@@ -165,7 +165,7 @@ def run():
         #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         
-        df = df[((df['RSI'] > 30) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
+        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
         #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
 
@@ -176,7 +176,7 @@ def run():
         step_features_used = 1
         total_cycles_used = 10
 
-        p_df, experiment_id_parent = run_models(df, ens_x, 
+        p_df, experiment_id_parent = run_models(df, ens_c, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 
