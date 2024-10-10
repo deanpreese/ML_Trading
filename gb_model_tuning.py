@@ -11,21 +11,26 @@ import optuna
 # =====================================
 def objective_cat_c(trial, X_train, y_train, X_val, y_val):
 
+
     param = {
-        "objective": trial.suggest_categorical("objective", ["Logloss", "CrossEntropy"]),
-        "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.01, 0.1, log=True),
-        "depth": trial.suggest_int("depth", 1, 12),
-        "boosting_type": trial.suggest_categorical("boosting_type", ["Ordered", "Plain"]),
-        "bootstrap_type": trial.suggest_categorical(
-            "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
-        ),
-        "eval_metric": "Accuracy",
-    }
+            "iterations" : trial.suggest_int("iterations", 100, 1000),
+            "learning_rate" : trial.suggest_float("learning_rate", 1e-3, 1e-1, log=True),
+            "objective": trial.suggest_categorical("objective", ["Logloss", "CrossEntropy"]),
+            "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.01, 0.1, log=True),
+            "depth": trial.suggest_int("depth", 1, 10),
+            "boosting_type": trial.suggest_categorical("boosting_type", ["Ordered", "Plain"]),
+            "bootstrap_type": trial.suggest_categorical(
+                "bootstrap_type", ["Bayesian", "Bernoulli", "MVS"]
+            ),
+            "used_ram_limit": "3gb",
+            "eval_metric": "Accuracy",
+        }
 
     if param["bootstrap_type"] == "Bayesian":
         param["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0, 10)
     elif param["bootstrap_type"] == "Bernoulli":
         param["subsample"] = trial.suggest_float("subsample", 0.1, 1, log=True)
+
 
     model = cb.CatBoostClassifier(**param)
     model.fit(X_train, y_train)
@@ -62,21 +67,37 @@ def objective_lgb_c(trial, X_train, y_train, X_val, y_val):
 def objective_xgb_c(trial, X_train, y_train, X_val, y_val):
     
     param = {
-        'max_depth': trial.suggest_int('max_depth', 2, 15),
-        'subsample': trial.suggest_discrete_uniform('subsample', 0.6, 1.0, 0.05),
-        'n_estimators': trial.suggest_int('n_estimators', 1000, 10000, 100),
-        'eta': trial.suggest_discrete_uniform('eta', 0.01, 0.1, 0.01),
-        'reg_alpha': trial.suggest_int('reg_alpha', 1, 50),
-        'reg_lambda': trial.suggest_int('reg_lambda', 5, 100),
-        'min_child_weight': trial.suggest_int('min_child_weight', 2, 20),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
+        "verbosity": 0,
+        "objective": "binary:logistic",
+        # use exact for small dataset.
+        "tree_method": "exact",
+        # defines booster, gblinear for linear functions.
+        "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
+        # L2 regularization weight.
+        "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+        # L1 regularization weight.
+        "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+        # sampling ratio for training data.
+        "subsample": trial.suggest_float("subsample", 0.2, 1.0),
+        # sampling according to each tree.
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
     }
-   
-    #model = xgb.XGBClassifier(random_state=42, 
-    #                         tree_method='gpu_hist', 
-    #                         gpu_id=0, 
-    #                         predictor="gpu_predictor"
-    #                         ,**param )  
+
+    if param["booster"] in ["gbtree", "dart"]:
+        # maximum depth of the tree, signifies complexity of the tree.
+        param["max_depth"] = trial.suggest_int("max_depth", 3, 9, step=2)
+        # minimum child weight, larger the term more conservative the tree.
+        param["min_child_weight"] = trial.suggest_int("min_child_weight", 2, 10)
+        param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
+        # defines how selective algorithm is.
+        param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
+        param["grow_policy"] = trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"])
+
+    if param["booster"] == "dart":
+        param["sample_type"] = trial.suggest_categorical("sample_type", ["uniform", "weighted"])
+        param["normalize_type"] = trial.suggest_categorical("normalize_type", ["tree", "forest"])
+        param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
+        param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
 
     model = xgb.XGBClassifier(**param )  
     model.fit(X_train, y_train,verbose=False)
@@ -215,11 +236,11 @@ def main():
             #'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
             #'data/ndata_diff_lucky13_3070_oos.csv', 
-            'data/ndata_diff_lucky13_3070.csv', #3
+            #'data/ndata_diff_lucky13_3070.csv', #3
             #'data/ndata_lucky_13_lag_3070_oos.csv', 
-            'data/ndata_lucky13_lag_3070.csv', #5
+            #'data/ndata_lucky13_lag_3070.csv', #5
             #'new_model_Z_lucky13_3070_oos.csv',
-            'new_model_Z_lucky13_3070.csv' #7,
+            #'new_model_Z_lucky13_3070.csv' #7,
 
     ]
 
@@ -248,26 +269,32 @@ def main():
         t = {'file': file ,'model':'XGBR','data' : study_xgb_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
-        study_xgb_c_best_trial = study_xgb_c(X_train, y_train_c, X_val, y_val_c)
-        t = {'file': file ,'model':'XGBC','data' : study_xgb_c_best_trial}
+        study_cat_r_best_trial = study_cat_r(X_train, y_train_r, X_val, y_val_r)               
+        t = {'file': file ,'model':'CATR','data' : study_cat_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
         study_lgb_r_best_trial = study_lgb_r(X_train, y_train_r, X_val, y_val_r) 
         t = {'file': file ,'model':'LGBR','data' : study_lgb_r_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
-        study_lgb_c_best_trial = study_lgb_c(X_train, y_train_c, X_val, y_val_c) 
-        t = {'file': file ,'model':'LGBC','data' : study_lgb_c_best_trial}
-        comp_df = comp_df._append(t, ignore_index=True)
-        
-        study_cat_r_best_trial = study_cat_r(X_train, y_train_r, X_val, y_val_r)               
-        t = {'file': file ,'model':'CATR','data' : study_cat_r_best_trial}
-        comp_df = comp_df._append(t, ignore_index=True)
+        """
         
         study_cat_c_best_trial = study_cat_c(X_train, y_train_c, X_val, y_val_c)               
         t = {'file': file ,'model':'CATC','data' : study_cat_c_best_trial}
         comp_df = comp_df._append(t, ignore_index=True)
         
+        
+        study_xgb_c_best_trial = study_xgb_c(X_train, y_train_c, X_val, y_val_c)
+        t = {'file': file ,'model':'XGBC','data' : study_xgb_c_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        
+        
+        study_lgb_c_best_trial = study_lgb_c(X_train, y_train_c, X_val, y_val_c) 
+        t = {'file': file ,'model':'LGBC','data' : study_lgb_c_best_trial}
+        comp_df = comp_df._append(t, ignore_index=True)
+        """
+        
+      
         comp_df.to_csv('params.csv', mode='a', index=False, header=False)
         
     print(comp_df)

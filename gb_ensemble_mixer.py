@@ -106,34 +106,34 @@ def run():
 
 
         ens_x = [
-                XGBClassifier(**mp.xgbc_t),
-                XGBClassifier(**mp.xgc_set),
-                #LGBMClassifier(**mp.lgbc_t),
-                #CatBoostClassifier(),        
-                CatBoostClassifier(**mp.cbc_set),        
-                CatBoostClassifier(**mp.catc_t),        
-
-                #CatBoostRegressor(**mp.cbr_set),
-                CatBoostRegressor(**mp.catr_t),
-                XGBRegressor(**mp.xgbr_set ), 
+                #XGBClassifier(**mp.xgbc_t),
+                #XGBClassifier(**mp.xgc_set),
+                #XGBRegressor(**mp.xgbr_set ), 
                 #XGBRegressor(), 
-                XGBRegressor(**mp.xgbr_set ), 
+                #XGBRegressor(**mp.xgbr_set ), 
                 #XGBRFRegressor(), 
                 #XGBRFRegressor(**mp.xgbrf_set ),
-                #CatBoostRegressor(),  
-                CatBoostRegressor(**mp.cbr_set),
+                
+                #LGBMClassifier(**mp.lgbc_t),
                 #LGBMRegressor(), 
                 #LGBMRegressor(**mp.lbr_set),               
+                
+                #CatBoostClassifier(),        
+                CatBoostClassifier(**mp.catc_lucky13),        
+                CatBoostClassifier(**mp.cbc_set),        
+                CatBoostClassifier(**mp.catc_t),        
+                CatBoostRegressor(**mp.catr_lucky13),
+                #CatBoostRegressor(**mp.cbr_set),
+                
         ]
-
 
         ens_c = [
                 #XGBClassifier(**mp.xgbc_t),
-                XGBClassifier(**mp.xgc_set),
+                #XGBClassifier(**mp.xgbc_lucky13),
                 #LGBMClassifier(**mp.lgbc_t),
-                #CatBoostClassifier(),        
+                CatBoostClassifier(**mp.catc_lucky13),        
                 CatBoostClassifier(**mp.cbc_set),        
-                CatBoostClassifier(**mp.catc_t),        
+                #CatBoostClassifier(**mp.catc_t),        
         ]
 
 
@@ -148,12 +148,8 @@ def run():
                 'data/ndata_lucky_13_lag_3070_oos.csv', 
                 'data/ndata_lucky13_lag_3070.csv', #5
                 'new_model_Z_lucky13_3070_oos.csv',
-                'new_model_Z_lucky13_3070.csv' #7,
-                'data/Lucky13_3070_oos_3.csv',   
-                'data/Lucky13_3070_3.csv',  #8
-                'data/Lucky13_3070_oos_5.csv',   
-                'data/Lucky13_3070_5.csv',  #10
-                'data/Lucky13_EX.csv', #11
+                'new_model_Z_lucky13_3070.csv', #7,
+                'data/Corr_13x_3070.csv',  #8
                 
         ]
 
@@ -163,9 +159,9 @@ def run():
         #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
         #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
         #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
         
-        df = df[((df['RSI'] > 20) & (df['RSI'] < 31))|(df['RSI'] > 69) & (df['RSI'] < 80)] 
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 27))|(df['RSI'] > 70) & (df['RSI'] < 77)] 
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
         #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
 
@@ -174,9 +170,9 @@ def run():
         min_features_used = 10
         max_features_used = 14
         step_features_used = 1
-        total_cycles_used = 10
+        total_cycles_used = 25
 
-        p_df, experiment_id_parent = run_models(df, ens_c, 
+        p_df, experiment_id_parent = run_models(df, ens_x, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

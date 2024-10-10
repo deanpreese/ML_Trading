@@ -1,3 +1,17 @@
+# --- 
+# params 10/10/2024
+
+
+catc_lucky13 = {'iterations': 162, 'learning_rate': 0.010463258885379521, 'objective': 'Logloss', 'colsample_bylevel': 0.01161504658137422, 'depth': 2, 'boosting_type': 'Ordered', 'bootstrap_type': 'Bayesian', 'bagging_temperature': 0.7414129195847714}
+xgbc_lucky13 = {'booster': 'dart', 'lambda': 2.8409026532087042e-06, 'alpha': 0.6635352958565828, 'subsample': 0.28996448676651215, 'colsample_bytree': 0.43832008451333576, 'max_depth': 3, 'min_child_weight': 4, 'eta': 1.579079759343244e-07, 'gamma': 9.282358728683162e-06, 'grow_policy': 'lossguide', 'sample_type': 'uniform', 'normalize_type': 'tree', 'rate_drop': 1.1429793349532624e-06, 'skip_drop': 0.0003874670877712408}
+lgbc_lucky13 = {'lambda_l1': 0.7939061182280855, 'lambda_l2': 2.7785406431968906e-06, 'num_leaves': 142, 'feature_fraction': 0.9315397361540054, 'bagging_fraction': 0.8717606696848038, 'bagging_freq': 4, 'min_child_samples': 53}
+
+xgbr_lucky13 = {'lambda': 8.545299921698266, 'alpha': 16.993322455483007, 'eta': 0.7, 'gamma': 25, 'learning_rate': 0.012, 'colsample_bytree': 0.9, 'colsample_bynode': 1.0, 'n_estimators': 739, 'min_child_weight': 105, 'max_depth': 7, 'subsample': 1.0}
+catr_lucky13 = {'learning_rate': 0.003583339802324007, 'depth': 10, 'subsample': 0.4529600813178114, 'colsample_bylevel': 0.7439504747396157, 'min_data_in_leaf': 43}
+lgbr_lucky13 = {'reg_alpha': 0.008016904246004472, 'reg_lambda': 0.009356818652445557, 'colsample_bytree': 0.8, 'subsample': 0.8, 'learning_rate': 0.006, 'max_depth': 100, 'num_leaves': 134, 'min_child_samples': 102, 'min_data_per_groups': 72}
+
+
+# ------
 
 catc_t = {'objective': 'Logloss', 'colsample_bylevel': 0.015411304224424851, 'depth': 3, 'boosting_type': 'Ordered', 'bootstrap_type': 'Bayesian', 'bagging_temperature': 8.820225862779308}
 xgbc_t = {'max_depth': 11, 'subsample': 0.8, 'n_estimators': 9600, 'eta': 0.09999999999999999, 'reg_alpha': 2, 'reg_lambda': 7, 'min_child_weight': 8, 'colsample_bytree': 0.41751610958110463}
