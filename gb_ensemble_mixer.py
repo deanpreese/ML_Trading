@@ -165,7 +165,7 @@ def run():
         #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         
-        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
+        df = df[((df['RSI'] > 20) & (df['RSI'] < 31))|(df['RSI'] > 69) & (df['RSI'] < 80)] 
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
         #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
 
