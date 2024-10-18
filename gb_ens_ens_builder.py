@@ -160,100 +160,54 @@ def run_single(model_list, file, target):
 
 
 def run_test():
-    file = "data/lucky13_oos.csv"    
+    file = 'data/Lucky13_3070.csv'  
     
-    #7601
-    list_a = mrd.fetch_data(3, "DESC", "=100", 0, "'R2'")
-    list_a = list_a + mrd.fetch_data(1, "DESC", "=100", 5, "'R2'")
-    list_a = list_a + mrd.fetch_data(1, "ASC", "=100", 1, "'R2'")
+    #  fetch_data(num_models, asc_desc, exp_query, features, perf_r2):
     
-    
-    x_mc = 4
-    x_ad = "DESC"
-    x_exp = "= 109"
-    x_feat = 2
+    x_mc = 1
+    x_ad = "ASC"
+    x_exp = "= 340"
+    x_feat = 10
     list_x= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
 
-    x_mc =  2 #0
-    x_ad = "DESC"
-    x_exp = "= 109"
-    x_feat = 5
+    x_mc =  1 
+    x_ad = "ASC"
+    x_exp = "= 343"
+    x_feat = 11
     list_x_2= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
 
-    x_mc = 1 #0
+    x_mc = 1 
     x_ad = "ASC"
-    x_exp = "= 109"
-    x_feat = 1
+    x_exp = "= 344"
+    x_feat = 7
     list_x_3= mrd.fetch_data(x_mc, x_ad, x_exp, x_feat, "'R2'")
+    
     list_x = list_x + list_x_2 + list_x_3
     
-    c_mc =  2 #2
-    c_ad = "DESC"
-    c_exp = "= 111"
-    c_feat = 6
-    list_c = mrd.fetch_data(c_mc, c_ad, c_exp, c_feat, "'R2'")
-
-    c_mc =  3 #1
-    c_ad = "DESC"
-    c_exp = "= 111"
-    c_feat = 6
-    list_c_2 = mrd.fetch_data(c_mc, c_ad, c_exp, c_feat, "'R2'")
-    list_c = list_c + list_c_2
-
-    lg_mc = 0
-    lg_ad = "DESC"
-    lg_exp = "= 113"
-    lg_feat = 1
-    list_lg = mrd.fetch_data(lg_mc, lg_ad, lg_exp, lg_feat, "'R2'")
-
-    lg_mc = 0
-    lg_ad = "ASC"
-    lg_exp = "= 113"
-    lg_feat = 5
-    list_lg_2 = mrd.fetch_data(lg_mc, lg_ad, lg_exp, lg_feat, "'R2'")
-    list_lg = list_lg + list_lg_2    
-
-    rf_mc = 0
-    rf_ad = "DESC"
-    rf_exp = "= 115"
-    rf_feat = 0
-    list_rf = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
-
-    rf_mc = 0
-    rf_ad = "ASC"
-    rf_exp = "= 115"
-    rf_feat = 4
-    list_rf_2 = mrd.fetch_data(rf_mc, rf_ad, rf_exp, rf_feat, "'R2'")
-    
-    l13_mc = 1
-    l13_ad = "DESC"
-    l13_exp = "= 63"
-    l13_feat = 0
-    list_13= mrd.fetch_data(l13_mc, l13_ad, l13_exp, l13_feat, "'R2'")
-
-
-    list_rf = list_rf + list_rf_2 
-    model_list = list(set(list_x + list_c + list_lg + list_rf+ list_13))
+    model_list = list(set(list_x))
     
     
     print(" ")
     print(f"Models {len(model_list)}")
     print(model_list)
     print(" ")
+    
+    target = 'output'
         
     #combo_p = run_combos(model_list, file)
     #df = pd.DataFrame(combo_p)
     #print(df)
     
-    target = 'output'
-    #run_single(model_list, file, target)
-      
-    model_loader = ModelLoader()
-    models = model_loader.load_composite_strategy(["66"], 2, 0)        
-    models = models + model_loader.load_composite_strategy(["108"], 2, 0)        
-    models = models + model_loader.load_composite_strategy(["116"], 2, 0)        
-    models = models + model_loader.load_composite_strategy(["68"], 2, 0)        
-    run_sim( file, models, target)
+    
+    run_single(model_list, file, target)
+    
+    
+    #model_loader = ModelLoader()
+    #models = model_loader.load_composite_strategy(["66"], 2, 0)        
+    #models = models + model_loader.load_composite_strategy(["108"], 2, 0)        
+    #models = models + model_loader.load_composite_strategy(["116"], 2, 0)        
+    #models = models + model_loader.load_composite_strategy(["68"], 2, 0)        
+    #run_sim( file, models, target)
 
 
 if __name__ == "__main__":

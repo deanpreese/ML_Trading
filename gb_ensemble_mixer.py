@@ -71,7 +71,7 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
 #
 # ---------------------------
 def run():
-
+        """
         baseline = [
                 LGBMRegressor(), 
                 CatBoostRegressor(),
@@ -105,6 +105,28 @@ def run():
         ]
 
 
+        ens_x2 = [
+                #XGBClassifier(**mp.xgbc_t),
+                XGBClassifier(**mp.xgbc_lucky13),
+                #XGBRegressor(**mp.xgbr_set ), 
+                #XGBRegressor(), 
+                XGBRegressor(**mp.xgbr_lucky13 ), 
+                #XGBRFRegressor(), 
+                #XGBRFRegressor(**mp.xgbrf_set ),
+                
+                #LGBMClassifier(**mp.lgbr_lucky13),
+                #LGBMRegressor(), 
+                #LGBMRegressor(**mp.lbr_set),               
+                
+                #CatBoostClassifier(),        
+                CatBoostClassifier(**mp.catc_lucky13),        
+                #CatBoostClassifier(**mp.cbc_set),        
+                #CatBoostClassifier(**mp.catc_t),        
+                CatBoostRegressor(**mp.catr_lucky13),
+                #CatBoostRegressor(**mp.cbr_set),
+                
+        ]
+        
         ens_x = [
                 #XGBClassifier(**mp.xgbc_t),
                 #XGBClassifier(**mp.xgc_set),
@@ -118,22 +140,85 @@ def run():
                 #LGBMRegressor(), 
                 #LGBMRegressor(**mp.lbr_set),               
                 
-                #CatBoostClassifier(),        
-                CatBoostClassifier(**mp.catc_lucky13),        
+                CatBoostClassifier(),        
+                #CatBoostClassifier(**mp.catc_lucky13),        
                 CatBoostClassifier(**mp.cbc_set),        
                 CatBoostClassifier(**mp.catc_t),        
-                CatBoostRegressor(**mp.catr_lucky13),
-                #CatBoostRegressor(**mp.cbr_set),
+                #CatBoostRegressor(**mp.catr_lucky13),
+                CatBoostRegressor(),
                 
         ]
 
-        ens_c = [
-                #XGBClassifier(**mp.xgbc_t),
-                #XGBClassifier(**mp.xgbc_lucky13),
-                #LGBMClassifier(**mp.lgbc_t),
-                CatBoostClassifier(**mp.catc_lucky13),        
-                CatBoostClassifier(**mp.cbc_set),        
-                #CatBoostClassifier(**mp.catc_t),        
+        
+        """
+        
+       
+        ens_371 = [
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_lucky13),
+        ]
+
+
+        ens_385 = [
+                XGBClassifier(**mp.xgb_c_lucky13),
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_lucky13),
+        ]
+
+
+        ens_387 = [
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_set),
+        ]
+
+        ens_389 = [
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                #XGBRFRegressor(**mp.xgbrf_set ),
+                #XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_set),
+        ]
+
+
+        ens_393 = [
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                #XGBRFRegressor(**mp.xgbrf_set ),
+                #XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_L13EX),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_L13EX),
+        ]
+
+
+        ens_405 = [
+                XGBRegressor(**mp.xgb_r_L13EX), 
+                XGBClassifier(),
+                CatBoostClassifier(**mp.cat_c_L13EX),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),    
+                CatBoostRegressor(**mp.cat_r_L13EX),    
+        ]
+
+
+        ens_xxx = [
+                XGBClassifier(**mp.xgb_c_set),
+                XGBRegressor(**mp.xgb_r_set ), 
+                #XGBRFRegressor(**mp.xgbrf_r_L13EX ),
+                XGBRFClassifier(**mp.xgbrf_c_lucky13),
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                #CatBoostClassifier(**mp.cat_c_t),        
+                #CatBoostRegressor(**mp.cat_r_lucky13),
         ]
 
 
@@ -155,24 +240,22 @@ def run():
 
         df = pd.read_csv(datafile[1])
 
-        #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
-        #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
-        #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
-        #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
-        df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
+        #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  
         
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 27))|(df['RSI'] > 70) & (df['RSI'] < 77)] 
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
+        
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
         #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
 
         
         split_test_size_value = 0.7          
-        min_features_used = 10
-        max_features_used = 14
+        min_features_used = 5
+        max_features_used = 10
         step_features_used = 1
-        total_cycles_used = 25
+        total_cycles_used = 15
 
-        p_df, experiment_id_parent = run_models(df, ens_x, 
+        p_df, experiment_id_parent = run_models(df, ens_385, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 

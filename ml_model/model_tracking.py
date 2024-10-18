@@ -21,7 +21,13 @@ mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 def train_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
     
     run_id = 0
-    model.fit(X_train, y_train)
+    
+    if  ("CAT" in model_name):
+        model.fit(X_train, y_train, early_stopping_rounds=5)
+    else:
+        model.fit(X_train, y_train)
+
+
     y_pred = model.predict(X_test)
     pred_proba = model.predict_proba(X_test)
     
@@ -72,7 +78,13 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
 def train_regressor_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_test, y_test, save_to_mlflow):
     
     run_id = 0
-    model.fit(X_train, y_train)
+    
+    if ("CAT" in model_name):
+        model.fit(X_train, y_train, early_stopping_rounds=5)
+    else:
+        model.fit(X_train, y_train)
+    
+    
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
     rmse = rmse =  rmse = mse**.5
