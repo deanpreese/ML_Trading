@@ -125,47 +125,56 @@ class ModelLoader:
             
     def load_composite_strategy(self, experiment_id, num_models, group_id): 
         
+        skip_val = 0
+        
         print("Querying Runs ...")
-        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cxp DESC"], max_results=num_models)
-        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.cpp DESC"], max_results=num_models)
-        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 DESC"], max_results=num_models)
+        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.Perf DESC"], max_results=num_models+skip_val)
+        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 ASC"], max_results=num_models+skip_val)        
+        
         self.model_group = group_id
         comp_strategies = []
 
+        cnt = 0
+        
         for i in range(len(runs)):
-            self.model_list = []    
-            r_id = runs.iloc[i].run_id 
-            print(f"Run Id     {r_id}")
             
-            rinfo = mlflow.get_run(r_id)
-            comp_strat = CompositeStrategy()
-            comp_strat.run_id = r_id
-            comp_strat.run_name = rinfo.info.run_name   
-            comp_strat.trader_group = group_id     
+            print(i)
+            
+            if i >= skip_val:
 
-            t_id = 1
-            comp_strat.trader_id = t_id
+                self.model_list = []    
+                r_id = runs.iloc[i].run_id 
+                print(f"Run Id     {r_id}")
+                
+                rinfo = mlflow.get_run(r_id)
+                comp_strat = CompositeStrategy()
+                comp_strat.run_id = r_id
+                comp_strat.run_name = rinfo.info.run_name   
+                comp_strat.trader_group = group_id     
 
-            try:
-                art = json.loads(rinfo.data.tags['mlflow.loggedArtifacts'])
-                for item in art:
-                    if item.get('path') == "all_perf_data.json" :
-                        art_file = item.get('path', None)
-                        art_uri = rinfo.info.artifact_uri
-                        art_to_load = f"{art_uri}/{art_file}"
-                        print(art_to_load)
-                        arti_d = mlflow.artifacts.load_dict(art_to_load)
-                        for item_data in arti_d['data']:
+                t_id = 1
+                comp_strat.trader_id = t_id
+
+                try:
+                    art = json.loads(rinfo.data.tags['mlflow.loggedArtifacts'])
+                    for item in art:
+                        if item.get('path') == "all_perf_data.json" :
+                            art_file = item.get('path', None)
+                            art_uri = rinfo.info.artifact_uri
+                            art_to_load = f"{art_uri}/{art_file}"
+                            print(art_to_load)
+                            arti_d = mlflow.artifacts.load_dict(art_to_load)
+                            for item_data in arti_d['data']:
+                                
+                                if "V2" in item_data[0] :
+                                    self.add_model(item_data[3], item_data[0])
+                                if "V2" not in item_data[0] :
+                                    self.add_model(item_data[8], item_data[0])
+                                
+                    comp_strat.strategy_models = self.model_list    
                             
-                            if "V2" in item_data[0] :
-                                self.add_model(item_data[3], item_data[0])
-                            if "V2" not in item_data[0] :
-                                self.add_model(item_data[8], item_data[0])
-                            
-                comp_strat.strategy_models = self.model_list    
-                        
-            except Exception as e:
-                print(f"An error occurred: {e}")
+                except Exception as e:
+                    print(f"An error occurred: {e}")
 
-            comp_strategies.append(comp_strat)
+                comp_strategies.append(comp_strat)
         return comp_strategies    

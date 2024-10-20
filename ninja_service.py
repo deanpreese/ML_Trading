@@ -77,12 +77,17 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        models_one = LoadModels(0, ["286"], 1)
-        models_two = LoadModels(0, ["288"], 1)
-        models_three = LoadModels(0, ["290"], 1)
-        models_four = LoadModels(0, ["292"], 1)
-        models_five = LoadModels(0, ["294"], 1)
-
+        
+        models_one = LoadModels(0, ["385"], 1)
+        models_two = LoadModels(0, ["387"], 1)
+        models_three = LoadModels(0, ["389"], 1)
+        models_four = LoadModels(0, ["393"], 1)
+       
+        models_five = LoadModels(0, ["453"], 1)
+       
+        
+       
+        
     # ----------------------------------------
     @app.route('/predict-one', methods=['POST'])
     def predict_one():
@@ -91,15 +96,15 @@ def init_app():
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
         df = pd.read_csv(csv_data, header=None, names=column_names)
         
-        j_out = None
-        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_one)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
+        #j_out = None
+        #if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_one)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
         return j_out
 
     # ----------------------------------------
@@ -110,15 +115,15 @@ def init_app():
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
         df = pd.read_csv(csv_data, header=None, names=column_names)
         
-        j_out = None
-        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_two)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
+        #j_out = None
+        #if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_two)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
         return j_out
         
     # ----------------------------------------
@@ -132,14 +137,14 @@ def init_app():
         j_out = None
         
         
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_three)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_three)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
         return j_out
 
 
@@ -153,18 +158,19 @@ def init_app():
         
         j_out = None
         
-        
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_four)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_four)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
         return j_out
 
-# ----------------------------------------
+
+
+ # ----------------------------------------
     @app.route('/predict-five', methods=['POST'])
     def predict_five():
         
@@ -174,16 +180,17 @@ def init_app():
         
         j_out = None
         
-        
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_five)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_five)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
         return j_out
+
+
 
         
     return app
