@@ -14,11 +14,22 @@ def generate_combinations(data_list, min=3, max=7):
         all_combinations.extend(combinations)
     return all_combinations
 
+def simple_split_and_scale(X, y, test_size, random_state):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_size, random_state=random_state)
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+#split_three_ways_full(X, y, run_test_size, 0.2, 42)
+def split_three_ways_full(X,y,run_test_size, val_size, random_v ):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=run_test_size, random_state=random_v)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_size, random_state=random_v)
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+
 
 def split_three_ways(X,y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-
     return X_train, X_val, X_test, y_train, y_val, y_test
 
 

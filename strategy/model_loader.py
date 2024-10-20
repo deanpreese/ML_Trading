@@ -4,6 +4,8 @@ import pandas as pd
 import requests
 import datetime as dt
 import random as rand
+import yaml
+
 
 from strategy.ml_strategy import MLStrategy
 from strategy.composite_strategy import CompositeStrategy
@@ -37,6 +39,10 @@ class ModelLoader:
         self.l_artifacts = []
         self.model_list = []
         self.model_group = 0
+        
+        self.flavor_list = ['catboost', 'xgboost', 'lightgbm']
+
+         
 
     # -------------------------
     # Main add_model function
@@ -97,7 +103,7 @@ class ModelLoader:
             ml.append(lm)
         return ml                 
             
-
+            
     def load_virtual_composite_model(self, run_list):
         
         self.model_group = 0
@@ -112,8 +118,11 @@ class ModelLoader:
         try:
             for i in range(len(run_list)):
                 r_id = run_list[i]
-                print(f"Run Id     {r_id}")
-                self.add_model(r_id, False)
+                rinfo = mlflow.get_run(r_id)
+                
+                model_n = rinfo.data.params["ModelName"]
+                print(f"Run Id     {r_id}    {model_n}")
+                self.add_model(r_id, model_n)
                         
             comp_strat.strategy_models = self.model_list    
             comp_strategies.append(comp_strat)

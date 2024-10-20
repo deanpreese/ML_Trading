@@ -143,109 +143,6 @@ def init_app():
         keras_lower_models = load_keras_models(comp_model_dir_lower)    
         
     
-    # ----------------------------------------
-    @app.route('/predict-one', methods=['POST'])
-    def predict_one():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        df = pd.read_csv(csv_data, header=None, names=column_names)
-        
-        j_out = None
-        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_one)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
-        return j_out
-
-    # ----------------------------------------
-    @app.route('/predict-two', methods=['POST'])
-    def predict_two():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        df = pd.read_csv(csv_data, header=None, names=column_names)
-        
-        j_out = None
-        if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_two)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
-        return j_out
-        
-    # ----------------------------------------
-    @app.route('/predict-three', methods=['POST'])
-    def predict_three():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        df = pd.read_csv(csv_data, header=None, names=column_names)
-        
-        j_out = None
-        
-        
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_three)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
-        return j_out
-
-
- # ----------------------------------------
-    @app.route('/predict-four', methods=['POST'])
-    def predict_four():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        df = pd.read_csv(csv_data, header=None, names=column_names)
-        
-        j_out = None
-        
-        
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_four)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
-        return j_out
-
-# ----------------------------------------
-    @app.route('/predict-five', methods=['POST'])
-    def predict_five():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        df = pd.read_csv(csv_data, header=None, names=column_names)
-        
-        j_out = None
-
-        
-        if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        else:
-            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-            out_data = get_model_predictions(df, models_five)
-            j_out = json.dumps(out_data, indent=4)
-            #print(jd)
-        return j_out
-
-
 # ----------------------------------------
     @app.route('/predict-keras', methods=['POST'])
     def predict_keras():
@@ -256,50 +153,45 @@ def init_app():
         
         j_out = None
         
-        if (df['RSI'][0] < 20)  |  (df['RSI'][0] > 80):
-            out_data = gen_zero_predictions()
-            j_out = json.dumps(out_data, indent=4)
-        
-        else:
             
-            if ((df['RSI'][0] > 20) & (df['RSI'][0] < 40)):  
-                df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-                
-                x_val = df.values
-                x_val = x_val.reshape((1, 14, 1)) 
-                predicts = 0
-                for m in range(len(keras_lower_models)):
-                    predicts += keras_lower_models[m].predict(x_val)[0]
-                    print(m)
-                
-                y_val = (predicts/len(keras_lower_models))[0]
-                
-                out_data = {
-                "agg_prediction" : float(y_val),
-                "agg_weighted_prediction" : float(y_val),
-                "all_predicts": [float(y_val)]
-                }
-                j_out = json.dumps(out_data, indent=4)
-                
-                
-            elif (df['RSI'][0] > 60) & (df['RSI'][0] < 80):  
-                df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-                
-                x_val = df.values
-                x_val = x_val.reshape((1, 14, 1)) 
-                predicts = 0
-                for m in range(len(keras_upper_models)):
-                    predicts += keras_upper_models[m].predict(x_val)[0]
-                    print(m)
-                
-                y_val = (predicts/len(keras_upper_models))[0]
-                
-                out_data = {
-                "agg_prediction" : float(y_val),
-                "agg_weighted_prediction" : float(y_val),
-                "all_predicts": [float(y_val)]
-                }
-                j_out = json.dumps(out_data, indent=4)
+        if (df['RSI'][0] < 40):  
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            
+            x_val = df.values
+            x_val = x_val.reshape((1, 14, 1)) 
+            predicts = 0
+            for m in range(len(keras_lower_models)):
+                predicts += keras_lower_models[m].predict(x_val)[0]
+                print(m)
+            
+            y_val = (predicts/len(keras_lower_models))[0]
+            
+            out_data = {
+            "agg_prediction" : float(y_val),
+            "agg_weighted_prediction" : float(y_val),
+            "all_predicts": [float(y_val)]
+            }
+            j_out = json.dumps(out_data, indent=4)
+            
+            
+        elif (df['RSI'][0] > 60) :  
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            
+            x_val = df.values
+            x_val = x_val.reshape((1, 14, 1)) 
+            predicts = 0
+            for m in range(len(keras_upper_models)):
+                predicts += keras_upper_models[m].predict(x_val)[0]
+                print(m)
+            
+            y_val = (predicts/len(keras_upper_models))[0]
+            
+            out_data = {
+            "agg_prediction" : float(y_val),
+            "agg_weighted_prediction" : float(y_val),
+            "all_predicts": [float(y_val)]
+            }
+            j_out = json.dumps(out_data, indent=4)
             
             
         return j_out
