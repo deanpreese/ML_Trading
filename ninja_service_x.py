@@ -1,14 +1,13 @@
+import os
 from flask import Flask, request, jsonify
 import pandas as pd
 from io import BytesIO
 import json
+import tensorflow as tf
 import numpy as np
 from datetime import datetime, timedelta
 
 from strategy.model_loader import ModelLoader
-from models.ts_mixer_model import TSMixerModel
-from models.cnn_lstm_model import CNN_LSTM
-from models.kan_mixer_model import KANMixerModel
 
 import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
@@ -21,18 +20,37 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", module='[LightGBM]')
 
+
+#tf.config.set_visible_devices([], 'GPU')
+
+
 model_loader = ModelLoader()
 models_one = []
 models_two = []
 models_three = []
+models_four = []
+models_five = []
 
-ts_mixer = TSMixerModel(epochs=100, batch_size=32)
-cnn_model = CNN_LSTM()
-kan_mixer = KANMixerModel(epochs=100, batch_size=32)
+keras_upper_models = []
+keras_lower_models = []
 
 
 # ----------------------------------------
-def LoadModels(group_id, experiment_id, num_models):
+
+def load_keras_models(model_dir):
+    
+    model_list = []
+    files_ = [ f for f in os.listdir(model_dir) if f.endswith('.keras') ]
+    for f in files_:
+        fm = os.path.join(model_dir, f)
+        print(f"Loading ... {fm}")
+        xm = tf.keras.models.load_model(fm)
+        model_list.append(xm)
+        
+    return model_list
+
+
+def load_models(group_id, experiment_id, num_models):
     return model_loader.load_composite_strategy( experiment_id, num_models, group_id)    
 
 def format_json(output_data):
@@ -66,152 +84,117 @@ def get_model_predictions(data_df, models):
     out_data = format_json(output_data)
     return out_data
 
+def gen_zero_predictions():
+    output_data = {
+            "agg_prediction" : float(0.0),
+            "agg_weighted_prediction" : float(0.0),
+            "all_predicts": [float(0.0)]
+        }
+    #out_data = format_json(output_data)
+    return output_data
 
-def load_other_models():
-    ts_mixer.load_saved_model("run")
-    cnn_model.load_saved_model("run")
-    kan_mixer.load_saved_model("run")
+def run_predicts(x_val, model_list):
+    
+    x_val = x_val.reshape((1, 14, 1)) 
+    predicts = 0
+    for m in range(len(model_list)):
+        predicts += model_list[m].predict(x_val)[0]
+        
+        print(m)
+
+    count_up = len([x for x in predicts if x > 0])
+    cnt_pct = count_up/len(predicts)
+
+    if cnt_pct > .5:
+        y_val = 1
+    else:
+        y_val = -1
+
+    #y_val = predicts/len(model_list)
+    return y_val
+
+
 
 # ----------------------------------------
 def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        models_one = LoadModels(0, ["251"], 1)
-        models_two = LoadModels(0, ["253"], 1)
-        models_three = LoadModels(0, ["257"], 1)
-        load_other_models()
-
-
-    # ----------------------------------------
-    @app.route('/predict-one', methods=['POST'])
-    def predict_one():
+        #models_one = load_models(0, ["286"], 1)
+        #models_two = load_models(0, ["288"], 1)
+        #models_three = load_models(0, ["290"], 1)
+        #models_four = load_models(0, ["292"], 1)
+        #models_five = load_models(0, ["294"], 1)
         
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_one)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
-
-    # ----------------------------------------
-    @app.route('/predict-two', methods=['POST'])
-    def predict_two():
         
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_two)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
+        c_kan_model_dir_upper = "saved_models/c_kan/upper"
+        c_kan_model_dir_lower = "saved_models/c_kan/lower"
+        #keras_upper_models = load_keras_models(c_kan_model_dir_upper)
+        #keras_lower_models = load_keras_models(c_kan_model_dir_lower)    
         
-    # ----------------------------------------
-    @app.route('/predict-three', methods=['POST'])
-    def predict_three():
+        dcnn_model_dir_upper = "saved_models/dcnn_ens/upper"
+        dcnn_model_dir_lower = "saved_models/dcnn_ens/lower"
+        #keras_upper_models = load_keras_models(dcnn_model_dir_upper)
+        #keras_lower_models = load_keras_models(dcnn_model_dir_lower)    
         
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        out_data = get_model_predictions(data_df, models_three)
-        jd = json.dumps(out_data, indent=4)
-        #print(jd)
-        return jd
+        comp_model_dir_upper = "saved_models/comp/upper"
+        comp_model_dir_lower = "saved_models/comp/lower"
+        keras_upper_models = load_keras_models(comp_model_dir_upper)
+        keras_lower_models = load_keras_models(comp_model_dir_lower)    
+        
     
-    # ----------------------------------------
-    @app.route('/predict-kan', methods=['POST'])
-    def predict_kan():
+# ----------------------------------------
+    @app.route('/predict-keras', methods=['POST'])
+    def predict_keras():
         
         csv_data = BytesIO(request.data)
         column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        df = pd.read_csv(csv_data, header=None, names=column_names)
         
-        X = data_df.values
+        j_out = None
         
-        x_val = X.reshape((1, 14, 1)) 
-        y_val = kan_mixer.model.predict(x_val)
-        
-        predicts = [y_val[0][0]]
-        
-        out_data = {
-            "agg_prediction" : round(y_val[0][0],6),
-            "agg_weighted_prediction" : round(y_val[0][0],6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-   # ----------------------------------------
-    @app.route('/predict-cnn', methods=['POST'])
-    def predict_cnn():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        
-        X = data_df.values
-        
-        x_val = X.reshape((1, 14, 1)) 
-        y_val = cnn_model.model.predict(x_val)
-        predicts = [y_val[0][0]]
-        
-        out_data = {
-            "agg_prediction" : round(y_val[0][0],6),
-            "agg_weighted_prediction" : round(y_val[0][0],6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-
-   # ----------------------------------------
-    @app.route('/predict-tsm', methods=['POST'])
-    def predict_tsm():
-        
-        csv_data = BytesIO(request.data)
-        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
-        data_df = pd.read_csv(csv_data, header=None, names=column_names)
-        data_df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
-        X = data_df    
-        
-        #aX = data_df
-        #anom_score = get_anomaly_score(aX)
-        anom_score = False
-        
-        if anom_score == False:
-            X_scaled = ts_mixer.saved_scaler.transform(X)
-            X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))  # [batch_size, seq_length, num_features]
-            y_val = ts_mixer.model.predict(X_scaled)
-            y_raw = y_val[0][0]
-        else:
-            y_raw = 0.0            
             
-        predicts = [y_raw]
-        out_data = {
-            "agg_prediction" : round(y_raw,6),
-            "agg_weighted_prediction" : round(y_raw,6),
-            "all_predicts": predicts
-        }
-        
-        out_data = format_json(out_data)
-        jd = json.dumps(out_data, indent=4)        
-        jd = json.dumps(out_data, indent=4)
-        print(jd)
-        return jd
-
-
+        if (df['RSI'][0] < 40):  
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            
+            x_val = df.values
+            x_val = x_val.reshape((1, 14, 1)) 
+            predicts = 0
+            for m in range(len(keras_lower_models)):
+                predicts += keras_lower_models[m].predict(x_val)[0]
+                print(m)
+            
+            y_val = (predicts/len(keras_lower_models))[0]
+            
+            out_data = {
+            "agg_prediction" : float(y_val),
+            "agg_weighted_prediction" : float(y_val),
+            "all_predicts": [float(y_val)]
+            }
+            j_out = json.dumps(out_data, indent=4)
+            
+            
+        elif (df['RSI'][0] > 60) :  
+            df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+            
+            x_val = df.values
+            x_val = x_val.reshape((1, 14, 1)) 
+            predicts = 0
+            for m in range(len(keras_upper_models)):
+                predicts += keras_upper_models[m].predict(x_val)[0]
+                print(m)
+            
+            y_val = (predicts/len(keras_upper_models))[0]
+            
+            out_data = {
+            "agg_prediction" : float(y_val),
+            "agg_weighted_prediction" : float(y_val),
+            "all_predicts": [float(y_val)]
+            }
+            j_out = json.dumps(out_data, indent=4)
+            
+            
+        return j_out
 
 
         

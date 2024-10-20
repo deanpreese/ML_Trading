@@ -58,59 +58,48 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
                                
         return p_df, experiment_id        
                 
-                
 
-def run_stack_vote(est_list):
-                
-        stacking_regressor = StackingRegressor(estimators=est_list, cv=4
-        , verbose=True, final_estimator=CatBoostRegressor()
-        )
-
-        regressor = stacking_regressor
-        #regressor = voting_regressor
-
-
-        # Train the Voting Regressor on the training data
-        regressor.fit(X_train, y_train)
-
-        print(" ")
-        #print("Saving and Reloading Model ")
-        #pickle.dump(voting_regressor, open(model_filename, "wb"))
-        #loaded_model = pickle.load(open(model_filename, "rb"))
-        #predictions = loaded_model.predict(X_test)
-
-        y_pred = regressor.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred, squared=True)
-        rmse =mean_squared_error(y_test, y_pred, squared=False)
-        r2 =r2_score(y_test, y_pred)
-        score = regressor.score(X_test, y_test)
-        mae = float(mean_absolute_error(y_test,y_pred))                
-        perf, tot = gen_reg_stats(y_test, y_pred)        
-
-        print("Results ---")
-        print(f"MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
-
-        for m in regressor.named_estimators_:
-                r_pred = regressor.named_estimators_[m].predict(X_test)
-
-                mse = mean_squared_error(y_test, r_pred, squared=True)
-                rmse =mean_squared_error(y_test, r_pred, squared=False)
-                r2 =r2_score(y_test, r_pred)
-                score = regressor.score(X_test, r_pred)
-                mae = float(mean_absolute_error(y_test,r_pred))                
-                perf, total, mse, rmse = gen_reg_stats(y_test, r_pred)        
-
-                print(f"{m}  MSE  {mse}   RMSE {rmse}  R2 {r2}  Score {score}  MAE {mae}  Perf  {perf}  Total {tot}" )
-                        
-                
-                
-# ---------------------------
-#
-# Run the models
-#
-# ---------------------------
 
 def run():
+        model_list = []
+
+        monster = [
+                LGBMRegressor(**mp.lgb_r_lucky13), 
+                CatBoostRegressor(**mp.cat_r_lucky13),
+                XGBRegressor(**mp.xgb_r_lucky13),   
+                XGBRFRegressor(**mp.xgbrf_r_lucky13),                
+                LGBMClassifier(**mp.lgb_c_lucky13),
+                XGBClassifier(**mp.xgb_c_lucky13),
+                CatBoostClassifier(**mp.cat_c_lucky13),
+                XGBRFClassifier(**mp.xgbrf_c_lucky13),
+                
+                LGBMRegressor(**mp.lgb_r_L13EX), 
+                CatBoostRegressor(**mp.cat_r_L13EX),
+                XGBRegressor(**mp.xgb_r_L13EX),   
+                XGBRFRegressor(**mp.xgbrf_r_L13EX),                
+                LGBMClassifier(**mp.lgb_c_L13EX),
+                XGBClassifier(**mp.xgb_c_L13EX),
+                CatBoostClassifier(**mp.cat_c_L13EX),
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                
+                LGBMRegressor(**mp.lgb_r_set), 
+                CatBoostRegressor(**mp.cat_r_set),
+                XGBRegressor(**mp.xgb_r_set),   
+                XGBRFRegressor(**mp.xgbrf_r_set),                
+                LGBMClassifier(**mp.lgb_c_set),
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+
+                LGBMRegressor(**mp.lgb_r_t), 
+                CatBoostRegressor(**mp.cat_r_t),
+                XGBRegressor(**mp.xgb_r_t),   
+                XGBRFRegressor(**mp.xgbrf_r_t),                
+                LGBMClassifier(**mp.lgb_c_t),
+                XGBClassifier(**mp.xgb_c_t),
+                CatBoostClassifier(**mp.cat_c_t),
+        ]       
+        
+        #model_list.append(monster)
 
         baseline = [
                 LGBMRegressor(), 
@@ -122,59 +111,55 @@ def run():
                 CatBoostClassifier(),
                 XGBRFClassifier(),
         ]
-
-        baseline_r = [
-                #XGBRegressor(), 
-                XGBRegressor(**mp.xgbr_set ), 
-                #XGBRFRegressor(), 
-                XGBRFRegressor(**mp.xgbrf_set ),
-                #CatBoostRegressor(),  
-                CatBoostRegressor(**mp.cbr_set),
-                #LGBMRegressor(), 
-                LGBMRegressor(**mp.lbr_set),               
+       
+        ens_r13 = [
+                XGBRegressor(**mp.xgb_c_lucky13 ), 
+                XGBRFRegressor(**mp.xgbrf_c_lucky13 ), 
+                XGBRFRegressor(**mp.xgbrf_r_lucky13 ),
+                CatBoostRegressor(**mp.cat_r_lucky13),
+                LGBMRegressor(**mp.lgb_r_lucky13),               
         ]
 
-        est_list_1 = [ 
-                XGBRegressor(), 
-                #XGBRegressor(**mp.xgbr_set2 ), 
-                #XGBRFRegressor(), 
-                #XGBRFRegressor(**mp.xgbrf_set ),
-                #CatBoostRegressor(),  
-                #CatBoostRegressor(**mp.cbr_set),
-                #LGBMRegressor(), 
-                #LGBMRegressor(**mp.lbr_set), 
-                #LGBMClassifier(),
-                #LGBMClassifier(**mp.lbc_set),
-                XGBClassifier(),
-                XGBClassifier(**mp.lbc_set),
-                CatBoostClassifier(),
-                CatBoostClassifier(**mp.cbc_set),
-                #XGBRFClassifier(),
+        ens_c13 = [
+                XGBClassifier(**mp.xgb_c_lucky13),
+                XGBRFClassifier(**mp.xgbrf_c_lucky13),
+                LGBMClassifier(**mp.lgb_c_lucky13),
+                CatBoostClassifier(**mp.cat_c_lucky13),        
         ]
 
 
-        est_list_2 = [
-                #XGBRegressor(), 
-                XGBRegressor(**mp.xgbr_t),   
-                XGBClassifier(),
-                XGBRFClassifier(**mp.xgc_set),
-                XGBClassifier(**mp.xgbc_t),
+        ens_x3 = [
+                XGBClassifier(**mp.xgb_c_t),
+                XGBClassifier(**mp.xgb_c_lucky13),
+                XGBRegressor(**mp.xgb_r_lucky13 ), 
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostRegressor(**mp.cat_r_lucky13),
+        ]
+
+        ens_342 = [
+                XGBClassifier(**mp.xgb_c_lucky13),
+                XGBRegressor(**mp.xgb_r_lucky13 ), 
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostRegressor(**mp.cat_r_lucky13),
                 
-                #LGBMRegressor(**mp.lgbr_t), 
-                LGBMClassifier(**mp.lbc_set),
-                LGBMClassifier(**mp.lgbc_t),
-                
-                #CatBoostRegressor(**mp.catr_t),
-                #CatBoostClassifier(),
-                CatBoostClassifier(**mp.catc_t),
-                CatBoostClassifier(**mp.cbc_set),
-                
-                #XGBRFRegressor(),                
-                XGBRFClassifier(),
-                #XGBRFRegressor(**mp.xgbrf_set ),
+        ]
+
+        ens_341 = [
+                CatBoostClassifier(),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(),
         ]
 
 
+        ens_290 = [
+                CatBoostClassifier(**mp.cat_c_lucky13),        
+                CatBoostClassifier(**mp.cat_c_set),        
+                CatBoostClassifier(**mp.cat_c_t),        
+        ]
+
+
+     
 
         # ==========================================
 
@@ -191,13 +176,16 @@ def run():
                 'data/Lucky13_3070_3.csv',  #8
                 'data/Lucky13_3070_oos_5.csv',   
                 'data/Lucky13_3070_5.csv',  #10
+                'data/Lucky13_A_ALL_5M.csv',  
+                'data/Lucky13_A_ALL_15.csv',  #12
 
         ]
 
 
+        df = pd.read_csv(datafile[11])
 
-        dtx = pd.read_csv(datafile[1])
-
+        df = df[((df['RSI'] > 20) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 80)] 
+        
 
         f_87 =['RSI',
                 'STOK1',
@@ -209,32 +197,14 @@ def run():
                 'ATR5',
                 'ATR21',]
 
-        lucky13 = [
-                #'SDLR310',
-                #'SDBB91',
-                #'SDKC91',
-                'SDKC9',
-                'ROC',
-                #'ATR54',
-                #'ATR52',
-                #'ATR51',
-                'ATR5',
-                #'ATR21',
-                'ATR2',
-                'RSI',
-                'STOK1'
-                ]
-
- 
-
         #feat_data = f_87
         #feat_data = lucky13
         feat_data = 'xxx'
         split_test_size_value = 0.7          
         save_mlflow = False
-                
-        p_df, experiment_id_parent = run_models(dtx, baseline_r, split_test_size_value, save_mlflow, feat_data)
-
+        
+        p_df, experiment_id_parent = run_models(df, ens_342, split_test_size_value, save_mlflow, feat_data)
+        
         print("")
         for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 
                 print(f"{run_uuid}  {cxp}  {cyp}  {cpp}  {mse}  {rmse} {mae} {r2}  ")
@@ -245,3 +215,19 @@ def run():
 if __name__ == "__main__":
     run()
 
+"""
+
+baseline
+LGBMRegressorV2  0.7603
+CatBoostRegressorV2  0.7615
+XGBRegressorV2  0.7539
+XGBRFRegressorV2  0.7628
+LGBMClassifierV2  0.7741
+XGBClassifierV2  0.7636
+CatBoostClassifierV2  0.7794
+XGBRFClassifierV2  0.7834
+
+19b97c  0.8187636590696222  0.8532625663440524  0.8353106462691227  0.0000  0.0001 0.0000 -6.436285709846608
+
+
+"""

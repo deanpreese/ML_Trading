@@ -178,15 +178,12 @@ def run():
     datafile = [ 
         'data/Lucky13_3070_oos.csv',   
         'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_EX_3070_oos.csv',  
-        'data/Lucky13_EX_3070.csv',  #3
-        'data/new_model_Z_lucky13_3070.csv', #4
-        'data/ReFried_5M_ALL.csv' #5
-        
+        'data/Lucky13_3070_AUG_oos.csv',   
+        'data/Lucky13_3070_AUG.csv',  #3
     ]
 
-    df = pd.read_csv(datafile[5])
-    df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
+    df = pd.read_csv(datafile[1])
+    #df = df[((df['RSI'] > 0) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 100)]  
     
     #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
     #            'EMAL10102','ADX2','SDLR93','EMAL10103','EMAL21211','EMAL10101','FOSC','FOSC1','ADX','ATR54','SDLR92','ROC', 'output','outputC'] 
@@ -207,12 +204,11 @@ def run():
     threshold = 75
 
 
-    X_train_c, X_test_c, y_train_c, y_test_c = simple_split_and_scale(X, y, 0.2, 42)
-    X_train_r, X_test_r, y_train_r, y_test_r = simple_split_and_scale(X, y2, 0.2, 42)
-    
+    #X_train_c, X_test_c, y_train_c, y_test_c = simple_split_and_scale(X, y, 0.2, 42)
+    #X_train_r, X_test_r, y_train_r, y_test_r = simple_split_and_scale(X, y2, 0.2, 42)
 
-    #X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
-    #X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
+    X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X, y2, test_size=0.2, random_state=42)
     
     models_c = {
         #'RandomForestClassifier' :RandomForestClassifier(random_state=42, verbose=2, n_jobs=-1),
@@ -228,12 +224,16 @@ def run():
         'CatBoostRegressor': CatBoostRegressor(random_state=42, verbose=2)
     }
 
-    use_class = False
+    use_class = True
     use_reg = True
 
     if use_class:
         importance_df_sorted_c, important_features_c, performance_df_c  = gen_results(models_c, X_train_c, y_train_c, X_test_c, y_test_c, X.columns, threshold)    
-        
+
+    if use_reg:
+        importance_df_sorted_r, important_features_r, performance_df_r  = gen_results(models_r, X_train_r, y_train_r, X_test_r, y_test_r, X.columns, threshold)            
+
+    if use_class:
         print("Classifier Sorted Importance")
         print(" ")
         print(importance_df_sorted_c)
@@ -247,9 +247,6 @@ def run():
 
         
     if use_reg:
-        importance_df_sorted_r, important_features_r, performance_df_r  = gen_results(models_r, X_train_r, y_train_r, X_test_r, y_test_r, X.columns, threshold)            
-        
-        
         print("------------------------------------------------------------")
         print(" ")
         print("Regressor Sorted Importance")
