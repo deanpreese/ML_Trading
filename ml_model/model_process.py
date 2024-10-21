@@ -12,10 +12,11 @@ import logging
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
 logging.getLogger('mlflow.tracking._tracking_service.client').setLevel(logging.ERROR)
 logging.getLogger('mlflow.models.model').setLevel(logging.ERROR)
-mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+mlflow.set_tracking_uri(uri="http://10.0.0.50:8888")
 
-from sklearn.metrics import mean_absolute_error,r2_score,mean_squared_error
+
+from sklearn.metrics import mean_absolute_error,r2_score, root_mean_squared_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import confusion_matrix
 
@@ -67,6 +68,7 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
                 modelname = modelname + "V2"
                 
                 if "Regressor" in modelname:
+
                         r_run_id, r_perf, r_predictions = train_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                         y_train, X_val, y_val, X_test, y_test, save_to_mlflow)  
                         all_predict_data[model_run_uuid] = r_predictions
@@ -76,11 +78,12 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
                         outputs = [ modelname, r_perf, fl_out, r_run_id ]        
                         estimator_perf.append(outputs)  
                 
-                if "Classifier" in modelname:           
+                if "Classifier" in modelname:
+
                         c_run_id, accuracy, c_predictions, pred_proba = train_classifier_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                         y_train, X_val, y_val, X_test, y_test, save_to_mlflow)  
                         all_predict_data[model_run_uuid] = c_predictions
-                        all_predict_data[model_data] = c_predictions * accuracy
+                        all_predict_data[model_data] = c_predictions 
                         all_predict_data[model_type] = "Classifier"
                         estimator_run_ids.append(model_run_uuid)
                         outputs = [ modelname, round(accuracy,4), fl_out, c_run_id ]        
@@ -90,6 +93,7 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         e_perf = pd.DataFrame(estimator_perf)        
         e_perf.columns = ["Estimator", "Perf", "Features", "RUN_ID" ]
         
+        print(f"Running Ensemble Calculations")
         correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
 
         mse, rmse, mae = calc_mse_rmse_mae(r_y_target, r_predictions)
@@ -107,6 +111,10 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
 def train_classifier_model(model_name, features_used, experiment_id, nested, model, X_train, y_train, X_val, y_val, X_test, y_test, save_to_mlflow):
     
     run_id = 0
+    print(" ")
+    print(f"Training  {model_name}")            
+    print(f"{model.get_params()}")            
+    print(" ")              
     
     if "Cat" in model_name:
         val_pool = Pool(X_val, y_val)
@@ -116,7 +124,7 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
         model.fit(X_train, y_train, eval_set = [(X_val, y_val)], callbacks=[lgb.early_stopping(stopping_rounds=10)] )
         
     if "XGB" in model_name :        
-        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=True)
+        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
 
 
     y_pred = model.predict(X_test)
@@ -171,6 +179,11 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
     
     run_id = 0
     
+    print(" ")
+    print(f"Training  {model_name}")            
+    print(f"{model.get_params()}")            
+    print(" ")              
+    
     if "Cat" in model_name:
         val_pool = Pool(X_val, y_val)
         model.fit(X_train, y_train, eval_set=val_pool, early_stopping_rounds=10)
@@ -179,11 +192,11 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
         model.fit(X_train, y_train, eval_set = [(X_val, y_val)], callbacks=[lgb.early_stopping(stopping_rounds=10)] )
         
     if "XGB" in model_name :        
-        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=True)
+        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
     
     y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = rmse =  rmse = mse**.5
+    rmse = root_mean_squared_error(y_test, y_pred)
+    mse = rmse **2.0
     r2 =r2_score(y_test, y_pred)
     score = model.score(X_test, y_test)
     mae = float(mean_absolute_error(y_test,y_pred))                

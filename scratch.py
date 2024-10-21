@@ -1,8 +1,211 @@
-xgbrf_r_L13EX={'lambda': 7.974674671366159, 'alpha': 16.66971829301613, 'eta': 0.8, 'gamma': 25, 'learning_rate': 0.02, 'colsample_bytree': 0.9, 'colsample_bynode': 0.8, 'n_estimators': 784, 'min_child_weight': 103, 'max_depth': 5, 'subsample': 0.5}
-xgbrf_c_L13EX={'booster': 'dart', 'lambda': 2.070021661461845e-05, 'alpha': 0.15126229143246755, 'subsample': 0.6044804597119722, 'colsample_bytree': 0.860754120134545, 'max_depth': 7, 'min_child_weight': 6, 'eta': 1.7208681622613002e-06, 'gamma': 0.00019432061372607432, 'grow_policy': 'lossguide', 'sample_type': 'weighted', 'normalize_type': 'tree', 'rate_drop': 0.004544260549468311, 'skip_drop': 0.006163829282047574}
-xgb_r_L13EX={'lambda': 16.558794695199403, 'alpha': 16.129548002898076, 'eta': 0.6, 'gamma': 19, 'learning_rate': 0.014, 'colsample_bytree': 1.0, 'colsample_bynode': 0.9, 'n_estimators': 964, 'min_child_weight': 89, 'max_depth': 4, 'subsample': 0.8}
-cat_r_L13EX={'learning_rate': 0.008510947647454426, 'depth': 7, 'subsample': 0.5893632407426823, 'colsample_bylevel': 0.8378580962674798, 'min_data_in_leaf': 45}
-lgb_r_L13EX={'reg_alpha': 7.920421323674105, 'reg_lambda': 0.0010925618744339683, 'colsample_bytree': 0.7, 'subsample': 1.0, 'learning_rate': 0.006, 'max_depth': 10, 'num_leaves': 422, 'min_child_samples': 58, 'min_data_per_groups': 55}
-cat_c_L13EX={'iterations': 324, 'learning_rate': 0.0014855039371514946, 'objective': 'Logloss', 'colsample_bylevel': 0.010117887800571157, 'depth': 1, 'boosting_type': 'Plain', 'bootstrap_type': 'MVS'}
-xgb_c_L13EX={'booster': 'dart', 'lambda': 2.64778138335827e-05, 'alpha': 4.499184501875262e-05, 'subsample': 0.7038161179035025, 'colsample_bytree': 0.2873156608803908, 'max_depth': 3, 'min_child_weight': 9, 'eta': 7.487665523012072e-07, 'gamma': 5.091781218224234e-07, 'grow_policy': 'depthwise', 'sample_type': 'uniform', 'normalize_type': 'forest', 'rate_drop': 0.0028576695630366227, 'skip_drop': 1.2191492617055118e-07}
-lgb_c_L13EX={'lambda_l1': 1.0124433287340171e-07, 'lambda_l2': 0.16907976934158983, 'num_leaves': 74, 'feature_fraction': 0.9859201904837096, 'bagging_fraction': 0.7120057505063387, 'bagging_freq': 3, 'min_child_samples': 50}
+from flask import Flask, request, jsonify
+import pandas as pd
+from io import BytesIO
+import json
+import numpy as np
+from datetime import datetime, timedelta
+
+from strategy.model_loader import ModelLoader
+
+import logging
+logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+logging.getLogger('mlflow.pyfunc').setLevel(logging.ERROR)
+logging.getLogger('lightgbm').setLevel(logging.ERROR)
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", module='[LightGBM]')
+
+model_loader = ModelLoader()
+models_one = []
+models_two = []
+models_three = []
+models_four = []
+models_five = []
+
+# ----------------------------------------
+def LoadModels(group_id, experiment_id, num_models):
+    return model_loader.load_composite_strategy( experiment_id, num_models, group_id)    
+
+def format_json(output_data):
+    data_serializable = {
+        "agg_prediction": float(output_data["agg_prediction"]),
+        "agg_weighted_prediction": float(output_data["agg_weighted_prediction"]),
+        "all_predicts": [float(pred) for pred in output_data["all_predicts"]]
+    }
+    print(f"OUTPUT DATA   {data_serializable}")
+    return data_serializable
+
+def get_model_predictions_base(data_df, models):
+    all_agg_predicts = 0
+    all_agg_weighted = 0
+    all_predicts = []
+    for m in range(len(models)):
+        agg_predict, agg_weighted_predict, predicts = models[m].do_predict_base(data_df)
+        
+        all_agg_predicts += agg_predict
+        all_agg_weighted += agg_weighted_predict
+        all_predicts += predicts
+    return all_agg_predicts, all_agg_weighted, all_predicts
+        
+def get_model_predictions(data_df, models):
+    all_agg_predicts, all_agg_weighted, all_predicts = get_model_predictions_base(data_df, models)
+    output_data = {
+            "agg_prediction" : round(all_agg_predicts[0],6),
+            "agg_weighted_prediction" : round(all_agg_weighted[0],6),
+            "all_predicts": all_predicts
+        }
+    out_data = format_json(output_data)
+    return out_data
+
+def gen_zero_predictions():
+    output_data = {
+            "agg_prediction" : float(0.0),
+            "agg_weighted_prediction" : float(0.0),
+            "all_predicts": [float(0.0)]
+        }
+    #out_data = format_json(output_data)
+    return output_data
+
+
+
+
+# ----------------------------------------
+def init_app():
+    app = Flask(__name__)
+
+    with app.app_context():
+        
+        models_one = LoadModels(0, ["385"], 1)
+        models_two = LoadModels(0, ["387"], 1)
+        models_three = LoadModels(0, ["389"], 1)
+        models_four = LoadModels(0, ["393"], 1)
+       
+        models_five = LoadModels(0, ["453"], 1)
+       
+        
+       
+        
+    # ----------------------------------------
+    @app.route('/predict-one', methods=['POST'])
+    def predict_one():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        #j_out = None
+        #if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_one)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
+        return j_out
+
+    # ----------------------------------------
+    @app.route('/predict-two', methods=['POST'])
+    def predict_two():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        #j_out = None
+        #if (df['RSI'][0] <  25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_two)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
+        return j_out
+        
+    # ----------------------------------------
+    @app.route('/predict-three', methods=['POST'])
+    def predict_three():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        
+        
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_three)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
+        return j_out
+
+
+ # ----------------------------------------
+    @app.route('/predict-four', methods=['POST'])
+    def predict_four():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_four)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
+        return j_out
+
+
+
+ # ----------------------------------------
+    @app.route('/predict-five', methods=['POST'])
+    def predict_five():
+        
+        csv_data = BytesIO(request.data)
+        column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
+        df = pd.read_csv(csv_data, header=None, names=column_names)
+        
+        j_out = None
+        
+        #if (df['RSI'][0] < 25)  |  (df['RSI'][0] > 75):
+        #    out_data = gen_zero_predictions()
+        #    j_out = json.dumps(out_data, indent=4)
+        #else:
+        df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
+        out_data = get_model_predictions(df, models_five)
+        j_out = json.dumps(out_data, indent=4)
+        #print(jd)
+        return j_out
+
+
+
+        
+    return app
+
+   
+app = init_app()
+    
+if __name__ == '__main__':
+    print("Starting Flask application.")
+      
+    
+    app.run(
+        debug=True, 
+        use_reloader=False,
+        port=9999, 
+        host='0.0.0.0'
+        )
+    

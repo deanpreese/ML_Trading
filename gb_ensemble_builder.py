@@ -15,7 +15,7 @@ from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
 
-from ml_model.model_tracking import save_reg_ens_data
+from ml_model.model_process import save_reg_ens_data
 import ml_model.model_params as mp
 import ml_model.model_process as model_processing
 

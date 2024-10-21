@@ -1,18 +1,17 @@
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 from sklearn.metrics import confusion_matrix
 
 def calc_mse_rmse_mae( y_test, predicted_values):
-    mse = mean_squared_error(y_test, predicted_values)
-    rmse =  rmse = mse**.5
-    mae = float(mean_absolute_error(y_test,predicted_values))          
     
+    rmse = root_mean_squared_error(y_test, predicted_values)
+    mse = rmse **2.0
+    mae = float(mean_absolute_error(y_test,predicted_values))          
     mae = f"{round(mae, 4):.4f}"
     mse = f"{round(mse, 4):.4f}"
     rmse = f"{round(rmse, 4):.4f}"
-    
     return mse, rmse, mae
 
 
@@ -115,9 +114,10 @@ def calc_ensemble_results(all_predictions, estimator_run_ids):
                 #Rescale for classifier
                 if "Classifier" in model_type:
                     raw_predict = (row[id] - 0.5) * 2
-                    
-                agg_predict += raw_predict
+
                 agg_weighted_predict += model_data_x_perf 
+                agg_predict += raw_predict
+                
 
             target_output = row['target']
             y_count_o, agg_rtn_o, agg_w_rtn_o, comp_rtn_o, agg_agree_o, comp_predict_o   = calc_ensemble(len(estimator_run_ids),  target_output, agg_predict, agg_weighted_predict )
@@ -155,7 +155,7 @@ def calc_ensemble(num_models, target_val, agg_pre,  agg_weighted ):
     
     comp_predict = ((0.46 * agg_pre) + (0.54 * agg_predict_w)  )
 
-    if target_val > 0.5:
+    if target_val > 0:
         y_count += 1
         if agg_pre > 0 :  agg_rtn += 1
         if agg_predict_w > 0: agg_w_rtn += 1
@@ -163,7 +163,7 @@ def calc_ensemble(num_models, target_val, agg_pre,  agg_weighted ):
         if agg_weighted > 0  and agg_pre > 0:
             agg_agree += 1
         
-    if target_val < -0.5:
+    if target_val < 0:
         y_count += 1
         if agg_pre < 0:  agg_rtn += 1
         if agg_predict_w < 0: agg_w_rtn += 1

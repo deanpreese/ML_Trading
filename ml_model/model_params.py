@@ -1,41 +1,37 @@
 # --- 
 # params 10/10/2024
-xgbrf_r_L13EX={'lambda': 7.974674671366159, 'alpha': 16.66971829301613, 'eta': 0.8, 'gamma': 25, 'learning_rate': 0.02, 'colsample_bytree': 0.9, 'colsample_bynode': 0.8, 'n_estimators': 784, 'min_child_weight': 103, 'max_depth': 5, 'subsample': 0.5}
-xgbrf_c_L13EX={'booster': 'dart', 'lambda': 2.070021661461845e-05, 'alpha': 0.15126229143246755, 'subsample': 0.6044804597119722, 'colsample_bytree': 0.860754120134545, 'max_depth': 7, 'min_child_weight': 6, 'eta': 1.7208681622613002e-06, 'gamma': 0.00019432061372607432, 'grow_policy': 'lossguide', 'sample_type': 'weighted', 'normalize_type': 'tree', 'rate_drop': 0.004544260549468311, 'skip_drop': 0.006163829282047574}
-xgb_r_L13EX={'lambda': 16.558794695199403, 'alpha': 16.129548002898076, 'eta': 0.6, 'gamma': 19, 'learning_rate': 0.014, 'colsample_bytree': 1.0, 'colsample_bynode': 0.9, 'n_estimators': 964, 'min_child_weight': 89, 'max_depth': 4, 'subsample': 0.8 ,'early_stopping_rounds':10}
-cat_r_L13EX={'learning_rate': 0.008510947647454426, 'depth': 7, 'subsample': 0.5893632407426823, 'colsample_bylevel': 0.8378580962674798, 'min_data_in_leaf': 45}
-lgb_r_L13EX={'reg_alpha': 7.920421323674105, 'reg_lambda': 0.0010925618744339683, 'colsample_bytree': 0.7, 'subsample': 1.0, 'learning_rate': 0.006, 'max_depth': 10, 'num_leaves': 422, 'min_child_samples': 58, 'min_data_per_groups': 55}
-cat_c_L13EX={'iterations': 324, 'learning_rate': 0.0014855039371514946, 'objective': 'Logloss', 'colsample_bylevel': 0.010117887800571157, 'depth': 1, 'boosting_type': 'Plain', 'bootstrap_type': 'MVS'}
-xgb_c_L13EX={'booster': 'dart', 'lambda': 2.64778138335827e-05, 'alpha': 4.499184501875262e-05, 'subsample': 0.7038161179035025, 'colsample_bytree': 0.2873156608803908, 'max_depth': 3, 'min_child_weight': 9, 'eta': 7.487665523012072e-07, 'gamma': 5.091781218224234e-07, 'grow_policy': 'depthwise', 'sample_type': 'uniform', 'normalize_type': 'forest', 'rate_drop': 0.0028576695630366227, 'skip_drop': 1.2191492617055118e-07}
-lgb_c_L13EX={'lambda_l1': 1.0124433287340171e-07, 'lambda_l2': 0.16907976934158983, 'num_leaves': 74, 'feature_fraction': 0.9859201904837096, 'bagging_fraction': 0.7120057505063387, 'bagging_freq': 3, 'min_child_samples': 50}
+xgbrf_r_L13EX={'lambda': 7.974674671366159, 'alpha': 16.66971829301613, 'eta': 0.8, 'gamma': 25, 'learning_rate': 0.02, 'colsample_bytree': 0.9, 'colsample_bynode': 0.8, 'n_estimators': 784, 'min_child_weight': 103, 'max_depth': 5, 'subsample': 0.5, 'verbosity':0}
+xgbrf_c_L13EX={'booster': 'dart', 'lambda': 2.070021661461845e-05, 'alpha': 0.15126229143246755, 'subsample': 0.6044804597119722, 'colsample_bytree': 0.860754120134545, 'max_depth': 7, 'min_child_weight': 6, 'eta': 1.7208681622613002e-06, 'gamma': 0.00019432061372607432, 'grow_policy': 'lossguide', 'sample_type': 'weighted', 'normalize_type': 'tree', 'rate_drop': 0.004544260549468311, 'skip_drop': 0.006163829282047574, 'verbosity':0}
+xgb_r_L13EX={'lambda': 16.558794695199403, 'alpha': 16.129548002898076, 'eta': 0.6, 'gamma': 19, 'learning_rate': 0.014, 'colsample_bytree': 1.0, 'colsample_bynode': 0.9, 'n_estimators': 964, 'min_child_weight': 89, 'max_depth': 4, 'subsample': 0.8 ,'early_stopping_rounds':10 , 'verbosity':0}
+cat_r_L13EX={'learning_rate': 0.008510947647454426, 'depth': 7, 'subsample': 0.5893632407426823, 'colsample_bylevel': 0.8378580962674798, 'min_data_in_leaf': 45, 'silent':True}
+lgb_r_L13EX={'reg_alpha': 7.920421323674105, 'reg_lambda': 0.0010925618744339683, 'colsample_bytree': 0.7, 'subsample': 1.0, 'learning_rate': 0.006, 'max_depth': 10, 'num_leaves': 422, 'min_child_samples': 58, 'verbose':-1}
+cat_c_L13EX={'iterations': 2000, 'learning_rate': 0.0014855039371514946, 'objective': 'Logloss', 'colsample_bylevel': 0.010117887800571157, 'depth': 1, 'boosting_type': 'Plain', 'bootstrap_type': 'MVS' , 'silent':True}
+xgb_c_L13EX={'booster': 'dart', 'lambda': 2.64778138335827e-05, 'alpha': 4.499184501875262e-05, 'subsample': 0.7038161179035025, 'colsample_bytree': 0.2873156608803908, 'max_depth': 3, 'min_child_weight': 9, 'eta': 7.487665523012072e-07, 'gamma': 5.091781218224234e-07, 'grow_policy': 'depthwise', 'sample_type': 'uniform', 'normalize_type': 'forest', 'rate_drop': 0.0028576695630366227, 'skip_drop': 1.2191492617055118e-07 , 'verbosity':0}
+lgb_c_L13EX={'lambda_l1': 1.0124433287340171e-07, 'lambda_l2': 0.16907976934158983, 'num_leaves': 74, 'feature_fraction': 0.9859201904837096, 'bagging_fraction': 0.7120057505063387, 'bagging_freq': 3, 'min_child_samples': 50 , 'verbose':-1}
 
-xgbrf_r_lucky13={'lambda': 12.716309779044934, 'alpha': 8.058519346422411, 'eta': 0.3, 'gamma': 18, 'learning_rate': 0.02, 'colsample_bytree': 1.0, 'colsample_bynode': 0.9, 'n_estimators': 728, 'min_child_weight': 364, 'max_depth': 6, 'subsample': 1.0 }
-xgbrf_c_lucky13={'booster': 'gbtree', 'lambda': 0.005574705408796042, 'alpha': 5.314556653284922e-07, 'subsample': 0.2580585241605955, 'colsample_bytree': 0.26498196200505325, 'max_depth': 3, 'min_child_weight': 7, 'eta': 1.069097592831911e-05, 'gamma': 2.045243918823509e-08, 'grow_policy': 'depthwise'}
-xgb_r_lucky13={'lambda': 9.603435276784538, 'alpha': 13.50440164458477, 'eta': 1.0, 'gamma': 25, 'learning_rate': 0.01, 'colsample_bytree': 0.7, 'colsample_bynode': 0.7, 'n_estimators': 619, 'min_child_weight': 76, 'max_depth': 5, 'subsample': 0.8,'early_stopping_rounds':10}
-cat_r_lucky13={'learning_rate': 0.0042999282121744, 'depth': 13, 'subsample': 0.7888455726862523, 'colsample_bylevel': 0.890453398073004, 'min_data_in_leaf': 3}
-lgb_r_lucky13={'reg_alpha': 0.0669235257559269, 'reg_lambda': 0.6185601975589508, 'colsample_bytree': 0.7, 'subsample': 0.7, 'learning_rate': 0.008, 'max_depth': 10, 'num_leaves': 373, 'min_child_samples': 112, 'min_data_per_groups': 38}
-cat_c_lucky13={'iterations': 437, 'learning_rate': 0.0028566764906314025, 'objective': 'Logloss', 'colsample_bylevel': 0.012146448219821679, 'depth': 1, 'boosting_type': 'Ordered', 'bootstrap_type': 'MVS'}
-xgb_c_lucky13={'booster': 'gbtree', 'lambda': 0.005337068372219796, 'alpha': 0.04242122814941887, 'subsample': 0.8902040058718846, 'colsample_bytree': 0.42185209539811447, 'max_depth': 5, 'min_child_weight': 8, 'eta': 1.2224707135118668e-05, 'gamma': 1.4920443842414018e-06, 'grow_policy': 'depthwise','early_stopping_rounds':10}
-lgb_c_lucky13={'lambda_l1': 1.8017027344403692e-07, 'lambda_l2': 2.5495099276814124e-07, 'num_leaves': 165, 'feature_fraction': 0.6342455868227252, 'bagging_fraction': 0.6774309100385126, 'bagging_freq': 4, 'min_child_samples': 45}
+xgbrf_r_lucky13={'lambda': 12.716309779044934, 'alpha': 8.058519346422411, 'eta': 0.3, 'gamma': 18, 'learning_rate': 0.02, 'colsample_bytree': 1.0, 'colsample_bynode': 0.9, 'n_estimators': 728, 'min_child_weight': 364, 'max_depth': 6, 'subsample': 1.0  , 'verbosity':0}
+xgbrf_c_lucky13={'booster': 'gbtree', 'lambda': 0.005574705408796042, 'alpha': 5.314556653284922e-07, 'subsample': 0.2580585241605955, 'colsample_bytree': 0.26498196200505325, 'max_depth': 3, 'min_child_weight': 7, 'eta': 1.069097592831911e-05, 'gamma': 2.045243918823509e-08, 'grow_policy': 'depthwise' , 'verbosity':0}
+xgb_r_lucky13={'lambda': 9.603435276784538, 'alpha': 13.50440164458477, 'eta': 1.0, 'gamma': 25, 'learning_rate': 0.01, 'colsample_bytree': 0.7, 'colsample_bynode': 0.7, 'n_estimators': 619, 'min_child_weight': 76, 'max_depth': 5, 'subsample': 0.8,'early_stopping_rounds':10 , 'verbosity':0}
+cat_r_lucky13={'learning_rate': 0.0042999282121744, 'depth': 13, 'subsample': 0.7888455726862523, 'colsample_bylevel': 0.890453398073004, 'min_data_in_leaf': 3 , 'silent':True}
+lgb_r_lucky13={'reg_alpha': 0.0669235257559269, 'reg_lambda': 0.6185601975589508, 'colsample_bytree': 0.7, 'subsample': 0.7, 'learning_rate': 0.008, 'max_depth': 10, 'num_leaves': 373, 'min_child_samples': 112 , 'verbose':-1}
+cat_c_lucky13={'iterations': 2000, 'learning_rate': 0.0028566764906314025, 'objective': 'Logloss', 'colsample_bylevel': 0.012146448219821679, 'depth': 1, 'boosting_type': 'Ordered', 'bootstrap_type': 'MVS', 'silent':True}
+xgb_c_lucky13={'booster': 'gbtree', 'lambda': 0.005337068372219796, 'alpha': 0.04242122814941887, 'subsample': 0.8902040058718846, 'colsample_bytree': 0.42185209539811447, 'max_depth': 5, 'min_child_weight': 8, 'eta': 1.2224707135118668e-05, 'gamma': 1.4920443842414018e-06, 'grow_policy': 'depthwise','early_stopping_rounds':10 , 'verbosity':0}
+lgb_c_lucky13={'lambda_l1': 1.8017027344403692e-07, 'lambda_l2': 2.5495099276814124e-07, 'num_leaves': 165, 'feature_fraction': 0.6342455868227252, 'bagging_fraction': 0.6774309100385126, 'bagging_freq': 4, 'min_child_samples': 45 , 'verbose':-1}
 
 # --- 
 
-cat_c_t = {'objective': 'Logloss', 'colsample_bylevel': 0.015411304224424851, 'depth': 3, 'boosting_type': 'Ordered', 'bootstrap_type': 'Bayesian', 'bagging_temperature': 8.820225862779308}
-xgb_c_t = {'max_depth': 11, 'subsample': 0.8, 'n_estimators': 9600, 'eta': 0.09999999999999999, 'reg_alpha': 2, 'reg_lambda': 7, 'min_child_weight': 8, 'colsample_bytree': 0.41751610958110463,'early_stopping_rounds':10}
-lgb_c_t = {'lambda_l1': 3.448361997410009e-06, 'lambda_l2': 0.0184646060486577, 'num_leaves': 163, 'feature_fraction': 0.8823675284869981, 'bagging_fraction': 0.6100669161739707, 'bagging_freq': 5, 'min_child_samples': 13}
-xgb_r_t = {'lambda': 7.686003702107571, 'alpha': 8.6004068234192, 'eta': 0.3, 'gamma': 20, 'learning_rate': 0.012, 'colsample_bytree': 0.9, 'colsample_bynode': 0.8, 'n_estimators': 882, 'min_child_weight': 103, 'max_depth': 4, 'subsample': 0.7,'early_stopping_rounds':10}
-lgb_r_t = {'reg_alpha': 0.01816277967596359, 'reg_lambda': 5.297070757607957, 'colsample_bytree': 0.9, 'subsample': 0.5, 'learning_rate': 0.006, 'max_depth': 10, 'num_leaves': 245, 'min_child_samples': 55, 'min_data_per_groups': 43}
-cat_r_t = {'learning_rate': 0.004384466366976951, 'depth': 11, 'subsample': 0.30959203889098214, 'colsample_bylevel': 0.8258819366074175, 'min_data_in_leaf': 32}
-xgbrf_r_t = {'learning_rate': 0.09992558454567729, 'max_depth': 4, 'subsample': 0.6295085012732937, 'colsample_bytree': 0.507405257238443, 'min_child_weight': 12}
+cat_c_t = {'objective': 'Logloss', 'colsample_bylevel': 0.015411304224424851, 'depth': 3, 'boosting_type': 'Ordered', 'bootstrap_type': 'Bayesian', 'bagging_temperature': 8.820225862779308 , 'silent':True}
+xgb_c_t = {'max_depth': 11, 'subsample': 0.8, 'n_estimators': 9600, 'eta': 0.09999999999999999, 'reg_alpha': 2, 'reg_lambda': 7, 'min_child_weight': 8, 'colsample_bytree': 0.41751610958110463,'early_stopping_rounds':10 , 'verbosity':0}
+lgb_c_t = {'lambda_l1': 3.448361997410009e-06, 'lambda_l2': 0.0184646060486577, 'num_leaves': 163, 'feature_fraction': 0.8823675284869981, 'bagging_fraction': 0.6100669161739707, 'bagging_freq': 5, 'min_child_samples': 13 , 'verbose':-1}
+xgb_r_t = {'lambda': 7.686003702107571, 'alpha': 8.6004068234192, 'eta': 0.3, 'gamma': 20, 'learning_rate': 0.012, 'colsample_bytree': 0.9, 'colsample_bynode': 0.8, 'n_estimators': 882, 'min_child_weight': 103, 'max_depth': 4, 'subsample': 0.7,'early_stopping_rounds':10 , 'verbosity':0}
+lgb_r_t = {'reg_alpha': 0.01816277967596359, 'reg_lambda': 5.297070757607957, 'colsample_bytree': 0.9, 'subsample': 0.5, 'learning_rate': 0.006, 'max_depth': 10, 'num_leaves': 245, 'min_child_samples': 55 , 'verbose':-1}
+cat_r_t = {'learning_rate': 0.004384466366976951, 'depth': 11, 'subsample': 0.30959203889098214, 'colsample_bylevel': 0.8258819366074175, 'min_data_in_leaf': 32 , 'silent':True}
+xgbrf_r_t = {'learning_rate': 0.09992558454567729, 'max_depth': 4, 'subsample': 0.6295085012732937, 'colsample_bytree': 0.507405257238443, 'min_child_weight': 12 , 'verbosity':0}
 
-cat_c_set = {'learning_rate': 0.009, 'depth': 3, 'l2_leaf_reg': 3.0, 'min_child_samples': 32, 'iterations': 1000,}
-lgb_c_set = { 'boosting_type': 'gbdt', 'num_leaves': 31, 'learning_rate': 0.1, 'n_estimators': 10, 'min_child_samples': 20, 
-    'subsample': 1.0, 'colsample_bytree': 1.0, 'random_state': 0, 'n_jobs': -1,}
-xgb_c_set = {'colsample_bytree': 0.6655392754230048, 'gamma': 4.198875359789924, 'max_depth': 17, 'min_child_weight': 1,  
-    'reg_alpha': 57, 'reg_lambda': 0.896332305739873,'early_stopping_rounds':10}
-xgb_r_set = { 'booster': 'dart', 'learning_rate': 0.1, 'n_estimators': 100, 'tree_method': "hist", "objective": "reg:squarederror", "verbosity": 2,'early_stopping_rounds':10}
-lgb_r_set = { 'n_estimators': 150, 'objective': 'regression', 'min_child_samples': 7, 'subsample': 1,'num_leaves': 35, 
-    'colsample_bytree': 1, 'random_state': 0, 'n_jobs': -1, 'learning_rate': 0.01, 'verbose': 1,}
-cat_r_set = { "iterations": 800, "learning_rate": 0.01, "depth": 7,}
-xgbrf_r_set = {"colsample_bynode": 0.8, "learning_rate": 0.1, "max_depth": 5, "num_parallel_tree": 100,
-    "objective": "reg:squarederror", "subsample": 0.8, "tree_method": "hist"}
+cat_c_set = {'learning_rate': 0.009, 'depth': 3, 'l2_leaf_reg': 3.0, 'min_child_samples': 32, 'silent':True}
+lgb_c_set = { 'boosting_type': 'gbdt', 'num_leaves': 31, 'learning_rate': 0.1, 'n_estimators': 10, 'min_child_samples': 20,'subsample': 1.0, 'colsample_bytree': 1.0, 'random_state': 0, 'n_jobs': -1 , 'verbose':-1}
+xgb_c_set = {'colsample_bytree': 0.6655392754230048, 'gamma': 4.198875359789924, 'max_depth': 17, 'min_child_weight': 1, 'reg_alpha': 57, 'reg_lambda': 0.896332305739873,'early_stopping_rounds':10 , 'verbosity':0}
+xgb_r_set = { 'booster': 'dart', 'learning_rate': 0.1, 'n_estimators': 100, 'tree_method': "hist", "objective": "reg:squarederror", "verbosity": 2,'early_stopping_rounds':10 , 'verbosity':0}
+lgb_r_set = { 'n_estimators': 150, 'objective': 'regression', 'min_child_samples': 7, 'subsample': 1,'num_leaves': 35, 'colsample_bytree': 1, 'random_state': 0, 'n_jobs': -1, 'learning_rate': 0.01 , 'verbose':-1}
+cat_r_set = { "iterations": 2000, "learning_rate": 0.01, "depth": 7 , 'silent':True}
+xgbrf_r_set = {"colsample_bynode": 0.8, "learning_rate": 0.1, "max_depth": 5, "num_parallel_tree": 100, "objective": "reg:squarederror", "subsample": 0.8, "tree_method": "hist" , 'verbosity':0}

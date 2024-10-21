@@ -2,19 +2,23 @@
 import datetime as dte_time
 import random as rand
 import uuid
-#import warnings
 import mlflow
 import pandas as pd
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import logging
+import warnings
 
 from ml_model.model_process import save_reg_ens_data
-
-logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
-
 from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 from lightgbm  import LGBMClassifier, LGBMRegressor
 from catboost import CatBoostClassifier, CatBoostRegressor
+
+logging.getLogger('mlflow.utils.autologging_utils').setLevel(logging.ERROR)
+logging.getLogger('lightgbm').setLevel(logging.ERROR)
+logging.getLogger('[LightGBM]').setLevel(logging.ERROR)
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
 import ml_model.model_params as mp
 import ml_model.model_process as model_processing
@@ -126,12 +130,18 @@ def run():
 
         ens_xxx = [
                 XGBClassifier(**mp.xgb_c_lucky13),
+               
+                #LGBMClassifier(**mp.lgb_c_L13EX),
+                #LGBMClassifier(**mp.lgb_c_t),
+                LGBMClassifier(**mp.lgb_c_set),
+                LGBMRegressor(**mp.lgb_r_L13EX), 
+                
                 CatBoostClassifier(**mp.cat_c_lucky13),        
-                CatBoostClassifier(**mp.cat_c_set),        
-                CatBoostClassifier(**mp.cat_c_t),        
-                #CatBoostRegressor(**mp.cat_r_lucky13),
-                #XGBRegressor(**mp.xgb_r_set ), 
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX ),
+                #CatBoostClassifier(**mp.cat_c_set),        
+                #CatBoostClassifier(**mp.cat_c_t),        
+                CatBoostRegressor(**mp.cat_r_lucky13),
+                XGBRegressor(**mp.xgb_r_set ), 
+                XGBRFRegressor(**mp.xgbrf_r_L13EX ),
                 XGBRFClassifier(**mp.xgbrf_c_lucky13),
         ]
 
@@ -147,10 +157,10 @@ def run():
 
 
         df = pd.read_csv(datafile[1])
-        df = df.drop(columns=['ATR51', 'ATR52','SDKC91'])
+        df = df.drop(columns=['ATR5','ATR51', 'ATR52','SDKC91'])
 
-        df = df[(df['RSI'] > 60)]  
-        #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  
+        #df = df[(df['RSI'] > 60)]  
+        #df = df[(df['RSI'] < 40)]  
         
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
         
@@ -164,8 +174,8 @@ def run():
         min_features_used = 6
         max_features_used = max_avail
         step_features_used = 1
-        total_cycles_used = 10
-        
+        total_cycles_used = 20
+
         p_df, experiment_id_parent = run_models(df, ens_385, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )

@@ -183,6 +183,7 @@ def run():
     ]
 
     df = pd.read_csv(datafile[1])
+    
     #df = df[((df['RSI'] > 0) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 100)]  
     
     #f_list = ['RSI','ADX1','STOK1','ATR5','ATR51','SDKC9','EMAL21213',
