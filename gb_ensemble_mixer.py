@@ -149,7 +149,7 @@ def run():
         df = pd.read_csv(datafile[1])
         df = df.drop(columns=['ATR51', 'ATR52','SDKC91'])
 
-        #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = df[(df['RSI'] > 60)]  
         #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  
         
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
@@ -164,9 +164,9 @@ def run():
         min_features_used = 6
         max_features_used = max_avail
         step_features_used = 1
-        total_cycles_used = 15
+        total_cycles_used = 10
         
-        p_df, experiment_id_parent = run_models(df, ens_xxx, 
+        p_df, experiment_id_parent = run_models(df, ens_385, 
                                                 split_test_size_value, min_features_used, max_features_used, 
                                                 step_features_used, total_cycles_used  )
 
