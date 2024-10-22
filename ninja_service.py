@@ -64,13 +64,13 @@ def init_app():
 
     with app.app_context():
         
-        models_one = LoadModels(0, ["385"], 1)
-        models_two = LoadModels(0, ["387"], 1)
-        models_three = LoadModels(0, ["389"], 1)
-        models_four = LoadModels(0, ["393"], 1)
+        #models_one = LoadModels(0, ["385"], 1)
+        #models_two = LoadModels(0, ["387"], 1)
+        #models_three = LoadModels(0, ["389"], 1)
+        #models_four = LoadModels(0, ["393"], 1)
+        #models_five = LoadModels(0, ["453"], 1)
        
-        models_five = LoadModels(0, ["453"], 1)
-       
+        models_five = LoadModels(0, ["486"], 1)
         
        
         
