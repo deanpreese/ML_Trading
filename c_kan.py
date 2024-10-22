@@ -246,11 +246,12 @@ def main():
             #Lucky13  ALL Cols
             f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
-            #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
+            df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
             #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
+            
             #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
             #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
-            df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
+            #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
             
             X = df.drop(columns=['output']).values
             y = df['output'].values

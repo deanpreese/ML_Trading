@@ -214,7 +214,7 @@ def run():
             df = pd.read_csv(file_path)
             df = df.drop(columns=['outputC'])
             
-            #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
+            df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
             #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
             #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
             #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%

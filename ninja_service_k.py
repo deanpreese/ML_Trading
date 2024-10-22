@@ -120,12 +120,6 @@ def init_app():
     app = Flask(__name__)
 
     with app.app_context():
-        #models_one = load_models(0, ["286"], 1)
-        #models_two = load_models(0, ["288"], 1)
-        #models_three = load_models(0, ["290"], 1)
-        #models_four = load_models(0, ["292"], 1)
-        #models_five = load_models(0, ["294"], 1)
-        
         
         c_kan_model_dir_upper = "saved_models/c_kan/upper"
         c_kan_model_dir_lower = "saved_models/c_kan/lower"
@@ -137,11 +131,10 @@ def init_app():
         #keras_upper_models = load_keras_models(dcnn_model_dir_upper)
         #keras_lower_models = load_keras_models(dcnn_model_dir_lower)    
         
-        comp_model_dir_upper = "saved_models/comp/upper"
-        comp_model_dir_lower = "saved_models/comp/lower"
+        comp_model_dir_upper = "saved_models/comp/upper_d"
+        comp_model_dir_lower = "saved_models/comp/lower_d"
         keras_upper_models = load_keras_models(comp_model_dir_upper)
         keras_lower_models = load_keras_models(comp_model_dir_lower)    
-        
     
 # ----------------------------------------
     @app.route('/predict-keras', methods=['POST'])
@@ -162,9 +155,16 @@ def init_app():
             predicts = 0
             for m in range(len(keras_lower_models)):
                 predicts += keras_lower_models[m].predict(x_val)[0]
-                print(m)
+                #print(f"{df['RSI'][0]}    {m}  ")
+
+
             
             y_val = (predicts/len(keras_lower_models))[0]
+            
+            #if y_val < 0:
+            #    y_val = 0
+            
+            print(f"{df['RSI'][0]}   {y_val}  ")
             
             out_data = {
             "agg_prediction" : float(y_val),
@@ -182,9 +182,16 @@ def init_app():
             predicts = 0
             for m in range(len(keras_upper_models)):
                 predicts += keras_upper_models[m].predict(x_val)[0]
-                print(m)
+                #print(f"{df['RSI'][0]}    {m}  ")
             
             y_val = (predicts/len(keras_upper_models))[0]
+            
+            #if y_val > 0:
+            #    y_val = 0
+            
+            print(f"{df['RSI'][0]}   {y_val}  ")
+            
+            
             
             out_data = {
             "agg_prediction" : float(y_val),
