@@ -33,6 +33,7 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         all_predict_data = pd.DataFrame()
         estimator_perf = []
         estimator_run_ids = []     
+        output_text = []               
                 
         for f, e in enumerate(models):
                 
@@ -69,7 +70,7 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
                 
                 if "Regressor" in modelname:
 
-                        r_run_id, r_perf, r_predictions = train_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
+                        out_text, r_run_id, r_perf, r_predictions = train_regressor_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                         y_train, X_val, y_val, X_test, y_test, save_to_mlflow)  
                         all_predict_data[model_run_uuid] = r_predictions
                         all_predict_data[model_data] = r_predictions * r_perf
@@ -77,10 +78,12 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
                         estimator_run_ids.append(model_run_uuid)
                         outputs = [ modelname, r_perf, fl_out, r_run_id ]        
                         estimator_perf.append(outputs)  
+                        
+                        output_text.append(out_text)
                 
                 if "Classifier" in modelname:
 
-                        c_run_id, accuracy, c_predictions, pred_proba = train_classifier_model(modelname, X_train.columns, exp_name, True, e, X_train, 
+                        out_text, c_run_id, accuracy, c_predictions, pred_proba = train_classifier_model(modelname, X_train.columns, exp_name, True, e, X_train, 
                                                                                         y_train, X_val, y_val, X_test, y_test, save_to_mlflow)  
                         all_predict_data[model_run_uuid] = c_predictions
                         all_predict_data[model_data] = c_predictions 
@@ -88,6 +91,8 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
                         estimator_run_ids.append(model_run_uuid)
                         outputs = [ modelname, round(accuracy,4), fl_out, c_run_id ]        
                         estimator_perf.append(outputs) 
+                        
+                        output_text.append(out_text)
 
         all_predict_data["target"] = y_test
         e_perf = pd.DataFrame(estimator_perf)        
@@ -102,7 +107,7 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         perf_data_t = [run_uuid, 0, e_perf.values.tolist(), features_list, 
                        correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae]
         
-        return perf_data_t    
+        return perf_data_t, output_text    
 
 
 
@@ -136,10 +141,14 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
     recall = recall_score(y_pred, y_test)
     tot = TN + FP + FN + TP
             
+    out_text = f"TN {TN}  FP {FP}  FN {FN}  TP {TP}  Acc: {accuracy}  Precision: {precision}  Recall: {recall} "        
+            
     if save_to_mlflow :
         with mlflow.start_run(experiment_id = experiment_id, nested=nested):
             
             run_id = mlflow.active_run().info.run_id  
+            mlflow.MlflowClient().set_tag(run_id, 'mlflow.note.content', features_used)
+            
             if "XGB" in model_name :
                 mlflow.xgboost.log_model(model, "model") 
                 p2 = model.get_xgb_params()
@@ -169,7 +178,7 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
             mlflow.log_metric("TruePos", TP)
             mlflow.log_metric("Perf", accuracy)
 
-    return run_id, accuracy, y_pred, pred_proba   
+    return out_text, run_id, accuracy, y_pred, pred_proba   
     #return run_id, accuracy, precision, recall, TN/tot, FP/tot, FN/tot, TP/tot, tot, y_pred, pred_proba      
 
 
@@ -202,10 +211,13 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
     mae = float(mean_absolute_error(y_test,y_pred))                
     perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred)        
     
+    out_text = f"Perf {perf}  MSE {mse}  RMSE {rmse}  MAE {mae}  R2 {r2}"
+    
     if save_to_mlflow :
         with mlflow.start_run(experiment_id = experiment_id, nested=nested):
             
             run_id = mlflow.active_run().info.run_id
+            mlflow.MlflowClient().set_tag(run_id, 'mlflow.note.content', features_used)
             
             if "XGB" in model_name :
                 mlflow.xgboost.log_model(model, "model") 
@@ -237,7 +249,7 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
             mlflow.log_metric("Total", total)
                
     
-    return run_id, perf, y_pred        
+    return out_text, run_id, perf, y_pred        
     #return run_id, perf, total, mse, rmse, r2, score, mae, y_pred    
 
 

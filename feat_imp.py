@@ -182,7 +182,7 @@ def run():
         'data/Lucky13_3070_AUG.csv',  #3
     ]
 
-    df = pd.read_csv(datafile[1])
+    df = pd.read_csv(datafile[3])
     
     #df = df[((df['RSI'] > 0) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 100)]  
     
@@ -196,7 +196,9 @@ def run():
     #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output', 'outputC']
     #df = df[f_list]
     
-    X = df
+    f_aug2=  ['RSI', 'ATR2', 'STOK1','SDLR310','SDBB91', 'ROC', 'TV23', 'TV33', 'TV21', 'TV13', 'ATR21', 'TV11', 'TV12', 'TV22', 'ATR5' ,'output', 'outputC']
+    
+    X = df[f_aug2]
     X = X.drop(columns=['output', 'outputC'])
     
     y = df['outputC'].values
