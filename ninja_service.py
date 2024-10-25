@@ -55,7 +55,7 @@ def gen_prediction(csv_data, models):
     df = pd.read_csv(csv_data, header=None, names=column_names)
     
     with open("oos.txt", "a") as file:
-        file.write(f"{df.values[0][0]}\n")
+        file.write(f"{df.values[0]}\n")
     
     
     df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
