@@ -140,7 +140,7 @@ class ModelLoader:
         #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.Perf DESC"], max_results=num_models+skip_val)
         runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 ASC"], max_results=num_models+skip_val)        
         
-        self.model_group = group_id
+        self.model_group = 0
         comp_strategies = []
 
         cnt = 0
