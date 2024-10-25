@@ -48,7 +48,7 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
         perf_data = []
         for q in range(total_cycles):
                 for f in range(min_features, max_features, step_features):
-                        perf_data_t = model_processing.process_models(experiment_id, data, estimators, run_test_size, True, 'xxx', True, f)
+                        perf_data_t, output_text = model_processing.process_models(experiment_id, data, estimators, run_test_size, True, 'xxx', True, f)
                         perf_data.append(perf_data_t)
                 
                 p_df = pd.DataFrame(perf_data)    

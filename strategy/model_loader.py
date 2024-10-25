@@ -132,13 +132,13 @@ class ModelLoader:
         return comp_strategies    
         
             
-    def load_composite_strategy(self, experiment_id, num_models, group_id): 
+    def load_composite_strategy(self, experiment_id, num_models, run_filter): 
         
         skip_val = 0
         
         print("Querying Runs ...")
-        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.Perf DESC"], max_results=num_models+skip_val)
-        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 ASC"], max_results=num_models+skip_val)        
+        #runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.Perf DESC"], max_results=num_models+skip_val)
+        runs = mlflow.search_runs(experiment_ids=experiment_id, filter_string="", order_by=["metrics.R2 ASC"], max_results=num_models+skip_val)        
         
         self.model_group = group_id
         comp_strategies = []
@@ -159,7 +159,7 @@ class ModelLoader:
                 comp_strat = CompositeStrategy()
                 comp_strat.run_id = r_id
                 comp_strat.run_name = rinfo.info.run_name   
-                comp_strat.trader_group = group_id     
+                comp_strat.trader_group = 0    
 
                 t_id = 1
                 comp_strat.trader_id = t_id

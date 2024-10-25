@@ -17,23 +17,18 @@ from flask import Flask, request
 import numpy as np
 import pandas as pd
 from io import BytesIO
-import datetime  as time
+import datetime  as dte_time
 import ml_model.model_run_data as mrd
 import itertools
 
 from strategy.model_loader import ModelLoader
 
-def run_sim(file, models, target):
-
-    df = pd.read_csv(file)                   
-    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-    
+def run_sim(df, models, target):
+ 
     X = df
     X = X.drop(columns=['output', 'outputC'])
     y = df[target].values
     fl_out = list(X.columns)
-    start = time.time()
 
     percent_pos_rtn = 0
     combined_rtn = 0
@@ -44,6 +39,7 @@ def run_sim(file, models, target):
 
     y_count = 0
 
+    print(" ")
     print("Calculating Predictions")
 
     for i in range(len(y)):
@@ -130,21 +126,6 @@ def run_sim(file, models, target):
     print(" ")
 
     
-    end = time.time()
-    t = round(end-start,2)
-    
-    print(F"Predictions processed in range {y_count}")
-    print(f"Time {t} seconds to process {len(y)} predictions  --  {round(len(y)/t,2)}/sec ")
-    print(" ") 
-    
-
-
-def run_test(file, exp):
-    
-    target = 'output'
-    model_loader = ModelLoader()
-    models = model_loader.load_composite_strategy(exp, 1, 0)   
-    run_sim( file, models, target)
 
 
 def run_virtuaL_test(file, model_list ):
@@ -169,10 +150,26 @@ if __name__ == "__main__":
             'new_model_Z_lucky13_3070.csv' #7,
 
     ]
+
+    df = pd.read_csv(datafile[0])                   
+    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
     
-    #run_test(datafile[0], ["405"])
-
-
+    #df = df[(df['RSI'] > 60)]  
+    #df = df[(df['RSI'] < 40)]  
+    
+    run_test = True
+    
+    
+    if run_test:
+        exp =  ["385"]
+        target = 'output'
+        model_loader = ModelLoader()
+        models = model_loader.load_composite_strategy(exp, 1, 0)   
+        run_sim( df, models, target)
+    
+    
+    """
     x_mc = 1
     x_ad = "ASC"
     x_exp = "= 392"
@@ -198,3 +195,4 @@ if __name__ == "__main__":
     model_list = ["f2f83a4dfe11408b934290ec03defb47","2092c7f4c4e24cfa826cff0e217e8222","b3026c0e4a744fb6ad15e8eee4a8cacf","626ba76f501940f5aa9f0aa8d088b312"
             ,"2c6b620d3cd947dab63fddeaada653c0","e0a6df73c852461fbf0152d7dd4a5537","59564d88ee4b43249e035c0a03f3e0b9","015b013331a642ee9173c91c870e4991"]        
     run_virtuaL_test(datafile[0], model_list )
+    """
