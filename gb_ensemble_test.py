@@ -140,29 +140,22 @@ def run_virtuaL_test(file, model_list ):
 if __name__ == "__main__":
     
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            'data/ndata_diff_lucky13_3070_oos.csv', 
-            'data/ndata_diff_lucky13_3070.csv', #3
-            'data/ndata_lucky_13_lag_3070_oos.csv', 
-            'data/ndata_lucky13_lag_3070.csv', #5
-            'new_model_Z_lucky13_3070_oos.csv',
-            'new_model_Z_lucky13_3070.csv' #7,
-
+        'data/Lucky13_3070_oos.csv',   
+        'data/Lucky13_3070.csv',  #1
+        'data/Lucky13_PLUS_3070_oos.csv',   
+        'data/Lucky13_PLUS_3070.csv',  #3
     ]
 
     df = pd.read_csv(datafile[0])                   
     #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-    
     #df = df[(df['RSI'] > 60)]  
     #df = df[(df['RSI'] < 40)]  
     
     run_test = True
-    
-    
+        
     if run_test:
-        exp =  ["385"]
+        exp =  ["11"]
         target = 'output'
         model_loader = ModelLoader()
         models = model_loader.load_composite_strategy(exp, 1, 0)   
