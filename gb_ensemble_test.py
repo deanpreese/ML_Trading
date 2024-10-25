@@ -144,18 +144,21 @@ if __name__ == "__main__":
         'data/Lucky13_3070.csv',  #1
         'data/Lucky13_PLUS_3070_oos.csv',   
         'data/Lucky13_PLUS_3070.csv',  #3
+        'data/oos.csv',   #4
     ]
 
-    df = pd.read_csv(datafile[0])                   
+    df = pd.read_csv(datafile[4])                   
     #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
     #df = df[(df['RSI'] > 60)]  
     #df = df[(df['RSI'] < 40)]  
     
+    df = df.drop(columns=['time'])
+    
     run_test = True
         
     if run_test:
-        exp =  ["11"]
+        exp =  ["5"]
         target = 'output'
         model_loader = ModelLoader()
         models = model_loader.load_composite_strategy(exp, 1, 0)   
