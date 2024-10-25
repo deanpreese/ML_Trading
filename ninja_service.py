@@ -54,8 +54,9 @@ def gen_prediction(csv_data, models):
     column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
     df = pd.read_csv(csv_data, header=None, names=column_names)
     
+    text = csv_data.getvalue().decode('utf-8')
     with open("oos.txt", "a") as file:
-        file.write(f"{df.values[0]}\n")
+        file.write(f"{text}\n")
     
     
     df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
