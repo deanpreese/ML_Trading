@@ -50,8 +50,14 @@ def get_model_predictions(data_df, models):
 
 
 def gen_prediction(csv_data, models):
+    
     column_names = ['time', 'SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1', 'output', 'outputC', 'actual']
     df = pd.read_csv(csv_data, header=None, names=column_names)
+    
+    with open("oos.txt", "a") as file:
+        file.write(f"{df.values[0][0]}\n")
+    
+    
     df.drop(columns=['time', 'actual', 'output', 'outputC'], inplace=True)
     out_data = get_model_predictions(df, models)
     j_out = json.dumps(out_data, indent=4)
@@ -64,13 +70,11 @@ def init_app():
 
     with app.app_context():
         
-        #models_one = LoadModels(0, ["385"], 1)
-        #models_two = LoadModels(0, ["387"], 1)
-        #models_three = LoadModels(0, ["389"], 1)
-        #models_four = LoadModels(0, ["393"], 1)
-        #models_five = LoadModels(0, ["453"], 1)
-       
-        models_five = LoadModels(0, ["486"], 1)
+        models_one = LoadModels(0, ["5"], 1)
+        #models_two = LoadModels(0, ["11"], 1)
+        #models_three = LoadModels(0, ["13"], 1)
+        #models_four = LoadModels(0, ["15"], 1)
+        #models_five = LoadModels(0, ["17"], 1)
         
        
         
