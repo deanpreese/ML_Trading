@@ -66,7 +66,7 @@ def run_models(data, estimators, run_test_size, save_to_mlflow, feat_data ):
 def run():
         model_list = []
 
-        monster = [
+        ens_m = [
                 LGBMRegressor(**mp.lgb_r_lucky13), 
                 CatBoostRegressor(**mp.cat_r_lucky13),
                 XGBRegressor(**mp.xgb_r_lucky13),   
@@ -103,268 +103,129 @@ def run():
         ]       
         
 
-        ens_2 = [
-                LGBMRegressor(**mp.lgb_r_lucky13), 
-                CatBoostRegressor(**mp.cat_r_lucky13),
-                XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
-                #LGBMRegressor(**mp.lgb_r_L13EX), 
-                CatBoostRegressor(**mp.cat_r_L13EX),
-                XGBRegressor(**mp.xgb_r_L13EX),   
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX),                
-                LGBMRegressor(**mp.lgb_r_set), 
-                CatBoostRegressor(**mp.cat_r_set),
-                XGBRegressor(**mp.xgb_r_set),   
-               # XGBRFRegressor(**mp.xgbrf_r_set),                
-                LGBMRegressor(**mp.lgb_r_t), 
-                CatBoostRegressor(**mp.cat_r_t),
-                XGBRegressor(**mp.xgb_r_t),   
-        ]       
-        
-        
-        ens_3 = [
-                
-                LGBMRegressor(**mp.lgb_r_lucky13), 
-                CatBoostRegressor(**mp.cat_r_lucky13),
-                XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
-                #LGBMRegressor(**mp.lgb_r_L13EX), 
-                CatBoostRegressor(**mp.cat_r_L13EX),
-                XGBRegressor(**mp.xgb_r_L13EX),   
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX),                
-                LGBMRegressor(**mp.lgb_r_set), 
-                CatBoostRegressor(**mp.cat_r_set),
-                XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
-                #LGBMRegressor(**mp.lgb_r_t), 
-                CatBoostRegressor(**mp.cat_r_t),
-                #XGBRegressor(**mp.xgb_r_t),  
-        ]       
-        
        
-        ens_4 = [
+        ens_1 = [
                 XGBRegressor(**mp.xgb_r_L13EX),  
-                #LGBMClassifier(**mp.lgb_c_lucky13),
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),        
                 CatBoostClassifier(**mp.cat_c_set),        
                 CatBoostClassifier(**mp.cat_c_t),        
                 CatBoostRegressor(**mp.cat_r_lucky13),
         ]
         
-        ens_5 = [
-                
-                #LGBMRegressor(**mp.lgb_r_lucky13), 
-                CatBoostRegressor(**mp.cat_r_lucky13),
-                XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
-                #LGBMRegressor(**mp.lgb_r_L13EX), 
-                CatBoostRegressor(**mp.cat_r_L13EX),
-                XGBRegressor(**mp.xgb_r_L13EX),   
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX),                
-                #LGBMRegressor(**mp.lgb_r_set), 
-                CatBoostRegressor(**mp.cat_r_set),
-                #XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
-                #LGBMRegressor(**mp.lgb_r_t), 
-                CatBoostRegressor(**mp.cat_r_t),
-                #XGBRegressor(**mp.xgb_r_t),  
-                
-                LGBMClassifier(**mp.lgb_c_lucky13),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),
-                XGBRFClassifier(**mp.xgbrf_c_lucky13),
-                LGBMClassifier(**mp.lgb_c_L13EX),
-                #XGBClassifier(**mp.xgb_c_t),
-                CatBoostClassifier(**mp.cat_c_t),
-        ]      
-     
-     
-        ens_6 = [
-                
-                LGBMRegressor(**mp.lgb_r_lucky13), 
-                #CatBoostRegressor(**mp.cat_r_lucky13),
-                #XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
+          
+        ens_2 = [
                 LGBMRegressor(**mp.lgb_r_L13EX), 
-                #CatBoostRegressor(**mp.cat_r_L13EX),
-                #XGBRegressor(**mp.xgb_r_L13EX),   
                 XGBRFRegressor(**mp.xgbrf_r_L13EX),                
                 LGBMRegressor(**mp.lgb_r_set), 
-                ##CatBoostRegressor(**mp.cat_r_set),
                 XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
                 LGBMRegressor(**mp.lgb_r_t), 
-                #CatBoostRegressor(**mp.cat_r_t),
                 XGBRegressor(**mp.xgb_r_t),  
-                
-                #LGBMClassifier(**mp.lgb_c_lucky13),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),
-                #XGBRFClassifier(**mp.xgbrf_c_lucky13),
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #XGBClassifier(**mp.xgb_c_L13EX),
-                #CatBoostClassifier(**mp.cat_c_L13EX),
                 XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                LGBMClassifier(**mp.lgb_c_set),
                 XGBClassifier(**mp.xgb_c_set),
                 CatBoostClassifier(**mp.cat_c_set),
                 LGBMClassifier(**mp.lgb_c_t),
-                XGBClassifier(**mp.xgb_c_t),
-                #CatBoostClassifier(**mp.cat_c_t),
         ] 
      
-     
-        ens_7 = [
-                
-                #LGBMRegressor(**mp.lgb_r_lucky13), 
-                #CatBoostRegressor(**mp.cat_r_lucky13),
-                #XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
-                LGBMRegressor(**mp.lgb_r_L13EX), 
-                #CatBoostRegressor(**mp.cat_r_L13EX),
-                #XGBRegressor(**mp.xgb_r_L13EX),   
-                XGBRFRegressor(**mp.xgbrf_r_L13EX),                
-                LGBMRegressor(**mp.lgb_r_set), 
-                ##CatBoostRegressor(**mp.cat_r_set),
-                XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
-                LGBMRegressor(**mp.lgb_r_t), 
-                #CatBoostRegressor(**mp.cat_r_t),
-                XGBRegressor(**mp.xgb_r_t),  
-                
-                #LGBMClassifier(**mp.lgb_c_lucky13),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),
-                #XGBRFClassifier(**mp.xgbrf_c_lucky13),
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #XGBClassifier(**mp.xgb_c_L13EX),
-                #CatBoostClassifier(**mp.cat_c_L13EX),
-                XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                #LGBMClassifier(**mp.lgb_c_set),
-                XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_set),
-                LGBMClassifier(**mp.lgb_c_t),
-                #XGBClassifier(**mp.xgb_c_t),
-                #CatBoostClassifier(**mp.cat_c_t),
-        ] 
-     
-     
-        ens_8 = [
-                
-                #LGBMRegressor(**mp.lgb_r_lucky13), 
-                #CatBoostRegressor(**mp.cat_r_lucky13),
-                #XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13), 
-                
-                #LGBMRegressor(**mp.lgb_r_L13EX), 
-                
-                #CatBoostRegressor(**mp.cat_r_L13EX),
-                #XGBRegressor(**mp.xgb_r_L13EX),   
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX),                
-                LGBMRegressor(**mp.lgb_r_set), 
-                ##CatBoostRegressor(**mp.cat_r_set),
-                #XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
-                LGBMRegressor(**mp.lgb_r_t), 
-                #CatBoostRegressor(**mp.cat_r_t),
-                XGBRegressor(**mp.xgb_r_t),  
-                #LGBMClassifier(**mp.lgb_c_lucky13),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),
-                #XGBRFClassifier(**mp.xgbrf_c_lucky13),
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #XGBClassifier(**mp.xgb_c_L13EX),
-                #CatBoostClassifier(**mp.cat_c_L13EX),
-                #XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                #LGBMClassifier(**mp.lgb_c_set),
-                XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_set),
-                LGBMClassifier(**mp.lgb_c_t),
-                #XGBClassifier(**mp.xgb_c_t),
-                #CatBoostClassifier(**mp.cat_c_t),
-        ] 
-     
-     
-        ens_9 = [
-                
+        ens_3 = [
                 LGBMRegressor(**mp.lgb_r_lucky13), 
                 CatBoostRegressor(**mp.cat_r_lucky13),
                 XGBRegressor(**mp.xgb_r_lucky13),   
-                #XGBRFRegressor(**mp.xgbrf_r_lucky13),                
                 LGBMClassifier(**mp.lgb_c_lucky13),
-                #XGBClassifier(**mp.xgb_c_lucky13),
-                #CatBoostClassifier(**mp.cat_c_lucky13),
-                #XGBRFClassifier(**mp.xgbrf_c_lucky13),
-                
                 LGBMRegressor(**mp.lgb_r_L13EX), 
                 CatBoostRegressor(**mp.cat_r_L13EX),
                 XGBRegressor(**mp.xgb_r_L13EX),   
-                #XGBRFRegressor(**mp.xgbrf_r_L13EX),                
                 LGBMClassifier(**mp.lgb_c_L13EX),
                 XGBClassifier(**mp.xgb_c_L13EX),
                 CatBoostClassifier(**mp.cat_c_L13EX),
-                #XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                
                 LGBMRegressor(**mp.lgb_r_set), 
                 CatBoostRegressor(**mp.cat_r_set),
                 XGBRegressor(**mp.xgb_r_set),   
-                #XGBRFRegressor(**mp.xgbrf_r_set),                
                 LGBMClassifier(**mp.lgb_c_set),
                 XGBClassifier(**mp.xgb_c_set),
                 CatBoostClassifier(**mp.cat_c_set),
-
                 LGBMRegressor(**mp.lgb_r_t), 
                 CatBoostRegressor(**mp.cat_r_t),
                 XGBRegressor(**mp.xgb_r_t),   
-                #XGBRFRegressor(**mp.xgbrf_r_t),                
                 LGBMClassifier(**mp.lgb_c_t),
                 XGBClassifier(**mp.xgb_c_t),
-                #CatBoostClassifier(**mp.cat_c_t),
         ] 
      
-        ens_10 = ens_9 + ens_8 + ens_7 
      
+        ens_4 = [
+                LGBMRegressor(**mp.lgb_r_L13EX), 
+                LGBMRegressor(**mp.lgb_r_set), 
+                XGBRegressor(**mp.xgb_r_set),   
+                LGBMRegressor(**mp.lgb_r_t), 
+                XGBRegressor(**mp.xgb_r_t),  
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+                LGBMClassifier(**mp.lgb_c_t),
+        ] 
+     
+        ens_z = [
+                CatBoostRegressor(**mp.cat_r_lucky13),
+                XGBRegressor(**mp.xgb_r_L13EX), 
+                LGBMClassifier(**mp.lgb_c_L13EX),
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                LGBMClassifier(**mp.lgb_c_set),
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+                XGBRegressor(**mp.xgb_r_t), 
+                XGBClassifier(**mp.xgb_c_t),
+                CatBoostClassifier(**mp.cat_c_t),
+        ]
+
+
+        ens_d = [
+                LGBMRegressor(**mp.lgb_r_lucky13), 
+                LGBMClassifier(**mp.lgb_c_lucky13),
+                XGBRFClassifier(**mp.xgbrf_c_lucky13),
+                LGBMRegressor(**mp.lgb_r_L13EX), 
+                LGBMClassifier(**mp.lgb_c_L13EX),
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                LGBMRegressor(**mp.lgb_r_set), 
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+                LGBMRegressor(**mp.lgb_r_t), 
+                LGBMClassifier(**mp.lgb_c_t),
+                XGBClassifier(**mp.xgb_c_t),
+        ]  
+
 
         # ==========================================
 
         datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
-                'data/Lucky13_3070_AUG_oos.csv',   
-                'data/Lucky13_3070_AUG.csv',  #3
+                'data/Lucky13_PLUS_3070_oos.csv',   
+                'data/Lucky13_PLUS_3070.csv',  #3
         ]
 
 
         df = pd.read_csv(datafile[1])
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-        
         #df = df[(df['RSI'] > 60)]  
         #df = df[(df['RSI'] < 40)]  
+
+        feat_data = 'xxx'
             
         lucky_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1']
-        
-        f_13x =['RSI',
-                'STOK1',
-                'SDLR310',
-                'ATR2',
-                'SDBB91',
-                'ATR5',
-                'ATR21',]
-
-        f_aug=  ['RSI', 'ATR2', 'STOK1','SDLR310','SDBB91', 'ROC', 'TV23', 'TV33', 'TV21', 'TV13', 'ATR21', 'TV11', 'TV12', 'TV22', 'ATR5']
-        f_aug2=  ['RSI', 'ATR2', 'STOK1','SDLR310','SDBB91', 'TV23', 'TV33', 'TV21', 'TV13', 'ATR21', 'TV11', 'TV12',  'ATR5']
-                
-        feat_data = f_13x
-        #feat_data = f_aug2
         #feat_data = lucky_13
-        #feat_data = 'xxx'
-        split_test_size_value = 0.7          
-        save_mlflow = False
         
-        p_df, experiment_id_parent = run_models(df, ens_10, split_test_size_value, save_mlflow, feat_data)
+        f_13x =['RSI','STOK1','SDLR310', 'ATR2', 'SDBB91','ATR5', 'ATR21']       
+        feat_data = f_13x
+        
+        f_plus = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21', 'ROC']
+        f_plus_m = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21']
+        
+        #feat_data = f_plus
+        #feat_data = f_plus_m
+        
+        split_test_size_value = 0.7          
+        save_mlflow = True
+        
+        p_df, experiment_id_parent = run_models(df, ens_z, split_test_size_value, save_mlflow, feat_data)
         
         print("")
         for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in p_df.values.tolist(): 

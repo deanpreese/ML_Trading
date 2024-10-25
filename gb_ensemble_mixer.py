@@ -145,44 +145,58 @@ def run():
                 XGBRFClassifier(**mp.xgbrf_c_lucky13),
         ]
 
+        ens_4 = [
+                LGBMRegressor(**mp.lgb_r_L13EX), 
+                LGBMRegressor(**mp.lgb_r_set), 
+                XGBRegressor(**mp.xgb_r_set),   
+                LGBMRegressor(**mp.lgb_r_t), 
+                XGBRegressor(**mp.xgb_r_t),  
+                XGBRFClassifier(**mp.xgbrf_c_L13EX),
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+                LGBMClassifier(**mp.lgb_c_t),
+        ] 
 
 
         # ==================
         datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
-                'data/Lucky13_3070_AUG_oos.csv',   
-                'data/Lucky13_3070_AUG.csv',  #3
+                'data/Lucky13_PLUS_3070_oos.csv',   
+                'data/Lucky13_PLUS_3070.csv',  #3
         ]
 
+        for i in range(3):
 
-        df = pd.read_csv(datafile[1])
-        df = df.drop(columns=['ATR5','ATR51', 'ATR52','SDKC91'])
+                df = pd.read_csv(datafile[1])
+                #df = df.drop(columns=['ATR5','ATR51', 'ATR52','SDKC91'])
 
-        #df = df[(df['RSI'] > 60)]  
-        #df = df[(df['RSI'] < 40)]  
+                #df = df[(df['RSI'] > 60)]  
+                #df = df[(df['RSI'] < 40)]  
+                #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
+                #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
+                #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
+                
+                #22 columns
+                f_plus = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21', 'ROC', 'output', 'outputC']
+                #df = df[f_plus]
+                
+                
+                max_avail = df.shape[1] - 3
         
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)] 
-        
-        #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
-        #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
+                split_test_size_value = 0.7          
+                min_features_used = 5
+                max_features_used = 9
+                step_features_used = 1
+                total_cycles_used = 20
 
-        
-        max_avail = df.shape[1] - 2
-        
-        split_test_size_value = 0.7          
-        min_features_used = 6
-        max_features_used = max_avail
-        step_features_used = 1
-        total_cycles_used = 20
+                p_df, experiment_id_parent = run_models(df, ens_389, 
+                                                        split_test_size_value, min_features_used, max_features_used, 
+                                                        step_features_used, total_cycles_used  )
 
-        p_df, experiment_id_parent = run_models(df, ens_385, 
-                                                split_test_size_value, min_features_used, max_features_used, 
-                                                step_features_used, total_cycles_used  )
-
-        print(" ")
-        print(p_df)                
-        print(" ")
+                print(" ")
+                print(p_df)                
+                print(" ")
 
 
 
