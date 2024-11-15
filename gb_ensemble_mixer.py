@@ -160,11 +160,11 @@ def run():
 
         # ==================
         datafile = [ 
-                'data/Lucky13_3070_oos.csv',   
-                'data/Lucky13_3070.csv',  #1
-                'data/Lucky13_PLUS_3070_oos.csv',   
-                'data/Lucky13_PLUS_3070.csv',  #3
-        ]
+                'data/NewModel_3070_oos.csv',   
+                'data/NewModel_3070.csv',  #3
+                'data/NewModel_ALL_oos.csv',   
+                'data/NewModel_ALL.csv',  #3
+        ]   
 
         for i in range(3):
 

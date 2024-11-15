@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import Input, Conv1D, Average, Conv2D, LeakyReLU, Reshape, Concatenate, Multiply, BatchNormalization, Bidirectional, Add, Dense, Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+from tensorflow.keras.layers import Input, Conv1D, Average, Conv2D, LeakyReLU, Reshape, Concatenate, Multiply 
+from tensorflow.keras.layers import BatchNormalization, Bidirectional, Add, Dense, Dropout, MaxPooling1D, LSTM, MultiHeadAttention, Attention
+
+from tensorflow.keras.layers import AdditiveAttention
+
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import GlorotUniform
 from sklearn.model_selection import train_test_split
@@ -25,50 +29,94 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class C_KANX:
+class F_KAN_X:
     def __init__(self, epochs=50, batch_size=32):
         
         self.checkpoint_dir = 'checkpoints/'
         self.trained_dir = 'trained_models/'
        
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'c_kan_model.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'c_kan_model.keras')
-        self.model_plot = os.path.join(self.checkpoint_dir, 'c_kan_model.png')
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'f_kan_x_model.keras')
+        self.trained_model = os.path.join(self.trained_dir, 'f_kan_x_model.keras')
+        self.model_plot = os.path.join(self.checkpoint_dir, 'f_kan_x_model.png')
 
         self.drop_out = 0.2
         self.l2_reg = l2(0.01)
         self.initializer = GlorotUniform(seed=42)
 
+    def create_feature_model_h(self, inputs, output_dim):
 
-    def create_feature_model(self, input_shape):
+        """ 
+        H
+        Val MSE: 9.1925, Val MAE: 1.7172, R2: 0.46744909954386704
+        Total Wins: 5652, Total Losses: 1799, Win Percentage: 0.759
+        Number of Samples: 7451
+        """        
+
+        h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
+        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
+        h = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(h)
+        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
+        h = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(h)
+        h = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(h)
+        h = Bidirectional(LSTM(32,name="BIC2", kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(h)
+
+        h = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(h)         
+        attention_h = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_h')(h)
+        h = Multiply()([h, attention_h])                
+        h = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg, name="h_out", kernel_initializer=self.initializer)(h)           
+        
+        return h   
+
+
+    def create_feature_model_x(self, inputs, output_dim):
+        
+        """
+        X        
+        Val MSE: 9.2086, Val MAE: 1.7184, R2: 0.4665146637449804
+        Total Wins: 5651, Total Losses: 1800, Win Percentage: 0.758
+        Number of Samples: 7451    
+        """        
+        
+        x = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs)       
+        #x = LSTM(64, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=32, kernel_size=3,  activation='relu', kernel_initializer=self.initializer)(x)
+        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        x = Bidirectional(LSTM(64, kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
+        
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        
+        x = Bidirectional(LSTM(32, kernel_regularizer=self.l2_reg, kernel_initializer=self.initializer))(x)
+        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(x) 
+        attention_x = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention_x')(x)
+        x = Multiply()([x, attention_x])                
+        x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg, name="x_out", kernel_initializer=self.initializer)(x) 
+                     
+        return x
+
+
+    def create_feature_model_s(self, input_shape):
         
         input = Input(shape=input_shape)
         input_dim = input.shape[1]  
         reshaped_inputs = Reshape((input_dim, 1))(input)
         inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
-        #inx = Dropout(self.drop_out)(inx)
         x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-       # x = Dropout(self.drop_out)(x)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = Dropout(self.drop_out)(x)
-        x = MaxPooling1D(pool_size=1, strides=1)(x)
         x = LSTM(32, return_sequences=False, activation='relu')(x)
-        #x = Dropout(self.drop_out)(x)
-        smx_out = Dense(1, activation='linear')(x) 
+        smx_out = Dense(1, activation='sigmoid')(x) 
         subx_model = Model(input, smx_out)
         return subx_model
 
-
-    def create_feature_model2(self, input_shape):
+    def create_feature_model_t(self, input_shape):
         
         input = Input(shape=input_shape)
         input_dim = input.shape[1]  
         reshaped_inputs = Reshape((input_dim, 1))(input)
-        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
-        x = Dense(64, activation='relu')(x)
-        x = Dense(32, activation='relu')(x)
+        inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
         x = LSTM(32, return_sequences=False, activation='relu')(x)
-        smx_out = Dense(1, activation='linear')(x) 
+        smx_out = Dense(1, activation='tanh')(x) 
         subx_model = Model(input, smx_out)
         return subx_model
 
@@ -77,53 +125,31 @@ class C_KANX:
         
         inputs = Input(shape=input_shape)
         feature_outputs = []
+        output_dim = 32
+        
+        model_a = self.create_feature_model_h(inputs, output_dim)
+        model_b = self.create_feature_model_x(inputs, output_dim)
         
         for i in range(input_shape[0]):
             feature_input = inputs[:, i:i+1]
+                
+            fm1 = self.create_feature_model_s((1,))
+            fm1x = fm1(feature_input)
+            feature_outputs.append(fm1x)
             
-            
-            if i % 2 == 0:
-                fm = self.create_feature_model((1,))
-                fmx = fm(feature_input)
-                feature_outputs.append(fmx)
-                
-                fm2 = self.create_feature_model2((1,))
-                fm2x = fm2(feature_input)
-                #feature_outputs.append(fm2x)
-                
-            else:
-                fm = self.create_feature_model((1,))
-                fmx = fm(feature_input)
-                feature_outputs.append(fmx)
-                
-                fm2 = self.create_feature_model2((1,))
-                fm2x = fm2(feature_input)
-                #feature_outputs.append(fm2x)
-                
+            fm2 = self.create_feature_model_t((1,))
+            fm2x = fm2(feature_input)
+            feature_outputs.append(fm2x)
        
         concatenated_outputs = Concatenate(axis=1)(feature_outputs)
-        rs = Reshape((len(feature_outputs), 1))(concatenated_outputs)
-        x = Dense(len(feature_outputs), activation='softmax', kernel_initializer=self.initializer, name='attention')(rs)
-        x = Multiply()([rs, x])
+        x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,  kernel_initializer=self.initializer)(concatenated_outputs)   
         
-        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
-    
-        #attention2 = Dense(32, activation='softmax', kernel_initializer=self.initializer, name='attention2')(weighted)
-        #weighted = Multiply()([weighted, attention2])
-        
-        #x = Conv1D(32, 2, activation='relu', kernel_initializer=self.initializer)(x)
-        #x = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=False, kernel_initializer=self.initializer)(x)
-        #x = Bidirectional(LSTM(32,name="BIC", kernel_regularizer=self.l2_reg, return_sequences=True, kernel_initializer=self.initializer))(x)
-        
-        x = Reshape((-1,))(x)
-        aggregated = Dense(64, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
-        aggregated = Dropout(self.drop_out)(aggregated)
-        
-        output = Dense(1, activation='linear')(aggregated)
-        
+        #x = Average()([model_a, model_b, x])
+        x = model_a *0.75 + model_b*0.15 + x*0.1
+
+        output = Dense(1, activation='linear')(x)
         self.model = Model(inputs=inputs, outputs=output)
         return self.model
-
     
 
     def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val ):
@@ -135,37 +161,26 @@ class C_KANX:
         self.model.summary()
         
         tf.keras.utils.plot_model(self.model, to_file=self.model_plot, 
-            show_shapes=True, 
-            show_dtype=True,
-            show_layer_names=True,
-            expand_nested=True,
-            show_layer_activations=True,
-            show_trainable=True
+            show_shapes=True, show_dtype=True, show_layer_names=True,
+            expand_nested=True, show_layer_activations=True, show_trainable=True
             )   
-
+        
         reduce_lr = ReduceLROnPlateau(
-            monitor="val_loss", factor=0.2,
-            patience=5, verbose=1,
-            mode="auto", min_delta=0.000001,
-            cooldown=0, min_lr=0,
-        )
+            monitor="val_loss", factor=0.2, patience=5, verbose=1,
+            mode="auto", min_delta=0.000001, cooldown=0, min_lr=0,
+            )
 
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
         
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
-            self.checkpoint_model, 
-                monitor='val_loss', 
-                    verbose=0,
-                    save_best_only=True, 
-                        save_weights_only=False, mode='min')
-        
+            self.checkpoint_model, monitor='val_loss', verbose=1,
+            save_best_only=True, save_weights_only=False, mode='min'
+            )
         
         history_out = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
-                                initial_epoch=0, epochs=2000, verbose=1,
-                                batch_size=64, callbacks=[
-                                    early_stopping,
-                                    reduce_lr,
-                                    model_checkpoint])      
+            initial_epoch=0, epochs=1000, verbose=1, batch_size=64, 
+            callbacks=[early_stopping, reduce_lr, model_checkpoint]
+            )      
         
         y_pred = self.model.predict(X_test)
         return history_out, y_pred
@@ -215,21 +230,20 @@ def combined_plots(history, y_true, y_pred):
 
 
 def main():
-    
+
     datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_EX_3070_oos.csv',  
-        'data/Lucky13_EX_3070.csv',  #3
-        'data/Lucky13_ALL_oos.csv',  #4
-        'data/Lucky13_ALL.csv',  #5
-    ]
+            'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #3
+            'data/NewModel_ALL_oos.csv',   
+            'data/NewModel_ALL.csv',  #3
+    ]   
+
 
 
     train = True
-    run_oos = False
-
+    run_oos = True
     sc_temp = None
+    best_model_path = ""
 
     if train:
 
@@ -249,10 +263,12 @@ def main():
 
             #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
             #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
-            
             #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
             #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
             #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
+            
+            f_13x =['RSI','STOK1','SDLR310', 'ATR2', 'SDBB91','ATR5', 'ATR21']    
+            #X = df[f_13x].values
             
             X = df.drop(columns=['output']).values
             y = df['output'].values
@@ -267,7 +283,7 @@ def main():
             input_shape = (X_train.shape[1], 1)
             #(14, 1)
 
-            c_kan = C_KANX()
+            c_kan = F_KAN_X()
             history_out, y_pred = c_kan.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val )
 
             # Load best model and evaluate
@@ -275,12 +291,25 @@ def main():
             y_pred = best_model.predict(X_test)
             rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
             
-            model_file = f"c_kan_{mse}_{mae}_model.keras"
+            model_file = f"f_kan_x_{mse}_{mae}_{r2}_model.keras"
             file_path = os.path.join(c_kan.checkpoint_dir, model_file)
             best_model.save(file_path)
             
+            best_model_path = file_path
+            
+            plot_file = f"f_kan_x_{mse}_{mae}_{r2}_model.png"
+            plot_path = os.path.join(c_kan.checkpoint_dir, plot_file)
+            tf.keras.utils.plot_model(best_model, to_file=plot_path, 
+                show_shapes=True, 
+                show_dtype=True,
+                show_layer_names=True,
+                expand_nested=True,
+                show_layer_activations=True,
+                show_trainable=True
+            )   
+            
             #sc_temp = scaler
-            #scaler_file = f"c_kan_scaler_{mse}_{mae}_model.sc"
+            #scaler_file = f"f_kan_z_scaler_{mse}_{mae}_{r2}_model.sc"
             #sc_file_path = os.path.join(c_kan.checkpoint_dir, scaler_file)
             #joblib.dump(scaler, sc_file_path) 
             
@@ -292,8 +321,9 @@ def main():
         X = df.drop(columns=['output']).values
         y = df['output'].values 
             
-        oos_model = tf.keras.models.load_model(c_kan.checkpoint_model)
-        X_test = sc_temp.transform(X)
+        oos_model = tf.keras.models.load_model(best_model_path)
+        #X_test = sc_temp.fit(X)
+        X_test = X
         y_test = y
         
         y_pred = oos_model.predict(X_test)

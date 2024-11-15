@@ -321,18 +321,15 @@ def study_cat_c(X_train, y_train, X_val, y_val):
 def main():
 
     datafile = [ 
-            #'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            #'data/Lucky13_ALL_oos.csv', 
-            #'data/Lucky13_ALL.csv', #3
-            #'data/Lucky13_EX_3070_oos.csv', 
-            #'data/Lucky13_EX_3070.csv', #5
-            #'data/new_model_Z_lucky13_3070_oos.csv',
-            #'data/new_model_Z_lucky13_3070.csv', #7,
-    ]
+            #'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #1
+            #'#data/NewModel_ALL_oos.csv',   
+            #'data/NewModel_ALL.csv',  #3
+            #'data/NewModel_span3_3070_oos.csv',   
+            #'data/NewModel_span3_3070.csv',  #5
+    ]   
 
-
-    post_pend = 'Lucky13'
+    post_pend = 'New3070'
 
 
     for i in range(len(datafile)):

@@ -140,14 +140,13 @@ def run_virtuaL_test(file, model_list ):
 if __name__ == "__main__":
     
     datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_PLUS_3070_oos.csv',   
-        'data/Lucky13_PLUS_3070.csv',  #3
-        'data/oos.csv',   #4
-    ]
+            'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #3
+            'data/NewModel_ALL_oos.csv',   
+            'data/NewModel_ALL.csv',  #3
+    ]   
 
-    df = pd.read_csv(datafile[4])                   
+    df = pd.read_csv(datafile[5])                   
     #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
     #df = df[(df['RSI'] > 60)]  

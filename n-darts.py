@@ -8,7 +8,6 @@ from darts.dataprocessing.transformers import Scaler
 from darts.models import NHiTSModel, NBEATSModel
 from torchmetrics import MetricCollection
 from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
-from pytorch_lightning.loggers import TensorBoardLogger
 from darts.utils.likelihood_models import QuantileRegression, LaplaceLikelihood, DirichletLikelihood, ContinuousBernoulliLikelihood
 from darts.metrics import mae, mape, rmse, coefficient_of_variation, dtw_metric
 from torchmetrics.regression import SpearmanCorrCoef, PearsonCorrCoef, R2Score, MeanAbsoluteError 
@@ -26,8 +25,8 @@ def process_train_test_data(data, feature_columns, target_column, split):
     y_test = test.drop_columns(feature_columns)
     
     scaler = Scaler()
-    X_train = scaler.fit_transform(X_train) 
-    X_test = scaler.transform(X_test.astype(np.float32))   
+    #X_train = scaler.fit_transform(X_train) 
+    #X_test = scaler.transform(X_test.astype(np.float32))   
     
     print("X_train shape: ", X_train.all_values().shape)
     print("X_test shape: ", X_test.all_values().shape)
@@ -245,43 +244,20 @@ def plot_model(test_series, output_chunk, model, past_covariates=None, future_co
 
 def main():
     
-    #file_path = 'data/buildSeqInd_Lucky13_F.csv'
-    #data = pd.read_csv(file_path)
-    #list80 = ['SDKC9', 'ATR3', 'STOK1', 'SDKC91', 'ATR21', 'output']
-    
-    file_path = 'data/Ind_F.csv'
-    data = pd.read_csv(file_path)
-    data = data.drop(columns=['output'])
-    
-    list80 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'RSI14', 'VOSC9', 'SDKC14', 'ADX14', 'outputC']
-    list60 = ['CCI20', 'ATR2', 'CCI9', 'RSI3', 'RSI9', 'VOSC7', 'STOK15657', 'STOD15657', 'ADX20', 'STOD7217', 'STOK7217', 'SDKC9', 'outputC']
-           
-    listX2 = [
-             'CCI20', 
-             'ATR2', 
-             'CCI9', 
-             'RSI3', ##
-             'RSI9',  ##
-             'VOSC7',    #
-             'STOK15657', #
-             'STOD15657',  #
-             'ADX9', 
-             'LR2155', 
-             'BB7',
-              'LR1033',
-              'ROC9',
-              'SDKC9',
-              'BB14',
-              'LR813',
-              'outputC']
-    
-    data = data[listX2]
-    
-        
+    datafile = [ 
+            'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #1
+            'data/NewModel_ALL_oos.csv',   
+            'data/NewModel_ALL.csv',  #3
+            'data/NewModel_span3_3070_oos.csv',   
+            'data/NewModel_span3_3070.csv',  #5        
+    ]   
+
+    data = pd.read_csv(datafile[1])
     feature_columns = list(data.columns[:-1])
     
     target_column = 'outputC'  # Replace with your actual target column name
-    input_chunk_length = 21
+    input_chunk_length = 7
     output_chunk_length = 1
     n_epochs = 100
     num_stacks = 3
@@ -294,7 +270,6 @@ def main():
     #(data, feature_columns, target_column, split):
     X_train, X_test, y_train, y_test, scaler = process_train_test_data(data, feature_columns, target_column, test_split)
     
-    
     print("Training model...")
     #model = build_NBeats(input_chunk_length, output_chunk_length, 
     #        n_epochs, num_stacks, num_blocks, num_layers, layer_widths, 
@@ -304,9 +279,6 @@ def main():
             n_epochs, num_stacks, num_blocks, num_layers, layer_widths, 
             patience_val=5, min_delta_val=0.005)
 
-    #model_hits.fit(series=y_train)
-    #eval_model(False, y_test, output_chunk_length, model_hits)
-    
     model.fit(series=y_train, val_series=y_test, 
               past_covariates=X_train, val_past_covariates=X_test)
     

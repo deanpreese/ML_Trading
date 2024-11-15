@@ -22,7 +22,7 @@ from sklearn.metrics import confusion_matrix
 
 from ml_model.model_stats import calc_mse_rmse_mae, calc_ensemble_results
 from ml_model.data_func import simple_split_and_scale,split_three_ways_full
-from ml_model.model_stats import gen_reg_stats
+from ml_model.model_stats import gen_reg_stats, gen_reg_stats_x
 
 # -----------------------------------------------------
 def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_data, do_random, random_size):
@@ -98,11 +98,12 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         e_perf = pd.DataFrame(estimator_perf)        
         e_perf.columns = ["Estimator", "Perf", "Features", "RUN_ID" ]
         
+        print(f" ")
         print(f"Running Ensemble Calculations")
-        correctX, correctY, correctP, totalX, cxp, cyp, cpp, r_predictions, r_y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
+        correctX, correctY, correctP, totalX, cxp, cyp, cpp, predictions, cr_y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
 
-        mse, rmse, mae = calc_mse_rmse_mae(r_y_target, r_predictions)
-        r2 =r2_score(r_y_target, r_predictions)
+        mse, rmse, mae = calc_mse_rmse_mae(cr_y_target, predictions)
+        r2 =r2_score(cr_y_target, predictions)
 
         perf_data_t = [run_uuid, 0, e_perf.values.tolist(), features_list, 
                        correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae]
@@ -136,12 +137,12 @@ def train_classifier_model(model_name, features_used, experiment_id, nested, mod
     pred_proba = model.predict_proba(X_test)
     
     TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
-    accuracy = accuracy_score(y_pred, y_test)
-    precision = precision_score(y_pred, y_test)
-    recall = recall_score(y_pred, y_test)
+    accuracy = round(accuracy_score(y_pred, y_test),4)
+    precision = round(precision_score(y_pred, y_test),4)
+    recall = round(recall_score(y_pred, y_test),4)
     tot = TN + FP + FN + TP
             
-    out_text = f"TN {TN}  FP {FP}  FN {FN}  TP {TP}  Acc: {accuracy}  Precision: {precision}  Recall: {recall} "        
+    out_text = f"Total {tot}  Wins {TP+TN}  Acc: {accuracy}  Precision: {precision}  Recall: {recall}  TP {TP}  TN {TN}  FP {FP}  FN {FN}"        
             
     if save_to_mlflow :
         with mlflow.start_run(experiment_id = experiment_id, nested=nested):
@@ -209,9 +210,9 @@ def train_regressor_model(model_name, features_used, experiment_id, nested, mode
     r2 =r2_score(y_test, y_pred)
     score = model.score(X_test, y_test)
     mae = float(mean_absolute_error(y_test,y_pred))                
-    perf, total, mse, rmse, mae = gen_reg_stats(y_test, y_pred)        
     
-    out_text = f"Perf {perf}  MSE {mse}  RMSE {rmse}  MAE {mae}  R2 {r2}"
+    wins, perf, total, msex, rmsex, maex, r2x = gen_reg_stats_x(y_test, y_pred)        
+    out_text = f"Total {total}  Wins {wins}  Perf {perf}  MSE {mse} RMSE {rmse}  MAE {mae}  R2 {r2} "
     
     if save_to_mlflow :
         with mlflow.start_run(experiment_id = experiment_id, nested=nested):

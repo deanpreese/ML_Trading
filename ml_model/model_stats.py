@@ -171,5 +171,13 @@ def calc_ensemble(num_models, target_val, agg_pre,  agg_weighted ):
         if agg_weighted < 0  and agg_pre < 0:
             agg_agree += 1                                    
             
+    if target_val == 0:
+        y_count += 1
+        if agg_pre == 0:  agg_rtn += 1
+        if agg_predict_w == 0: agg_w_rtn += 1
+        if comp_predict == 0: comp_rtn += 1
+        if agg_weighted == 0  and agg_pre == 0:
+            agg_agree += 1                                    
+            
 
     return y_count, agg_rtn, agg_w_rtn, comp_rtn, agg_agree, comp_predict            

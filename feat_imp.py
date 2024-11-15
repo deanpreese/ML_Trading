@@ -129,25 +129,31 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 def run():
 
     datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/Lucky13_PLUS_3070_oos.csv',   
-        'data/Lucky13_PLUS_3070.csv',  #3
-    ]
+            'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #1
+            'data/NewModel_ALL_oos.csv',   
+            'data/NewModel_ALL.csv',  #3
+            'data/NewModel_span3_3070_oos.csv',   
+            'data/NewModel_span3_3070.csv',  #5
+    ]   
 
-    df = pd.read_csv(datafile[3])
-    X = df
-    
+    data = pd.read_csv(datafile[5])
+    df = data.drop(columns=['TimeTicks','SeqClose'])
     #df = df[((df['RSI'] > 0) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 100)]  
-        
-    #f_list = ['RSI', 'ATR2', 'ATR5', 'STOK1', 'SDLR310','FOSC1','ADX1','SDKC9','EMAL10101','EMAL21211', 'output', 'outputC']
     
-    f_plus = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21', 'ROC']
-    #f_plus_2 =['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'SDLR310', 'TV23', 'TV11', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV43', 'TV42', 'ATR21', 'ROC']    
-    #f_plus_ex = ['SDKC91','ATR54','ATR5']
+    #22 Items
+    #comp = ['L1', 'RSI', 'O5', 'ROC', 'ROC14', 'ATR5', 'ATR21', 'TV41', 'RSI14X', 'TV31', 'ATR2', 
+    #    'H2', 'ATR14Y1', 'L5', 'L2', 'STOK1', 'ROC1', 'SDBB91', 'ATR14Y', 'ROC141', 'SDKC9', 'SDLR310']
+    #X = df[comp]
+
+
+    span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
+             'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91']
+    X = df[span3]
+
+    #X = df
+    #X = X.drop(columns=['output', 'outputC'])
     
-    
-    X = X.drop(columns=['output', 'outputC'])
     y = df['outputC'].values
     y2 = df['output'].values
     
@@ -176,7 +182,6 @@ def run():
 
     use_class = True
     use_reg = True
-
     if use_class:
         importance_df_sorted_c, important_features_c, performance_df_c  = gen_results(models_c, X_train_c, y_train_c, X_test_c, y_test_c, X.columns, threshold)    
 
@@ -213,5 +218,85 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    #run()
 
+    #'data/NewModel_3070.csv',  #1
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #a =  ['RSI', 'ATR2', 'RSI14X', 'ATR21', 'ROC14', 'ROC141', 'SDBB91', 'TV31', 'H2', 'ATR14Y1']
+
+    #Regressor Selected Features
+    #b = ['RSI', 'ATR2', 'RSI14X', 'STOK1', 'ATR5', 'ROC141', 'SDBB91', 'ATR21', 'TV41', 'ROC14', 'SDKC9', 'ROC', 'ATR14Y']
+
+    #'data/NewModel_ALL.csv',  #3    
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #c = ['SDLR310', 'TV41', 'TV31', 'SDBB91', 'RSI', 'ROC1', 'L1', 'O5', 'L5', 'ATR21']
+
+    #Regressor Selected Features
+    #d = ['L2', 'ATR2', 'ROC141', 'TV41']
+
+    #22 Items
+    #comp = ['L1', 'RSI', 'O5', 'ROC', 'ROC14', 'ATR5', 'ATR21', 'TV41', 'RSI14X', 'TV31', 'ATR2', 
+    #'H2', 'ATR14Y1', 'L5', 'L2', 'STOK1', 'ROC1', 'SDBB91', 'ATR14Y', 'ROC141', 'SDKC9', 'SDLR310']
+
+    #unique_values = list(set(a + b + c + d))
+    #print(len(unique_values))
+    #print(unique_values)
+    
+    
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #a = ['SDLR310', 'TV41', 'RSI', 'ROC1', 'ATR21']
+    #Regressor Selected Features
+    #b = ['TV31', 'RSI', 'STOK1', 'TV41']
+    
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #c = ['RSI', 'ATR2', 'STOK1', 'ATR21', 'RSI14X', 'SDKC9', 'O5']
+    
+    #Features Selected based on threshold of 50 percent
+    #Regressor Selected Features
+    #d = ['RSI', 'ATR2', 'STOK1', 'RSI14X', 'ATR5']
+    
+    #unique_values = list(set(a + b + c + d))
+    #print(len(unique_values))
+    #print(unique_values)
+    
+    #comp = ['ATR2', 'RSI14X', 'SDLR310', 'ROC1', 'ATR5', 'SDKC9', 'TV31', 'RSI', 'O5', 'TV41', 'ATR21', 'STOK1']
+    
+    
+    # Span3 
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #s1 = ['RSI', 'HourOfDay', 'TV11', 'RSI14X', 'TV41', 'SDBB9', 'ROC14', 'ATR2', 'SDLR310', 'SDKC91', 'STOK1', 'SDBB91', 'TV31', 'ATR21', 'SDKC9', 'H1']
+    
+    
+    #Features Selected based on threshold of 50 percent
+    #Regressor Selected Features
+    #s2 = ['RSI', 'ATR2', 'STOK1', 'HourOfDay', 'ROC141', 'RSI14X', 'TV11', 'ROC14', 'TV31', 'ATR5', 'SDKC9', 'TV41', 'ROC', 'ROC1', 'SDBB9']
+    
+    #unique_values = list(set(s1 + s2))
+    #print(len(unique_values))
+    #print(unique_values)
+    
+    #span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
+    #         'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91']
+    
+    
+    #span3 min
+    #Features Selected based on threshold of 50 percent
+    #Regressor Selected Features
+    #s3m1 = ['RSI', 'STOK1', 'ATR5', 'ROC141', 'ROC', 'TV31']
+    
+    #Features Selected based on threshold of 50 percent
+    #Classifier Selected Features
+    #s3m2 = ['RSI', 'TV11', 'STOK1', 'TV41', 'RSI14X', 'ATR2']
+    
+    #unique_values = list(set(s3m1 + s3m2))
+    #print(len(unique_values))
+    #print(unique_values)
+    
+    
+    #10
+    s3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5']
