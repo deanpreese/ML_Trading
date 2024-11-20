@@ -51,10 +51,14 @@ def run_models(data, estimators, run_test_size, min_features, max_features, step
                         perf_data_t, output_text = model_processing.process_models(experiment_id, data, estimators, run_test_size, True, 'xxx', True, f)
                         perf_data.append(perf_data_t)
                 
-                p_df = pd.DataFrame(perf_data)    
-                p_df.columns = ["rid", "input_features", "e_perf", "features_list", "correctX", "correctY", 
-                                "correctP", "totalX", "cxp", "cyp", "cpp", "mse", "rmse", "r2", "mae"]
-                p_df.sort_values(by=['cpp'], ascending=False, inplace=True)
+                p_df = pd.DataFrame(perf_data)  
+        
+                p_df.columns = ["rid", "input_features", "e_perf", "features_list",  "ens_accuracy", "ens_precision", "ens_recall", "win_p", "loss_p", "tn_p", "tp_p", "fn_p", "fp_p" ]
+                p_df.sort_values(by=['win_p'], ascending=False, inplace=True)                
+                  
+                #p_df.columns = ["rid", "input_features", "e_perf", "features_list", "correctX", "correctY", 
+                #                "correctP", "totalX", "cxp", "cyp", "cpp", "mse", "rmse", "r2", "mae"]
+                #p_df.sort_values(by=['cpp'], ascending=False, inplace=True)
 
 
         markdown_content = f"### {len(estimators)} Models  --  Min Feat {min_features}  Max Feat {max_features}  Cycles {total_cycles} \n\n"                                
@@ -89,73 +93,6 @@ def run():
 
        
 
-        ens_385 = [
-                XGBClassifier(**mp.xgb_c_lucky13),
-                CatBoostClassifier(**mp.cat_c_lucky13),        
-                CatBoostClassifier(**mp.cat_c_set),        
-                CatBoostClassifier(**mp.cat_c_t),        
-                CatBoostRegressor(**mp.cat_r_lucky13),
-        ]
-
-
-        ens_387 = [
-                XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_lucky13),        
-                CatBoostClassifier(**mp.cat_c_set),        
-                CatBoostClassifier(**mp.cat_c_t),        
-                CatBoostRegressor(**mp.cat_r_set),
-        ]
-
-        ens_389 = [
-                XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                #XGBRFRegressor(**mp.xgbrf_set ),
-                #XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_lucky13),        
-                CatBoostClassifier(**mp.cat_c_set),        
-                CatBoostClassifier(**mp.cat_c_t),        
-                CatBoostRegressor(**mp.cat_r_set),
-        ]
-
-
-        ens_393 = [
-                XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                #XGBRFRegressor(**mp.xgbrf_set ),
-                #XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_L13EX),        
-                CatBoostClassifier(**mp.cat_c_set),        
-                CatBoostClassifier(**mp.cat_c_t),        
-                CatBoostRegressor(**mp.cat_r_L13EX),
-        ]
-
-
-        ens_xxx = [
-                XGBClassifier(**mp.xgb_c_lucky13),
-               
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #LGBMClassifier(**mp.lgb_c_t),
-                LGBMClassifier(**mp.lgb_c_set),
-                LGBMRegressor(**mp.lgb_r_L13EX), 
-                
-                CatBoostClassifier(**mp.cat_c_lucky13),        
-                #CatBoostClassifier(**mp.cat_c_set),        
-                #CatBoostClassifier(**mp.cat_c_t),        
-                CatBoostRegressor(**mp.cat_r_lucky13),
-                XGBRegressor(**mp.xgb_r_set ), 
-                XGBRFRegressor(**mp.xgbrf_r_L13EX ),
-                XGBRFClassifier(**mp.xgbrf_c_lucky13),
-        ]
-
-        ens_4 = [
-                LGBMRegressor(**mp.lgb_r_L13EX), 
-                LGBMRegressor(**mp.lgb_r_set), 
-                XGBRegressor(**mp.xgb_r_set),   
-                LGBMRegressor(**mp.lgb_r_t), 
-                XGBRegressor(**mp.xgb_r_t),  
-                XGBRFClassifier(**mp.xgbrf_c_L13EX),
-                XGBClassifier(**mp.xgb_c_set),
-                CatBoostClassifier(**mp.cat_c_set),
-                LGBMClassifier(**mp.lgb_c_t),
-        ] 
 
 
         # ==================
@@ -169,7 +106,7 @@ def run():
         for i in range(3):
 
                 df = pd.read_csv(datafile[1])
-                #df = df.drop(columns=['ATR5','ATR51', 'ATR52','SDKC91'])
+                df = df.drop(columns=['TimeTicks','SeqClose'])
 
                 #df = df[(df['RSI'] > 60)]  
                 #df = df[(df['RSI'] < 40)]  
@@ -180,12 +117,16 @@ def run():
                 #22 columns
                 f_plus = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21', 'ROC', 'output', 'outputC']
                 #df = df[f_plus]
-                
+
+                span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
+                     'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91', 'output', 'outputC']
+                df = df[span3]
+
                 
                 max_avail = df.shape[1] - 3
         
                 split_test_size_value = 0.7          
-                min_features_used = 5
+                min_features_used = 3
                 max_features_used = 9
                 step_features_used = 1
                 total_cycles_used = 20

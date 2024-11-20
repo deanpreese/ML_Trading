@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import mean_absolute_error,r2_score, root_mean_squared_error
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
 
 def calc_mse_rmse_mae( y_test, predicted_values):
     
@@ -95,7 +98,7 @@ def calc_ensemble_results(all_predictions, estimator_run_ids):
         
         for index, row in all_predictions.iterrows():
         
-            agg_predict = 0
+            class_scaled_predict = 0
             agg_weighted_predict = 0
         
             for id in estimator_run_ids:
@@ -110,74 +113,80 @@ def calc_ensemble_results(all_predictions, estimator_run_ids):
 
                 #untouched predict
                 raw_predict = row[id]
+                scaled_predict = 0
 
-                #Rescale for classifier
+                #Rescale Regressor to -1 to 1 to match the Classifier rescale
+                if "Regressor" in model_type:
+                    if raw_predict > 0:
+                        scaled_predict = 1
+                    if raw_predict < 0:
+                        scaled_predict = -1                        
+                    if raw_predict == 0:
+                        scaled_predict = 0
+
+                #Rescale for classifier to -1 to 1
                 if "Classifier" in model_type:
-                    raw_predict = (row[id] - 0.5) * 2
+                    scaled_predict = (raw_predict - 0.5) * 2
 
                 agg_weighted_predict += model_data_x_perf 
-                agg_predict += raw_predict
+                class_scaled_predict += scaled_predict
                 
-
-            target_output = row['target']
-            y_count_o, agg_rtn_o, agg_w_rtn_o, comp_rtn_o, agg_agree_o, comp_predict_o   = calc_ensemble(len(estimator_run_ids),  target_output, agg_predict, agg_weighted_predict )
+            target_val = row['target']
             
-            comp_predict = comp_predict_o
+            agg_class_pre = class_scaled_predict/len(estimator_run_ids)
+            agg_predict_w = agg_weighted_predict/len(estimator_run_ids)
+            comp_predict = ((0.5 * agg_class_pre) + (0.5 * agg_predict_w)  )
 
-            if y_count_o > 0:
-                y_count += y_count_o                
-                agg_agree += agg_agree_o
-                agg_rtn += agg_rtn_o
-                agg_w_rtn += agg_w_rtn_o
-                comp_rtn += comp_rtn_o
+            y_count += 1
             
-            y_target.append(target_output/len(all_predictions))
-            predictions.append(comp_predict/len(all_predictions))
+            if target_val > 0:
+                if agg_class_pre > 0 :  agg_rtn += 1
+                if agg_predict_w > 0: agg_w_rtn += 1
+                if comp_predict > 0: comp_rtn += 1
+                if agg_predict_w > 0  and agg_class_pre > 0:
+                    agg_agree += 1
+                
+            if target_val < 0:
+                if agg_class_pre < 0:  agg_rtn += 1
+                if agg_predict_w < 0: agg_w_rtn += 1
+                if comp_predict < 0: comp_rtn += 1
+                if agg_predict_w < 0  and agg_class_pre < 0:
+                    agg_agree += 1                                    
+                    
+            if target_val == 0:
+                if agg_class_pre == 0:  agg_rtn += 1
+                if agg_predict_w == 0: agg_w_rtn += 1
+                if comp_predict == 0: comp_rtn += 1
+                if agg_predict_w == 0  and agg_class_pre == 0:
+                    agg_agree += 1                  
+            
+            #y_target.append(target_output/len(all_predictions))
+            y_target.append(target_val)
+            predictions.append(agg_class_pre)
 
-        cxp = agg_rtn/y_count
-        cyp = agg_w_rtn/y_count
-        cpp = comp_rtn/y_count
+        #scaled_predictions = [1 if x > 0 else 0 for x in predictions]
+        scaled_predictions = np.where(np.array(predictions) > 0, 1, 0)
+        scaled_target = np.where(np.array(y_target) > 0, 1, 0)
         
-        return agg_rtn, agg_w_rtn, comp_rtn, y_count, cxp, cyp, cpp, predictions, y_target
-   
-   
-   
-def calc_ensemble(num_models, target_val, agg_pre,  agg_weighted ):
-    
-    agg_rtn = 0
-    agg_w_rtn = 0
-    comp_rtn = 0
-    agg_agree = 0
-    y_count = 0   
-    
-    agg_pre = agg_pre/num_models
-    agg_predict_w = agg_weighted/num_models
-    
-    comp_predict = ((0.46 * agg_pre) + (0.54 * agg_predict_w)  )
+        tn, fp, fn, tp = confusion_matrix(scaled_target, scaled_predictions).ravel()
+        #mse, rmse, mae =  calc_mse_rmse_mae( y_target, scaled_predictions)
+        #r2 = r2_score(y_target, predictions)
 
-    if target_val > 0:
-        y_count += 1
-        if agg_pre > 0 :  agg_rtn += 1
-        if agg_predict_w > 0: agg_w_rtn += 1
-        if comp_predict > 0: comp_rtn += 1
-        if agg_weighted > 0  and agg_pre > 0:
-            agg_agree += 1
+        accuracy = round(accuracy_score(scaled_target, scaled_predictions),4)
+        precision = round(precision_score(scaled_target, scaled_predictions),4)
+        recall = round(recall_score(scaled_target, scaled_predictions),4)
+
+        total = tn + fp + fn + tp 
+        win_p = round((tn + tp)/total,4)
+        loss_p = round((fp + fn)/total,4)
         
-    if target_val < 0:
-        y_count += 1
-        if agg_pre < 0:  agg_rtn += 1
-        if agg_predict_w < 0: agg_w_rtn += 1
-        if comp_predict < 0: comp_rtn += 1
-        if agg_weighted < 0  and agg_pre < 0:
-            agg_agree += 1                                    
-            
-    if target_val == 0:
-        y_count += 1
-        if agg_pre == 0:  agg_rtn += 1
-        if agg_predict_w == 0: agg_w_rtn += 1
-        if comp_predict == 0: comp_rtn += 1
-        if agg_weighted == 0  and agg_pre == 0:
-            agg_agree += 1                                    
-            
+        tn_p = round(tn/total,4)
+        tp_p = round(tp/total,4)
+        fn_p = round(fn/total,4)
+        fp_p = round(fp/total,4)
+        
+        #print(f" {win_p }  {loss_p}  {tn_p} {fp_p} {fn_p}  {tp_p}")
 
-    return y_count, agg_rtn, agg_w_rtn, comp_rtn, agg_agree, comp_predict            
+        return  accuracy, precision, recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p, predictions, scaled_predictions, y_target
+   
+      

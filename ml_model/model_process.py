@@ -100,14 +100,9 @@ def process_models(exp_name, data, models, run_test_size, save_to_mlflow, feat_d
         
         print(f" ")
         print(f"Running Ensemble Calculations")
-        correctX, correctY, correctP, totalX, cxp, cyp, cpp, predictions, cr_y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
+        ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p, predictions, scaled_predictions, y_target = calc_ensemble_results(all_predict_data, estimator_run_ids)
 
-        mse, rmse, mae = calc_mse_rmse_mae(cr_y_target, predictions)
-        r2 =r2_score(cr_y_target, predictions)
-
-        perf_data_t = [run_uuid, 0, e_perf.values.tolist(), features_list, 
-                       correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae]
-        
+        perf_data_t = [run_uuid, 0, e_perf.values.tolist(), features_list, ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p ]
         return perf_data_t, output_text    
 
 
@@ -265,31 +260,24 @@ def save_reg_ens_data(ens_perf_df, exp_description=""):
     tags={'mlflow.note.content':exp_description}
     experiment_id = mlflow.create_experiment(exp_name, tags=tags)
     new_exp_name = f"mixer_output_{experiment_id}"
+
+        
     mlflow.MlflowClient().rename_experiment(experiment_id, new_exp_name)
 
-    for run_uuid, input_features, e_perf, features_list, correctX, correctY, correctP, totalX, cxp, cyp, cpp, mse, rmse, r2, mae in ens_perf_df.values.tolist() :
+    for run_uuid, input_features, e_perf, features_list, ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p  in ens_perf_df.values.tolist(): 
     
         with mlflow.start_run(experiment_id = experiment_id, nested=False): 
                         
             #mlflow.log_param('FeatureCount', input_features)
             mlflow.log_param('run_uuid', run_uuid)
             #mlflow.log_metric('FeatureCount', input_features, step)
-            #mlflow.log_metric('correctX', correctX, step)
-            #mlflow.log_metric('correctP', correctP, step)
-            #mlflow.log_metric('correctY', correctY, step)
-            mlflow.log_metric('totalX', totalX, step)
-            mlflow.log_metric('cxp', cxp, step)
-            mlflow.log_metric("cyp", cyp, step)
-            mlflow.log_metric("cpp", cpp, step)
-
-            mlflow.log_metric('MSE', mse, step)
-            mlflow.log_metric('RMSE', rmse, step)
-            mlflow.log_metric('R2', r2, step)
-            mlflow.log_metric('Score', r2, step)
-            mlflow.log_metric("MAE", mae, step)
-            mlflow.log_metric("Perf", cpp, step)
-            mlflow.log_metric("Total", totalX, step)
-                            
+            mlflow.log_metric('Accuracy', ens_accuracy)
+            mlflow.log_metric('Precision', ens_precision)
+            mlflow.log_metric('Recall', ens_recall)
+            mlflow.log_metric('TrueNegPct', tn_p)
+            mlflow.log_metric("TruePosPct", tp_p)                            
+            mlflow.log_metric("FalsePosPct", fp_p)
+            mlflow.log_metric("FalseNegPct", fn_p)
             
             mlflow.log_table(data=pd.DataFrame(e_perf), artifact_file="all_perf_data.json")        
             step += 1 

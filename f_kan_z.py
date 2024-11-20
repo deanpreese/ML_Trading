@@ -187,8 +187,10 @@ class F_KAN_Z:
 
         #s_ave_output = Average()([x1,x2,x3])
         #s_ave_output = Average()([xa, xs, xt, x_leaky])
-        s_ave_output = Average()([xa, xs, xt, xa])
-        ave_output = Average()([model_a, model_b, s_ave_output])
+        s_ave_output = Average()([xa, xs, xt])
+        ave_output = s_ave_output
+        
+        #ave_output = Average()([model_a, model_b, s_ave_output])
         
 
         output = Dense(1, activation='linear')(ave_output)
@@ -222,7 +224,7 @@ class F_KAN_Z:
             )
         
         history_out = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
-            initial_epoch=0, epochs=1000, verbose=1, batch_size=64, 
+            initial_epoch=0, epochs=10, verbose=1, batch_size=64, 
             callbacks=[early_stopping, reduce_lr, model_checkpoint]
             )      
         
@@ -305,19 +307,21 @@ def main():
 
             print(f"Loading {file_path}" )
             data = pd.read_csv(file_path)
+            df = data.drop(columns=['TimeTicks','SeqClose'])
+            
+            #span_x =['ROC1','ROC141','ROC','ROC14','RSI','RSI14X','STOK1','STOK714Y','TV11','TV21','TV31','TV41','output','outputC']                
+            #df = data[span_x]
                 
             #Lucky13  ALL Cols
             f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
             span3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5','output','outputC']                
-            df = data[span3_min]
+            #df = data[span3_min]
             
-            #df = df[(df['RSI'] > 60) & (df['RSI'] < 80)]  #  81%
-            #df = df[(df['RSI'] > 60) & (df['RSI'] < 75)]   # 878%
-            
-            #df = df[(df['RSI'] > 20) & (df['RSI'] < 40)]  # 84%
-            #df = df[(df['RSI'] > 25) & (df['RSI'] < 40)]  # 91%
-            #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSIseq'] < 80)]  
+            #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+            #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+            #df = df[(df['RSI'] > 60)]  
+            #df = df[(df['RSI'] < 40)]  
             
             X = df.drop(columns=['output', 'outputC']).values
             y = df['output'].values
@@ -356,9 +360,21 @@ def main():
     if run_oos:
         file_path = datafile[file_oos]
         df = pd.read_csv(file_path)
+        df = df.drop(columns=['TimeTicks','SeqClose'])
+        
+            
+        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+        df = df[(df['RSI'] > 60)]  
+        #df = df[(df['RSI'] < 40)]  
+                
+        
+        span_x =['ROC1','ROC141','ROC','ROC14','RSI','RSI14X','STOK1','STOK714Y','TV11','TV21','TV31','TV41','output','outputC']                
+        df = data[span_x]
         
         span3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5','output','outputC']                
-        df = data[span3_min]
+        #df = data[span3_min]
+        
         
         X = df.drop(columns=['output','outputC']).values
         y = df['output'].values 
