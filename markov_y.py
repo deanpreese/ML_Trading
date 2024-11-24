@@ -10,9 +10,7 @@ from datetime import datetime
 warnings.filterwarnings('ignore')
 
 def download_and_prepare_data(ticker, start_date, end_date):
-    """
-    Download historical price data for a given ticker.
-    """
+
     raw_data = yf.download(ticker, start=start_date, end=end_date)
     data = raw_data
     
@@ -71,13 +69,12 @@ def analyze_results(result, k_regimes):
         how='left'
     )
 
-
 def combined_plot(data, returns, result, k_regimes, start_date=None, end_date=None, num_values=None):
     """
     Create a combined plot with:
     1. Smoothed probabilities
     2. Daily log returns by regime
-    3. Adjusted close price with regime overlay
+    3. Adjusted close price with regime overlay and transition points
     Optionally, limit the plot to a given number of values.
     """
     print("Creating combined plot...")
@@ -86,13 +83,16 @@ def combined_plot(data, returns, result, k_regimes, start_date=None, end_date=No
     smoothed_probs = result.smoothed_marginal_probabilities
     smoothed_probs.columns = [f'Regime {i}' for i in range(k_regimes)]
     most_probable_regimes = smoothed_probs.idxmax(axis=1)
-    
+    regime_changes = most_probable_regimes != most_probable_regimes.shift(1)
+    transition_points = most_probable_regimes[regime_changes]
+
     if start_date:
         start_date = pd.to_datetime(start_date)
         smoothed_probs = smoothed_probs[smoothed_probs.index >= start_date]
         most_probable_regimes = most_probable_regimes[most_probable_regimes.index >= start_date]
         returns = returns[returns.index >= start_date]
         data = data[data.index >= start_date]
+        transition_points = transition_points[transition_points.index >= start_date]
     
     if end_date:
         end_date = pd.to_datetime(end_date)
@@ -100,18 +100,22 @@ def combined_plot(data, returns, result, k_regimes, start_date=None, end_date=No
         most_probable_regimes = most_probable_regimes[most_probable_regimes.index <= end_date]
         returns = returns[returns.index <= end_date]
         data = data[data.index <= end_date]
+        transition_points = transition_points[transition_points.index <= end_date]
 
     if num_values:
         smoothed_probs = smoothed_probs.tail(num_values)
         most_probable_regimes = most_probable_regimes.tail(num_values)
         returns = returns.tail(num_values)
         data = data.tail(num_values)
+        transition_points = transition_points.tail(num_values)
     
     price_data = data['Adj Close'].reindex(most_probable_regimes.index)
     regime_colors = {f'Regime {i}': plt.cm.tab10(i) for i in range(k_regimes)}
 
     # Create subplots for the plot
-    fig, axes = plt.subplots(3, 1, figsize=(16, 8), sharex=True)
+    #fig, axes = plt.subplots((3,1),figsize=(16, 4), sharex=True)
+    
+    """
     
     # Plot 1: Smoothed Probabilities
     for column in smoothed_probs.columns:
@@ -132,12 +136,17 @@ def combined_plot(data, returns, result, k_regimes, start_date=None, end_date=No
     axes[1].set_title("Daily Log Returns by Most Probable Regime")
     axes[1].set_ylabel("Log Return")
     axes[1].legend()
+    """
 
-    # Plot 3: Adjusted Close Price with Regime Overlay
-    axes[2].plot(price_data, label="Adjusted Close Price", color='black', linewidth=1.5)
+    fig, ax = plt.subplots(figsize=(16, 4))
+
+    # Plot 3: Adjusted Close Price with Regime Overlay and Transition Points
+    ax.plot(price_data, label="Adjusted Close Price", color='black', linewidth=1.5)
+    
+    """
     for regime, color in regime_colors.items():
         regime_mask = most_probable_regimes == regime
-        axes[2].fill_between(
+        ax.fill_between(
             price_data.index,
             price_data.min(),
             price_data.max(),
@@ -146,16 +155,22 @@ def combined_plot(data, returns, result, k_regimes, start_date=None, end_date=No
             alpha=0.2,
             label=regime
         )
-    axes[2].set_title("Adjusted Close Price with Regime Overlay")
-    axes[2].set_ylabel("Adjusted Close Price")
-    axes[2].legend()
+    """
+    # Add transition points
+    for idx in transition_points.index:
+        ax.axvline(x=idx, color='red', linestyle='--', alpha=0.8 )
+
+    ax.set_title("Adjusted Close Price with Regime Overlay and Transition Points")
+    ax.set_ylabel("Adjusted Close Price")
+    ax.legend()
 
     # Set common x-label
-    axes[-1].set_xlabel("Date")
+    ax.set_xlabel("Date")
     
     # Adjust layout
     plt.tight_layout()
     plt.show()
+
 
 
 
@@ -212,14 +227,11 @@ if __name__ == "__main__":
 
     returns, data = download_and_prepare_data(tcker, start_date, end_date)
     result = fit_markov_model(returns, em_iter, search_reps, k_regimes=k_regimes, order=1)
-    regime_params = analyze_results(result, k_regimes)
-    print("\nRegime Parameters:\n")
-    print(regime_params)
-
-    transition_matrix = display_transition_matrix(result, k_regimes)
-
-    # Step 5: Combined Plot
-    # data, returns, result, k_regimes, start_date=None, end_date=None, num_values=None):
+    
+    #regime_params = analyze_results(result, k_regimes)
+    #print("\nRegime Parameters:\n")
+    #print(regime_params)
+    #transition_matrix = display_transition_matrix(result, k_regimes)
 
     combined_plot(data, returns, result, k_regimes, 
-                  start_date=plot_start_date, end_date=end_date,num_values=100)
+                  start_date=plot_start_date, end_date=end_date,num_values=700)

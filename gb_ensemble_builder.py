@@ -159,14 +159,14 @@ def run():
                 #LGBMRegressor(), 
                 #CatBoostRegressor(),
                 #XGBRegressor(),   
-                LGBMClassifier(),
+                #LGBMClassifier(),
                 #XGBClassifier(),
                 CatBoostClassifier(),
 
                 #LGBMRegressor(**mp.lgb_r_lucky13), 
                 #CatBoostRegressor(**mp.cat_r_lucky13),
                 #XGBRegressor(**mp.xgb_r_lucky13),   
-                LGBMClassifier(**mp.lgb_c_lucky13),
+                #LGBMClassifier(**mp.lgb_c_lucky13),
                 #XGBClassifier(**mp.xgb_c_lucky13),
                 CatBoostClassifier(**mp.cat_c_lucky13),
                 
@@ -180,7 +180,7 @@ def run():
                 #LGBMRegressor(**mp.lgb_r_set), 
                 #CatBoostRegressor(**mp.cat_r_set),
                 #XGBRegressor(**mp.xgb_r_set),   
-                LGBMClassifier(**mp.lgb_c_set),
+                #LGBMClassifier(**mp.lgb_c_set),
                 XGBClassifier(**mp.xgb_c_set),
                 CatBoostClassifier(**mp.cat_c_set),
 
@@ -189,12 +189,12 @@ def run():
                 #XGBRegressor(**mp.xgb_r_t),   
                 #LGBMClassifier(**mp.lgb_c_t),
                 XGBClassifier(**mp.xgb_c_t),
-                CatBoostClassifier(**mp.cat_c_t),
+                #CatBoostClassifier(**mp.cat_c_t),
                 
                 #LGBMRegressor(**mp.lgb_r_New3070), 
                 #CatBoostRegressor(**mp.cat_r_New3070),
                 #XGBRegressor(**mp.xgb_r_New3070), 
-                LGBMClassifier(**mp.lgb_c_New3070),
+                #LGBMClassifier(**mp.lgb_c_New3070),
                 #XGBClassifier(**mp.xgb_c_New3070),
                 CatBoostClassifier(**mp.cat_c_New3070)
         ]
@@ -206,13 +206,11 @@ def run():
                 'data/NewModel_3070.csv',  #1
                 'data/NewModel_ALL_oos.csv',   
                 'data/NewModel_ALL.csv',  #3
-                'data/NewModel_span3_3070_oos.csv',   
-                'data/NewModel_span3_3070.csv',  #5
                 
         ]   
 
 
-        df = pd.read_csv(datafile[5])
+        df = pd.read_csv(datafile[1])
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
         #df = df[(df['RSI'] > 60)]  
@@ -220,35 +218,25 @@ def run():
         
 
         feat_data = 'xxx'
+                
         
-        lucky_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1']
-        #feat_data = lucky_13
-        f_13x =['RSI','STOK1','SDLR310', 'ATR2', 'SDBB91','ATR5', 'ATR21']       
-        #feat_data = f_13x
-        
-        comp_new = ['L1', 'RSI', 'O5', 'ROC', 'ROC14', 'ATR5', 'ATR21', 'TV41', 'RSI14X', 'TV31', 'ATR2', 
-                'H2', 'ATR14Y1', 'L5', 'L2', 'STOK1', 'ROC1', 'SDBB91', 'ATR14Y', 'ROC141', 'SDKC9', 'SDLR310']
-        #feat_data = comp
-                
-        comp_new_min = ['ATR2', 'RSI14X', 'SDLR310', 'ROC1', 'ATR5', 'SDKC9', 'TV31', 'RSI', 'O5', 'TV41', 'ATR21', 'STOK1']
-        #feat_data = comp_new_min
-                
-        span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
-             'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91']
-        #feat_data = span3                
-                
-        span3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5']                
-        #feat_data = span3_min                
-                
-        span_x =['ROC1','ROC141','ROC','ROC14','RSI','RSI14X','STOK1','STOK714Y','TV11','TV21','TV31','TV41']                
-        feat_data = span_x
+        f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
+                'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ]   
+        f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3']
+        f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X']
+                        
+        f_list_uni = [
+                'RSI9', 'RSI14', 'COMP2', 'COMP1', 'COMP0', 'TV5', 'TV6', 
+                'RSI91', 'ROC9', 'COMP3', 'STOK5133', 'ROC7', 'STOK714Y', 
+                'ROC14', 'RSI141', 'TV2', 'TV3', 'ROC141', 'ROC91', 'TV1']   
+                        
+                        
+        #feat_data = f_list_f               
                 
         split_test_size_value = 0.7          
         save_mlflow = False
         
-        p_df, experiment_id_parent = run_models(df, ens_cc, split_test_size_value, save_mlflow, feat_data)
-        
-        #p_df.columns = ["rid", "input_features", "e_perf", "features_list", "win_p", "loss_p", "tn_p", "tp_p", "fn_p", "fp_p" ]
+        p_df, experiment_id_parent = run_models(df, ens_m, split_test_size_value, save_mlflow, feat_data)
         
         print("")
         for run_uuid, input_features, e_perf, features_list, ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p  in p_df.values.tolist(): 

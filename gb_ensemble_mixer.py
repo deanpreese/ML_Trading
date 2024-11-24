@@ -92,7 +92,49 @@ def run():
         ]
 
        
+        ens_cc =[
+                #LGBMRegressor(), 
+                #CatBoostRegressor(),
+                #XGBRegressor(),   
+                #LGBMClassifier(),
+                #XGBClassifier(),
+                CatBoostClassifier(),
 
+                #LGBMRegressor(**mp.lgb_r_lucky13), 
+                #CatBoostRegressor(**mp.cat_r_lucky13),
+                #XGBRegressor(**mp.xgb_r_lucky13),   
+                #LGBMClassifier(**mp.lgb_c_lucky13),
+                #XGBClassifier(**mp.xgb_c_lucky13),
+                CatBoostClassifier(**mp.cat_c_lucky13),
+                
+                #LGBMRegressor(**mp.lgb_r_L13EX), 
+                #CatBoostRegressor(**mp.cat_r_L13EX),
+                #XGBRegressor(**mp.xgb_r_L13EX),   
+                #LGBMClassifier(**mp.lgb_c_L13EX),
+                #XGBClassifier(**mp.xgb_c_L13EX),
+                #CatBoostClassifier(**mp.cat_c_L13EX),
+                
+                #LGBMRegressor(**mp.lgb_r_set), 
+                #CatBoostRegressor(**mp.cat_r_set),
+                #XGBRegressor(**mp.xgb_r_set),   
+                #LGBMClassifier(**mp.lgb_c_set),
+                XGBClassifier(**mp.xgb_c_set),
+                CatBoostClassifier(**mp.cat_c_set),
+
+                #LGBMRegressor(**mp.lgb_r_t), 
+                #CatBoostRegressor(**mp.cat_r_t),
+                #XGBRegressor(**mp.xgb_r_t),   
+                #LGBMClassifier(**mp.lgb_c_t),
+                XGBClassifier(**mp.xgb_c_t),
+                #CatBoostClassifier(**mp.cat_c_t),
+                
+                #LGBMRegressor(**mp.lgb_r_New3070), 
+                #CatBoostRegressor(**mp.cat_r_New3070),
+                #XGBRegressor(**mp.xgb_r_New3070), 
+                #LGBMClassifier(**mp.lgb_c_New3070),
+                #XGBClassifier(**mp.xgb_c_New3070),
+                CatBoostClassifier(**mp.cat_c_New3070)
+        ]
 
 
         # ==================
@@ -114,24 +156,27 @@ def run():
                 #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))] 
                 #df = df[( df['RSI'] > 60) & (df['RSI'] < 75 )] 
                 
-                #22 columns
-                f_plus = ['RSI', 'RSI14', 'ATR2', 'SDBB91', 'STOK1', 'COMP2', 'RSI3', 'SDLR310', 'TV23', 'TV11', 'TV41', 'RSI7', 'STOK7143', 'TV21', 'TV13', 'TV22', 'TV43', 'TV42', 'ATR21', 'ROC', 'output', 'outputC']
-                #df = df[f_plus]
-
-                span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
-                     'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91', 'output', 'outputC']
-                df = df[span3]
-
+                #16 cols        
+                f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
+                            'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ,'output','outputC']   
+                
+                #10 cols
+                f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3', 'output','outputC']
+                
+                #10 cols
+                f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X', 'output','outputC']
+                
+                df=df[f_list_f]
                 
                 max_avail = df.shape[1] - 3
         
                 split_test_size_value = 0.7          
                 min_features_used = 3
-                max_features_used = 9
+                max_features_used = 15
                 step_features_used = 1
                 total_cycles_used = 20
 
-                p_df, experiment_id_parent = run_models(df, ens_389, 
+                p_df, experiment_id_parent = run_models(df, ens_cc, 
                                                         split_test_size_value, min_features_used, max_features_used, 
                                                         step_features_used, total_cycles_used  )
 

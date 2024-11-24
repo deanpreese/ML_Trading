@@ -23,7 +23,6 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 from ml_model.data_func import split_three_ways
 
-
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -95,6 +94,31 @@ class F_KAN_Z:
                      
         return x
 
+    def create_feature_model_c1(self, inputs, output_dim):
+        
+        inx = LSTM(32, return_sequences=True, activation='relu')(inputs)
+        #inx = Dropout(self.drop_out)(inx)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
+       # x = Dropout(self.drop_out)(x)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        #x = Dropout(self.drop_out)(x)
+        x = MaxPooling1D(pool_size=1, strides=1)(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        #x = Dropout(self.drop_out)(x)
+        c1_out = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg, name="c1_out", kernel_initializer=self.initializer)(x) 
+        
+        return c1_out
+
+
+    def create_feature_model_c2(self, inputs, output_dim):
+        
+        x = LSTM(32, return_sequences=True, activation='relu')(inputs)
+        x = Dense(64, activation='relu')(x)
+        x = Dense(32, activation='relu')(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        c2_out = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg, name="c2_out", kernel_initializer=self.initializer)(x) 
+
+        return c2_out    
 
     def create_feature_model_a(self, input_shape):
         
@@ -103,7 +127,6 @@ class F_KAN_Z:
         reshaped_inputs = Reshape((input_dim, 1))(input)
         inx = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
         x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
         x = LSTM(32, return_sequences=False, activation='relu')(x)
         smx_out = Dense(1, activation='linear')(x) 
         subx_model = Model(input, smx_out)
@@ -141,11 +164,14 @@ class F_KAN_Z:
         feature_outputs1 = []
         feature_outputs2 = []
         
-        concat_dims = 64
+        att_dim = 64
+        concat_dims = 32
         output_dim = 16
         
         model_a = self.create_feature_model_h(inputs, output_dim)
         model_b = self.create_feature_model_x(inputs, output_dim)
+        model_c1 = self.create_feature_model_c1(inputs, output_dim)
+        model_c2 = self.create_feature_model_c2(inputs, output_dim)
         
         for i in range(input_shape[0]):
             feature_input = inputs[:, i:i+1]
@@ -168,37 +194,41 @@ class F_KAN_Z:
         concatenated_outputs1 = Concatenate(axis=1)(feature_outputs1)
         concatenated_outputs2 = Concatenate(axis=1)(feature_outputs2)
         
-        xa = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs)
-        xa = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xa)
-        xs = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs1)
-        xs = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xs)
-        xt = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs2)
-        xt = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xt)
+        xa_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs)
+        xs_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs1)
+        xt_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs2)
+        
+        xa = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xa_out)
+        xs = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xs_out)
+        xt = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xt_out)
 
         xa1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xa')(xa)
         x1 = Multiply()([xa1, xa])
-
         xs1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xs')(xs)
         x2 = Multiply()([xs1, xs])
-        
         xt1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xt')(xt)
         x3 = Multiply()([xt1, xt])
 
+        xc_ta = Multiply()([xt1, xa])
+        xc_sa = Multiply()([xs1, xa])
+        xc_ts = Multiply()([xt1, xs1])
 
-        #s_ave_output = Average()([x1,x2,x3])
-        #s_ave_output = Average()([xa, xs, xt, x_leaky])
-        s_ave_output = Average()([xa, xs, xt])
-        ave_output = s_ave_output
+        #s_ave_output = Average()([xa, xs, xt, x1,x2,x3])
+        #s_ave_output = Average()([xa, xs, xt, x1,x2,x3])
+        s_ave_output = Average(name='final_average')([xa, xs, xt, x1,x2,x3, xc_ta, xc_sa, xc_ts])
+        x = s_ave_output
         
         #ave_output = Average()([model_a, model_b, s_ave_output])
+        #ave_output = Average()([model_a, model_b, model_c1, model_c2, s_ave_output])
+        #xa = Average()([model_a, model_b, model_c1, model_c2, ave_output])
         
-
-        output = Dense(1, activation='linear')(ave_output)
+        output = Dense(1, activation='linear')(x)
+        
         self.model = Model(inputs=inputs, outputs=output)
         return self.model
     
 
-    def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val ):
+    def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val, epocs ):
         
         self.create_model(input_shape )
 
@@ -224,7 +254,7 @@ class F_KAN_Z:
             )
         
         history_out = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
-            initial_epoch=0, epochs=10, verbose=1, batch_size=64, 
+            initial_epoch=0, epochs=epocs, verbose=1, batch_size=64, 
             callbacks=[early_stopping, reduce_lr, model_checkpoint]
             )      
         
@@ -276,6 +306,9 @@ def combined_plots(history, y_true, y_pred):
 
 
 def main():
+        
+    np.random.seed(42)
+    tf.random.set_seed(42)
     
     datafile = [ 
             'data/NewModel_3070_oos.csv',   
@@ -290,105 +323,93 @@ def main():
     file_train = 1
     file_oos = 0
 
-
-    train = True
-    run_oos = True
-    sc_temp = None
     best_model_path = ""
 
-    if train:
+    #Lucky13  ALL Cols
+    f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
 
-        for i in range(1):
+    f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
+        'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ,'output','outputC']   
 
-            np.random.seed(42)
-            tf.random.set_seed(42)
+    f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3', 'output','outputC']
+    f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X', 'output','outputC']
 
-            file_path = datafile[file_train]
+    f_list_uni = [
+                'RSI9', 'RSI14', 'COMP2', 'COMP1', 'COMP0', 'TV5', 'TV6', 
+                'RSI91', 'ROC9', 'COMP3', 'STOK5133', 'ROC7', 'STOK714Y', 
+                'ROC14', 'RSI141', 'TV2', 'TV3', 'ROC141', 'ROC91', 'TV1', 
+                'output','outputC']   
 
-            print(f"Loading {file_path}" )
-            data = pd.read_csv(file_path)
-            df = data.drop(columns=['TimeTicks','SeqClose'])
-            
-            #span_x =['ROC1','ROC141','ROC','ROC14','RSI','RSI14X','STOK1','STOK714Y','TV11','TV21','TV31','TV41','output','outputC']                
-            #df = data[span_x]
-                
-            #Lucky13  ALL Cols
-            f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+    col_filter = f_list_uni
 
-            span3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5','output','outputC']                
-            #df = data[span3_min]
-            
-            #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-            #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-            #df = df[(df['RSI'] > 60)]  
-            #df = df[(df['RSI'] < 40)]  
-            
-            X = df.drop(columns=['output', 'outputC']).values
-            y = df['output'].values
 
-            X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
+    file_path = datafile[file_train]
+    print(f"Loading {file_path}" )
+    data = pd.read_csv(file_path)
+    df = data.drop(columns=['TimeTicks','SeqClose'])
 
-            input_shape = (X_train.shape[1], 1)
-            #(14, 1)
+    df=df[col_filter]
+    
+    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+    #df = df[(df['RSI9'] > 60)]  
+    #df = df[(df['RSI'] < 40)]  
+    
+    X = df.drop(columns=['output', 'outputC']).values
+    y = df['output'].values
 
-            c_kan = F_KAN_Z()
-            history_out, y_pred = c_kan.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val )
+    X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
+    input_shape = (X_train.shape[1], 1)
+    #(14, 1)
 
-            # Load best model and evaluate
-            best_model = tf.keras.models.load_model(c_kan.checkpoint_model)
-            y_pred = best_model.predict(X_test)
-            rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
-            
-            model_file = f"f_kan_z_{mse}_{mae}_{r2}_model.keras"
-            file_path = os.path.join(c_kan.checkpoint_dir, model_file)
-            best_model.save(file_path)
-            
-            best_model_path = file_path
-            
-            plot_file = f"f_kan_z_{mse}_{mae}_{r2}_model.png"
-            plot_path = os.path.join(c_kan.checkpoint_dir, plot_file)
-            tf.keras.utils.plot_model(best_model, to_file=plot_path, 
-                show_shapes=True, 
-                show_dtype=True,
-                show_layer_names=True,
-                expand_nested=True,
-                show_layer_activations=True,
-                show_trainable=True
-            )   
+    c_kan = F_KAN_Z()
+    history_out, y_pred = c_kan.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
 
+    # Load best model and evaluate
+    best_model = tf.keras.models.load_model(c_kan.checkpoint_model)
+    y_pred = best_model.predict(X_test)
+    rmse, mse, mae, r2 = evaluate_model( y_test, y_pred)
+    
+    model_file = f"f_kan_z_{mse}_{mae}_{r2}_model.keras"
+    file_path = os.path.join(c_kan.checkpoint_dir, model_file)
+    best_model.save(file_path)
+    
+    best_model_path = file_path
+    
+    plot_file = f"f_kan_z_{mse}_{mae}_{r2}_model.png"
+    plot_path = os.path.join(c_kan.checkpoint_dir, plot_file)
+    tf.keras.utils.plot_model(best_model, to_file=plot_path, 
+        show_shapes=True, 
+        show_dtype=True,
+        show_layer_names=True,
+        expand_nested=True,
+        show_layer_activations=True,
+        show_trainable=True
+    )   
+    
+    file_path = datafile[file_oos]
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=['TimeTicks','SeqClose'])
         
-    if run_oos:
-        file_path = datafile[file_oos]
-        df = pd.read_csv(file_path)
-        df = df.drop(columns=['TimeTicks','SeqClose'])
+    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+    #df = df[(df['RSI'] > 60)]  
+    #df = df[(df['RSI'] < 40)]  
+    
+    
+    df = data[col_filter]
+    
+    X = df.drop(columns=['output','outputC']).values
+    y = df['output'].values 
         
+    oos_model = tf.keras.models.load_model(best_model_path)
+    #X_test = sc_temp.fit(X)
+    X_test = X
+    y_test = y
+    
+    y_pred = oos_model.predict(X_test)
+    evaluate_model( y_test, y_pred)
             
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-        #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-        df = df[(df['RSI'] > 60)]  
-        #df = df[(df['RSI'] < 40)]  
-                
-        
-        span_x =['ROC1','ROC141','ROC','ROC14','RSI','RSI14X','STOK1','STOK714Y','TV11','TV21','TV31','TV41','output','outputC']                
-        df = data[span_x]
-        
-        span3_min = ['ROC', 'TV31', 'ATR2', 'TV11', 'ROC141', 'RSI14X', 'TV41', 'RSI', 'STOK1', 'ATR5','output','outputC']                
-        #df = data[span3_min]
-        
-        
-        X = df.drop(columns=['output','outputC']).values
-        y = df['output'].values 
-            
-        oos_model = tf.keras.models.load_model(best_model_path)
-        #X_test = sc_temp.fit(X)
-        X_test = X
-        y_test = y
-        
-        y_pred = oos_model.predict(X_test)
-        evaluate_model( y_test, y_pred)
-            
-
-
 if __name__ == "__main__":
     main()
     
