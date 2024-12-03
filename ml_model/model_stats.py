@@ -2,7 +2,7 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.metrics import mean_absolute_error,r2_score, root_mean_squared_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 

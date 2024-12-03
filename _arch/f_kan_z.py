@@ -164,8 +164,8 @@ class F_KAN_Z:
         feature_outputs1 = []
         feature_outputs2 = []
         
-        att_dim = 64
-        concat_dims = 32
+        #concat_dims = 32
+        concat_dims = input_shape[0]
         output_dim = 16
         
         model_a = self.create_feature_model_h(inputs, output_dim)

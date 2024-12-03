@@ -47,6 +47,18 @@ def full_split_and_scale(pd_data, col_offset, size_test, random_state, output_co
     
     return X_train, X_test, y_train, y_test, input_features
 
+def create_sequences_XY(X, Y, time_steps=1, step_size=1):
+    X_sequences = []
+    Y_sequences = []
+
+    for i in range(0, len(X) - time_steps, step_size):
+        X_seq = X[i:(i + time_steps)]
+        Y_seq = Y[i + time_steps]
+        X_sequences.append(X_seq)
+        Y_sequences.append(Y_seq)
+
+    return np.array(X_sequences), np.array(Y_sequences)
+
 
 def create_sequences(df, seq_length):
     print("Create Sequences")
@@ -108,35 +120,23 @@ def sequence_and_split(file_path, timesteps):
     feature_dims = len(X.columns)
     
     X, y = create_sequences(df, timesteps)
-    X, scalers = scale_sequences(X)
+    #X, scalers = scale_sequences(X)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     
     return feature_dims, X_train, X_test, y_train, y_test
 
 
-def sequence_and_split3D(file_path, timesteps):
+def sequence_and_split_3_ways(df, time_steps):
     
-    df = pd.read_csv(file_path)
     df = df.drop(columns=['outputC'])
     X = df.drop(columns=['output'])
     feature_dims = len(X.columns)
+    y = df['output']
     
-    X, y = create_sequences(df, timesteps)
-    
-    X, scalers = scale_sequences(X)
-    #X, scalers = normalize_sequences(X)
-    """
-    The reshaped data has the shape (number of samples, number of time steps, number of features, 1)
-    , where:
-    X_train.shape[0] is the number of samples in the training set.
-    X_train.shape[1] is the number of time steps (sequence length).
-    X_train.shape[2] is the number of features per time step.
-    1 is the single channel dimension.
-    """
-    
-    X = X.reshape((X.shape[0], timesteps, feature_dims, 1))
+    X, y, = create_sequences_XY(X, y, time_steps=time_steps, step_size=1)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    
-    return feature_dims, X_train, X_test, y_train, y_test
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+    return feature_dims, X_train, X_val, X_test, y_train, y_val, y_test
+

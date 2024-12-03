@@ -29,7 +29,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class KA_CNN:
+class MODEL_KA_CNN:
     def __init__(self, epochs=50, batch_size=32):
         
         self.epochs = epochs
@@ -60,20 +60,20 @@ class KA_CNN:
         input_dim = inputs.shape[1]               
         hidden_units = 16 
         output_units = 16               
-        reshaped_inputs = Reshape((input_dim, 1))(inputs)
+        #reshaped_inputs = Reshape((input_dim, 1))(inputs)
         
+        reshaped_inputs = inputs
+                
         univariate_outputs = []
         for i in range(input_dim):
             
             x = Reshape((1, -1))(reshaped_inputs[:, i, :])
             inx = LSTM(32, return_sequences=True, activation='relu')(x)
-            
             #set x
             x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
             x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
             x = LSTM(32, return_sequences=True, activation='relu')(x)
             x = MaxPooling1D(pool_size=1, strides=1)(x)
-            
             #set y
             y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
             y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
@@ -120,7 +120,7 @@ class KA_CNN:
 
         
     
-    def train_model(self, file_path, model_type):
+    def train_model(self, file_path, model_type, epochs):
     
         y_pred = None
         df = pd.read_csv(file_path)
@@ -177,15 +177,6 @@ class KA_CNN:
 
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
         
-        """
-        Val MSE: 9.6242, Val MAE: 1.7241, R2: 0.4424378036541311
-        Total Wins: 5658, Total Losses: 1793, Win Percentage: 0.7594
-        Number of Samples: 7451
-        
-        
-        """
-        
-        
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
             self.checkpoint_model, 
                 monitor='val_loss', 
@@ -193,7 +184,7 @@ class KA_CNN:
                         save_weights_only=False, mode='min')
         
         history_out = model.fit(X_train, y_train, validation_data=(X_test, y_test), 
-                                initial_epoch=0, epochs=250, 
+                                initial_epoch=0, epochs=epochs, 
                                 batch_size=32, callbacks=[
                                     early_stopping,
                                     reduce_lr,
@@ -274,33 +265,30 @@ class KA_CNN:
 def run():
 
     datafile = [ 
-        'data/Lucky13_3070_oos.csv',   
-        'data/Lucky13_3070.csv',  #1
-        'data/ndata_diff_lucky13_3070_oos.csv', 
-        'data/ndata_diff_lucky13_3070.csv', #3
-        'data/ndata_lucky_13_lag_3070_oos.csv', 
-        'data/ndata_lucky13_lag_3070.csv', #5
-        'new_model_Z_lucky13_3070_oos.csv',
-        'new_model_Z_lucky13_3070.csv', #7,
-        'data/Lucky13_3070_oos_3.csv',   
-        'data/Lucky13_3070_3.csv',  #9
-        'data/Lucky13_3070_oos_5.csv',   
-        'data/Lucky13_3070_5.csv',  #11
-        'data/new_model_HLC_lucky13.csv', #12
-        'data/R_HLC_lucky13.csv', #13
-    ]
+            'data/Lucky13_3070_oos.csv',
+            'data/Lucky13_3070.csv',  #1
+                          
+            'data/NewModel_3070_oos.csv',   
+            'data/NewModel_3070.csv',  #3
+            'data/NewModel_ALL_oos.csv',   
+            'data/NewModel_ALL.csv',  #5
+
+            'data/NewModel_ALL_SPAN2.csv',   #6  
+            'data/NewModel_ALL_SPAN3.csv',   #7
+            'data/NewModel_ALL_SPAN6.csv',   #8
+    ] 
 
     file_path = datafile[0]
-    model = KA_CNN()
+    model = MODEL_KA_CNN()
 
     model_type = "R"
     train = True
-    test = False
+    test = True
     single_item = False
 
     if train:
         file_path = datafile[1]
-        history_out, y_pred = model.train_model(file_path, model_type)
+        history_out, y_pred = model.train_model(file_path, model_type,10)
         
 
     if test:
