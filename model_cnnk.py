@@ -60,43 +60,48 @@ class MODEL_CNNK (K_MODEL_BASE):
             
             x = Reshape((1, -1))(reshaped_inputs[:, i, :])
             inx = LSTM(32, return_sequences=True, activation='relu')(x)
+            iny = LSTM(32, return_sequences=True, activation='relu')(x)
             
             #set x
             x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
             x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
             x = LSTM(32, return_sequences=True, activation='relu')(x)
-            x = MaxPooling1D(pool_size=1, strides=1)(x)
             
             #set y
-            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(inx)
-            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            y = Conv1D(filters=16, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
-            x = MaxPooling1D(pool_size=1, strides=1)(y)
+            y = Conv1D(filters=32, kernel_size=1, activation='sigmoid', kernel_initializer=self.initializer)(iny)
+            y = Conv1D(filters=32, kernel_size=1, activation='tanh', kernel_initializer=self.initializer)(y)
+            y = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(y)
             
             x_out = LSTM(hidden_units, return_sequences=False, activation='relu')(x)
             y_out = LSTM(hidden_units, return_sequences=False, activation='relu')(y)
             
-            xy_output = Average()([x_out, y_out])
-            #xy_output = 0.2*x_out + 0.8*y_out
-            #xy_output = x_out
+            xs = Dense(hidden_units, activation='sigmoid', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x_out)
+            xt = Dense(hidden_units, activation='tanh', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x_out)
             
+            ys = Dense(hidden_units, activation='sigmoid', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(y_out)
+            yt = Dense(hidden_units, activation='tanh', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(y_out)
+            
+            x_output = Average()([xs, xt])
+            y_output = Average()([ys, yt])
+            
+            xy_output = Average()([x_output,  y_output, xs, xt,  ys, yt])
             univariate_outputs.append(xy_output)
 
         concatenated_outputs = Concatenate(axis=1)(univariate_outputs)
+        
         reshaped_attention_input = Reshape((input_dim, hidden_units))(concatenated_outputs)
-        attention_output = MultiHeadAttention(num_heads=input_dim//2, key_dim=input_dim//2, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
-                        
-        #attention_output = MultiHeadAttention(num_heads=4, key_dim=8, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
-
-        flattened_output = Reshape((-1,))(attention_output)
+        ao = MultiHeadAttention(num_heads=input_dim//2, key_dim=input_dim//2, kernel_regularizer=l2_reg)(reshaped_attention_input, reshaped_attention_input)
+        flattened_output = Reshape((-1,))(ao)
         dense_output = Dense(output_units, activation='relu')(flattened_output)
     
         sum_output = Add()(univariate_outputs)
         sum_output = Dense(output_units, activation='relu')(sum_output)
+        ave_output = sum_output 
 
-        #ave_output = Average()([sum_output, dense_output, sum_output])
-        #ave_output = Average()([sum_output, dense_output])
-        ave_output = 0.5*sum_output + 0.5*dense_output
+        #ave_output = 0.5*sum_output + 0.5*dense_output
+        #ave_output = 0.4*sum_output + 0.6*dense_output
+        ave_output = 0.3*sum_output + 0.7*dense_output                
+        
         outputs = Dense(1)(ave_output)
         
         self.model = Model(inputs, outputs)
@@ -109,48 +114,40 @@ def process_data_file(file_to_load):
     print(f"Loading {file_to_load}" )
     df = pd.read_csv(file_to_load)
     
-    f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
-                        'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ,'output','outputC']   
-
-    f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3', 'output','outputC']
     
-    f_list_rx = ['RSI9', 'ATR2', 'ATR5', 'RSI14', 'TV3', 'TV6', 'COMP2', 'output','outputC']
+    model_x_3070_imp_full =['SDKC7CU', 'ZL79X', 'SeqClose', 'TV3', 'ROC14', 'ATR2', 'STO5135D', 'STO7143D', 
+                            'TV4', 'SDKC91', 'ZC79X', 'ATR9', 'TV5', 'RSIRAW', 'COMP3', 'SDBB9CL', 'SDKC9', 'TV2', 'TV6', 
+                            'SDKC7CL', 'COMP0', 'ZH79X', 'SDBB91', 'TV1', 'COMP2', 'output', 'outputC']
     
-    f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X', 'output','outputC']
+    model_x_3070_imp_slim = ['SDKC9', 'COMP3', 'STO7143D', 'ATR9', 'SDBB91', 'RSIRAW', 'COMP2', 'TV6', 'SDKC7CU','output', 'outputC']
 
-    f_list_cx = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'ZH79X', 'output','outputC']
 
-    #col_filter = f_list_rx
+    col_filter = model_x_3070_imp_full
     #df = df.drop(columns=['TimeTicks','SeqClose'])
-    #df=df[col_filter]
+    df=df[col_filter]
         
     #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
     #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
     #df = df[(df['RSI9'] > 60)]  
     #df = df[(df['RSI9'] < 40)]  
     
-    X = df.drop(columns=['output', 'outputC']).values
+    
+    X = df.drop(columns=['output', 'outputC'])
     y = df['output'].values
 
     return X, y
 
 def main():
+    
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',
+            'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
-                          
-            'data/NewModel_3070_oos.csv',   
-            'data/NewModel_3070.csv',  #3
-            'data/NewModel_ALL_oos.csv',   
-            'data/NewModel_ALL.csv',  #5
-
-            'data/NewModel_ALL_SPAN2.csv',   #6  
-            'data/NewModel_ALL_SPAN3.csv',   #7
-            'data/NewModel_ALL_SPAN6.csv',   #8
+            'data/Model_X_3070_oos.csv',  
+            'data/Model_X_3070.csv',  #3
     ]   
 
-    file_train = 1
-    file_oos = 0
+    file_train = 3
+    file_oos = 2
 
     X_data, y_data = process_data_file(datafile[file_train])
     X_oos, y_oos = process_data_file(datafile[file_oos])
@@ -161,7 +158,7 @@ def main():
 
 
     model_cnnk = MODEL_CNNK()
-    history_out, y_pred = model_cnnk.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 10 )
+    history_out, y_pred = model_cnnk.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
 
     best_model = tf.keras.models.load_model(model_cnnk.checkpoint_model)
     y_pred = best_model.predict(X_test)

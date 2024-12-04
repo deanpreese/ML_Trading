@@ -178,10 +178,12 @@ def evaluate_model( y_test, y_pred):
 def main():
     
     datafile = [ 
-            'data/NewModel_3070_oos.csv',   
-            'data/NewModel_3070.csv',  #1
-            'data/NewModel_ALL_oos.csv',   
-            'data/NewModel_ALL.csv',  #3
+            'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070.csv',  #1
+            'data/Model_X_ALL_oos.csv',   
+            'data/Model_X_ALL.csv',  #3
+            'data/Model_X_3070_oos.csv',  
+            'data/Model_X_3070.csv',  #5
             
     ]   
 
@@ -193,30 +195,29 @@ def main():
 
     file_path = datafile[file_train]
 
-    column_list = [
-        'Year', 'Month', 'Day', 'DayOfWeek', 'HourOfDay', 'MinOfHour', 
-        'SDLR310V', 'SDLR310E', 'SDLR310', 'SDBB9', 'SDBB91', 
-        'SDKC9', 'SDKC91', 'SDBB29', 'SDBB291', 'SDKC29', 'SDKC291', 
-        'SDBB9C', 'SDBB91C', 'SDKC9C', 'SDKC91C', 'SDBB29C', 'SDBB291C', 
-        'SDKC29C', 'SDKC291C', 'ROC141', 'ROC14', 'ROC91', 'ROC9', 
-        'ROC71', 'ROC7', 'ATR142', 'ATR141', 'ATR14', 'ATR52', 'ATR51', 
-        'ATR5', 'ATR22', 'ATR21', 'ATR2', 'RSI91', 'RSI9', 'RSI141', 
-        'RSI14', 'STOK51331', 'STOK5133', 'STOK714Y1', 'STOK714Y', 
-        'TV1', 'TV2', 'TV3', 'TV4', 'TV5', 'TV6', 
-        'ZH911X', 'ZH79X', 'ZH57X', 'ZL911X', 'ZL79X', 'ZL57X', 
-        'ZC911X', 'ZC79X', 'ZC57X', 'COMP0', 'COMP1', 'COMP2', 'COMP3', 
-        'CEMA9', 'CEMA13', 'CEMA21', 'CATR5', 'CATR3', 'CATR2', 
-        'CRSI3', 'CRSI7', 'CRSI9', 'CRSI14', 'CSTO7', 'CSTO3',
+    lucky_13_columns = [
+        "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
+        "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1", "output", "outputC"
+    ]
+    
+    model_x_columns = [
+        "Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "SeqClose",
+        "SDBB9", "SDBB91", "SDKC9", "SDKC91", "SDBB29", "SDBB291", "SDKC29", "SDKC291",
+        "SDBB14CU", "SDBB14CL", "SDBB9CU", "SDBB9CL", "SDKC10CU", "SDKC10CL", "SDKC7CU",
+        "SDKC7CL", "ROC14", "ROC9", "ROC7", "ATR14", "ATR9", "ATR5", "ATR2", "RSI14", 
+        "RSI9", "ADX14", "ADX9", "STO5135K", "STO5135D", "STO7143K", "STO7143D", "TV1", 
+        "TV2", "TV3", "TV4", "TV5", "TV6", "ZH79X", "ZL79X", "ZC79X", "COMP0", "COMP1", 
+        "COMP2", "COMP3"
     ]
     
     column_results = []
-    
+    column_list = model_x_columns
     
     for i in range(len(column_list)):
         
         print(f"Loading {file_path}" )
         data = pd.read_csv(file_path)
-        df = data.drop(columns=['TimeTicks','SeqClose', 'outputC'])
+        df = data.drop(columns=['SeqClose', 'outputC'])
         X = df.drop(columns=['output'])
         y = df['output']
         
@@ -232,7 +233,7 @@ def main():
         print(X_test.shape)
         print(X_val.shape)
         
-        epocs = 25
+        epocs = 10
     
         c_kan = FEAT_KAN()
         history_out, y_pred = c_kan.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, epocs )

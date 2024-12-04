@@ -129,40 +129,50 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 def run():
 
     datafile = [ 
-            'data/NewModel_3070_oos.csv',   
-            'data/NewModel_3070.csv',  #1
-            'data/NewModel_ALL_oos.csv',   
-            'data/NewModel_ALL.csv',  #3
-    ]   
+            'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070.csv',  #1
+            'data/Model_X_3070_oos.csv',  
+            'data/Model_X_3070.csv',  #3
+    ] 
 
-    data = pd.read_csv(datafile[1])
-    df = data.drop(columns=['TimeTicks','SeqClose'])
-    #df = df[((df['RSI'] > 0) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 100)]  
+    df = pd.read_csv(datafile[1])
+    #df = df.drop(columns=['SeqClose'])
     
-    #big list
-    big_list = ['STOK5133', 'HourOfDay', 'SDBB291C', 'ATR51', 'TV4', 'ZC911X', 'ZH79X', 'CRSI14', 'ZC79X', 'COMP2', 'ROC91', 
-     'SDLR310', 'TV6', 'COMP0', 'SDKC9C', 'ATR2', 'SDKC29C', 'SDBB91C', 'RSI9', 'COMP1', 'RSI91', 'STOK714Y1', 
-     'COMP3', 'ROC7', 'ZL79X', 'SDBB29C', 'TV1', 'ROC14', 'TV3', 'ATR5', 'ZL57X', 'RSI141', 'SDBB91', 'ROC71', 
-     'STOK714Y', 'ZH57X', 'TV2', 'ROC141', 'ROC9', 'RSI14', 'STOK51331', 'TV5', 'CATR3']
-    #X = df[big_list]
-
-    f_list = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
-                    'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51']
-    X = df[f_list]
-
-
-    span3 = ['RSI', 'ATR5', 'STOK1', 'H1', 'SDBB9', 'ATR2', 'SDBB91', 'TV11', 'ROC141', 
-             'ATR21', 'TV31', 'RSI14X', 'SDKC9', 'ROC1', 'SDLR310', 'ROC14', 'HourOfDay', 'TV41', 'ROC', 'SDKC91']
-    #X = df[span3]
-
-    #X = df
-    #X = X.drop(columns=['output', 'outputC'])
+    #df = df[((df['RSIRAW'] > 50))]  
+    #df = df[((df['RSIRAW'] > 0) & (df['RSIRAW'] < 30))]  
+    #df = df[((df['RSIRAW'] > 70) & (df['RSIRAW'] < 100))]  
     
+    #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))]  
+    #df = df[((df['RSI'] > 70) & (df['RSI'] < 100))]  
+    
+    
+    
+    X = df
+    X = X.drop(columns=['output', 'outputC'])
+    
+    
+    lucky_13_columns = [
+    "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
+    "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1"
+    ]
+    #X = df[lucky_13_columns]
+    
+    model_x_columns = [
+        "Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "RSIRAW", "SeqClose",
+        "SDBB9", "SDBB91", "SDKC9", "SDKC91", "SDBB29", "SDBB291", "SDKC29", "SDKC291",
+        "SDBB14CU", "SDBB14CL", "SDBB9CU", "SDBB9CL", "SDKC10CU", "SDKC10CL", "SDKC7CU",
+        "SDKC7CL", "ROC14", "ROC9", "ROC7", "ATR14", "ATR9", "ATR5", "ATR2", "RSI14", 
+        "RSI9", "ADX14", "ADX9", "STO5135K", "STO5135D", "STO7143K", "STO7143D", "TV1", 
+        "TV2", "TV3", "TV4", "TV5", "TV6", "ZH79X", "ZL79X", "ZC79X", "COMP0", "COMP1", 
+        "COMP2", "COMP3"
+    ]
+    #X = df[model_x_columns]
+    
+
     y = df['outputC'].values
     y2 = df['output'].values
     
     threshold = 50
-
 
     #X_train_c, X_test_c, y_train_c, y_test_c = simple_split_and_scale(X, y, 0.2, 42)
     #X_train_r, X_test_r, y_train_r, y_test_r = simple_split_and_scale(X, y2, 0.2, 42)
@@ -193,9 +203,9 @@ def run():
         importance_df_sorted_r, important_features_r, performance_df_r  = gen_results(models_r, X_train_r, y_train_r, X_test_r, y_test_r, X.columns, threshold)            
 
     if use_class:
-        print("Classifier Sorted Importance")
-        print(" ")
-        print(importance_df_sorted_c)
+        #print("Classifier Sorted Importance")
+        #print(" ")
+        #print(importance_df_sorted_c)
         print(" ")
         print(f"Features Selected based on threshold of {threshold} percent")
         print("Classifier Selected Features")
@@ -207,10 +217,10 @@ def run():
         
     if use_reg:
         print("------------------------------------------------------------")
-        print(" ")
-        print("Regressor Sorted Importance")
-        print(" ")
-        print(importance_df_sorted_r)
+        #print(" ")
+        #print("Regressor Sorted Importance")
+        #print(" ")
+        #print(importance_df_sorted_r)
         print(" ")
         print(f"Features Selected based on threshold of {threshold} percent")
         print("Regressor Selected Features")
@@ -224,124 +234,45 @@ def run():
 if __name__ == "__main__":
     run()
 
-    #'data/NewModel_ALL.csv',  #3
+    model_x_3070_imp_full =['SDKC7CU', 'ZL79X', 'SeqClose', 'TV3', 'ROC14', 'ATR2', 'STO5135D', 'STO7143D', 
+                            'TV4', 'SDKC91', 'ZC79X', 'ATR9', 'TV5', 'RSIRAW', 'COMP3', 'SDBB9CL', 'SDKC9', 'TV2', 'TV6', 
+                            'SDKC7CL', 'COMP0', 'ZH79X', 'SDBB91', 'TV1', 'COMP2']
     
-    
-    """
-    Features Selected based on threshold of 50 percent
-    Classifier Selected Features
-    ['TV1', 'ZL79X', 'COMP0', 'ZL57X', 'HourOfDay', 'ATR2', 'SDLR310', 'CATR3', 'TV3', 'ROC91', 'ROC71', 'ZC79X', 'SDBB29C', 'SDBB91', 'CRSI14', 'SDKC29C', 'ZH79X', 'SDKC9C', 'TV6']
-    Perf Results
-        Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.526376  0.525564 -0.899122 -0.902378  0.473624  0.474436
-    1  XGBCls  0.521174  0.518104 -0.919979 -0.932290  0.478826  0.481896
-    2  CatCls  0.524980  0.525107 -0.904718 -0.904209  0.475020  0.474893
-
-    Regressor Selected Features
-    ['ZH57X', 'ZL79X', 'TV3', 'ZH79X', 'ATR2', 'ZC79X', 'COMP3', 'RSI141', 'ROC14', 'ROC141', 'ROC9', 'ATR51', 'STOK51331', 'ZC911X', 'ATR5', 'SDBB291C', 'SDBB91C', 'ROC71']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.4727    0.4729 -0.008631 -0.013306  11.0985  11.149955
-    1  XGBReg  0.4685    0.4706 -0.058814 -0.041507  11.6507  11.460267
-    2  CatReg  0.4707    0.4717 -0.027692 -0.025023  11.3083  11.278880
-    
-    Features Selected based on threshold of 50 percent
-    Classifier Selected Features
-    ['RSI9', 'TV6', 'TV1', 'COMP0', 'RSI14', 'ATR2', 'HourOfDay', 'ZC79X', 'CATR2', 'ZH911X', 'ZH57X', 'ZC57X', 'ZL911X', 'Day', 'CRSI3', 'ZH79X', 'RSI141', 'STOK5133', 'ROC14', 'ROC141', 'SDLR310', 'SDKC9C', 'ROC7']
-    Perf Results
-        Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.781103  0.782177  0.124166  0.128462  0.218897  0.217823
-    1  XGBCls  0.771977  0.769695  0.087651  0.078522  0.228023  0.230305
-    2  CatCls  0.780298  0.782177  0.120944  0.128462  0.219702  0.217823
-        
-    Features Selected based on threshold of 50 percent
-    Regressor Selected Features
-    ['RSI9', 'ATR2', 'RSI14', 'COMP2', 'ZL57X', 'ATR5', 'ZH57X', 'ATR21', 'COMP0', 'STOK51331', 'TV5', 'TV6', 'COMP3', 'SDKC29C', 'ATR14', 'SDLR310V', 'ROC141', 'SDKC9', 'TV2', 'SDKC291C', 'ROC14', 'SDBB9', 'ATR51']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.7556    0.7556  0.375378  0.394523  10.7818  10.451287
-    1  XGBReg  0.7512    0.7579  0.313055  0.375975  11.8575  10.771447
-    2  CatReg  0.7517    0.7543  0.360360  0.393261  11.0410  10.473082
-    
-    -------------------------------------------------------------------
-    
-    
-    Features Selected based on threshold of 70 percent
-    Regressor Selected Features
-    ['RSI9', 'ATR2', 'RSI14', 'ZL57X', 'ATR5', 'ZH57X', 'TV5', 'TV6', 'COMP3', 'SDKC29C', 'ATR14']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.7556    0.7564  0.375378  0.411651  10.7818  10.155651
-    1  XGBReg  0.7512    0.7527  0.313055  0.362738  11.8575  10.999935
-    2  CatReg  0.7517    0.7533  0.360360  0.383957  11.0410  10.633673
-    
-    Classifier Selected Features
-    ['RSI9', 'TV6', 'TV1', 'COMP0', 'RSI14', 'ATR2', 'CATR2', 'ZH911X', 'ZC57X', 'ZL911X', 'Day', 'CRSI3']
-    Perf Results
-        Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.781103  0.781237  0.124166  0.124703  0.218897  0.218763
-    1  XGBCls  0.771977  0.774527  0.087651  0.097854  0.228023  0.225473
-    2  CatCls  0.780298  0.782982  0.120944  0.131684  0.219702  0.217018
-    
-    
-    
-    Features Selected based on threshold of 70 percent
-    Regressor Selected Features
-    ['ZH57X', 'ATR2', 'ROC14', 'ROC9', 'ATR51']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.4727    0.4724 -0.008631 -0.017648  11.0985  11.197734
-    1  XGBReg  0.4685    0.4685 -0.058814 -0.045961  11.6507  11.509273
-    2  CatReg  0.4707    0.4690 -0.027692 -0.028171  11.3083  11.313523
-    
-    ['TV1', 'COMP0', 'HourOfDay', 'ROC91', 'ROC71', 'ZC79X']
-    Perf Results
-        Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.526376  0.525056 -0.899122 -0.904413  0.473624  0.474944
-    1  XGBCls  0.521174  0.515592 -0.919979 -0.942362  0.478826  0.484408
-    2  CatCls  0.524980  0.520185 -0.904718 -0.923947  0.475020  0.479815
-    
-
-    
-    Features Selected based on threshold of 50 percent
-    Classifier Selected Features
-    ['TV1', 'ZL79X', 'COMP0', 'ZL57X', 'HourOfDay', 'ATR2', 'SDLR310', 'CATR3', 'TV3', 'ROC91', 'ROC71', 'ZC79X', 'SDBB29C', 'SDBB91', 'CRSI14', 'SDKC29C', 'ZH79X', 'SDKC9C', 'TV6']
-    Perf Results
-    Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.526376  0.525564 -0.899122 -0.902378  0.473624  0.474436
-    1  XGBCls  0.521174  0.518104 -0.919979 -0.932290  0.478826  0.481896
-    2  CatCls  0.524980  0.525107 -0.904718 -0.904209  0.475020  0.474893
+    model_x_3070_imp_slim = ['SDKC9', 'COMP3', 'STO7143D', 'ATR9', 'SDBB91', 'RSIRAW', 'COMP2', 'TV6', 'SDKC7CU']
 
 
-    Features Selected based on threshold of 50 percent
-    Regressor Selected Features
-    ['ZH57X', 'ZL79X', 'TV3', 'ZH79X', 'ATR2', 'ZC79X', 'COMP3', 'RSI141', 'ROC14', 'ROC141', 'ROC9', 'ATR51', 'STOK51331', 'ZC911X', 'ATR5', 'SDBB291C', 'SDBB91C', 'ROC71']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.4727    0.4729 -0.008631 -0.013306  11.0985  11.149955
-    1  XGBReg  0.4685    0.4706 -0.058814 -0.041507  11.6507  11.460267
-    2  CatReg  0.4707    0.4717 -0.027692 -0.025023  11.3083  11.278880
+
+    model_x_3070_LT_30_50 = ['TV6', 'TV1', 'STO7143D', 'ATR14', 'SDBB9CL', 'SDKC7CU', 'SDKC10CL', 'ATR5', 'ZH79X', 'COMP3', 'SDKC9', 'TV3', 
+                        'SDBB9', 'ATR2', 'STO7143K', 'ZC79X', 'TV2', 'ROC9', 'COMP2', 'ROC14', 'STO5135K', 'STO5135D', 'RSIRAW']
+    
+    model_x_3070_LT_30_75 = ['RSIRAW', 'ROC14', 'TV1', 'COMP2', 'SDKC9', 'ROC9']
+
+
+
+    model_x_3070_GT_70_75 = ['SDKC9', 'ZH79X', 'ROC14', 'COMP3', 'RSIRAW', 'COMP2', 'ATR2', 
+                             'STO7143D', 'TV6', 'TV3', 'SDKC7CU', 'ROC9', 'ZC79X', 'ATR14', 'TV1', 'STO5135K']
+
+    model_x_3070_GT_70_50 = ['ZC79X', 'SDKC9', 'MinOfHour', 'SDBB14CU', 'ADX14', 'ATR14', 'SDKC10CU', 'ATR2', 
+                             'SDKC7CU', 'TV6', 'COMP2', 'STO5135K', 'RSIRAW', 'STO5135D', 'COMP3', 'TV4', 'ADX9', 'TV1', 
+                             'STO7143D', 'ZH79X', 'HourOfDay', 'ROC7', 'SeqClose']
+
+
+    model_x_3070_GT_50_75 = ['SDKC9', 'COMP2', 'ADX14', 'RSIRAW', 'SDKC91', 'SeqClose', 'TV3', 'STO5135D', 'TV4', 'SDKC7CU']
+
+    model_x_3070_GT_50_50 = ['TV5', 'ROC9', 'ATR14', 'TV4', 'COMP2', 'SDKC7CL', 'SDKC9', 'TV6', 'HourOfDay', 'ZL79X', 
+                             'MinOfHour', 'ZH79X', 'RSIRAW', 'ROC14', 'ATR2', 'TV1', 'ZC79X', 'TV3', 'SDKC91', 'STO5135D', 'SDBB9CU', 
+                             'SDKC7CU', 'ADX14', 'SeqClose']
+
+    model_x_3070_LT_50_75 = ['RSIRAW', 'ZH79X', 'SDKC9', 'SDKC7CU', 'COMP2']
+
+    model_x_3070_LT_50_50 =  ['TV4', 'SDBB9CL', 'TV1', 'COMP3', 'TV3', 'ZH79X', 'STO7143D', 'HourOfDay', 'ATR2', 'SDKC7CL', 'ADX14', 'SDKC9', 
+                            'SeqClose', 'ATR5', 'Day', 'ADX9', 'SDKC10CL', 'ROC9', 'MinOfHour', 'STO5135D', 'RSIRAW', 'SDKC7CU', 
+                            'ZC79X', 'ROC14', 'COMP2', 'TV6']
     
     
-    
-    Features Selected based on threshold of 50 percent
-    Classifier Selected Features
-    ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X']
-    Perf Results
-        Model      Perf  Sel_Perf        R2    Sel_R2       MSE   Sel_MSE
-    0  LGBCls  0.775466  0.777345  0.101613  0.109131  0.224534  0.222655
-    1  XGBCls  0.769964  0.775064  0.079596  0.100002  0.230036  0.224936
-    2  CatCls  0.776406  0.779090  0.105372  0.116111  0.223594  0.220910
-        
-    
-    Features Selected based on threshold of 50 percent
-    Regressor Selected Features
-    ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3']
-    Perf Results
-        Model    Perf  Sel_Perf        R2    Sel_R2      MSE    Sel_MSE
-    0  LGBReg  0.7536    0.7549  0.379641  0.407515  10.7082  10.227037
-    1  XGBReg  0.7517    0.7539  0.273167  0.374111  12.5460  10.803638
-    2  CatReg  0.7537    0.7569  0.343594  0.380305  11.3304  10.696709
-    
-    
-    """
+    lucky_13_3070_RSI_LT_50 = ['ATR2', 'ROC', 'ATR21', 'SDKC9', 'SDBB91', 'RSI']
+    lucky_13_3070_RSI_GT_50 = ['RSI', 'ATR2', 'ATR21', 'ROC', 'ATR5']
+    lucky13_3070_comp = ['SDKC9', 'ATR5', 'ROC', 'ATR2', 'SDBB91', 'ATR21', 'RSI']
+    lucky13_3070_min = ['RSI', 'ATR2', 'ROC']
+   
+   

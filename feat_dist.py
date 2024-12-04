@@ -5,10 +5,28 @@ import matplotlib.pyplot as plt
 
 datafile = [ 
         'data/NewModel_3070_oos.csv',   
-        'data/NewModel_3070.csv',  #3
-        'data/NewModel_ALL_oos.csv',   
-        'data/NewModel_ALL.csv',  #3
+        'data/NewModel_3070.csv',  #1
+        'data/Model_X_ALL_oos.csv',   
+        'data/Model_X_ALL.csv',  #3
+        'data/Model_X_3070_oos.csv',  
+        'data/Model_X_3070.csv',  #5
+        
 ]   
+
+lucky_13_columns = [
+    "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
+    "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1", "output", "outputC"
+]
+
+model_x_columns = [
+    "Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "SeqClose",
+    "SDBB9", "SDBB91", "SDKC9", "SDKC91", "SDBB29", "SDBB291", "SDKC29", "SDKC291",
+    "SDBB14CU", "SDBB14CL", "SDBB9CU", "SDBB9CL", "SDKC10CU", "SDKC10CL", "SDKC7CU",
+    "SDKC7CL", "ROC14", "ROC9", "ROC7", "ATR14", "ATR9", "ATR5", "ATR2", "RSI14", 
+    "RSI9", "ADX14", "ADX9", "STO5135K", "STO5135D", "STO7143K", "STO7143D", "TV1", 
+    "TV2", "TV3", "TV4", "TV5", "TV6", "ZH79X", "ZL79X", "ZC79X", "COMP0", "COMP1", 
+    "COMP2", "COMP3"
+]
 
 data = pd.read_csv(datafile[3])
 df = data[['STOK1']]
