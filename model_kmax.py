@@ -21,29 +21,20 @@ from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x, gen_class_stats
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
-from ml_model.data_func import split_three_ways
 from ml_model.k_model_base import K_MODEL_BASE
+import ml_model.feature_filter as feature_filter
 
 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
-
-class MODEL_NEW (K_MODEL_BASE):
+class KMAX (K_MODEL_BASE):
     def __init__(self):
         
-        self.checkpoint_dir = 'checkpoints/'
-        self.trained_dir = 'trained_models/'
-       
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'model_new.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'model_new.keras')
-        self.model_plot = os.path.join(self.checkpoint_dir, 'model_new.png')
-
-        self.drop_out = 0.2
-        self.l2_reg = l2(0.01)
-        self.initializer = GlorotUniform(seed=42)
-
+        model_name = 'kmax'
+        self.setup_model(model_name)
+        
     def create_feature_model_h(self, inputs, output_dim):
 
         """ 
@@ -264,103 +255,26 @@ class MODEL_NEW (K_MODEL_BASE):
         return self.model
     
 
-def process_data_file(file_to_load):
-    
-    print(f"Loading {file_to_load}" )
-    df = pd.read_csv(file_to_load)
-    
-    f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
-                        'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ,'output','outputC']   
-
-    f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3', 'output','outputC']
-    
-    f_list_rx = ['RSI9', 'ATR2', 'ATR5', 'RSI14', 'TV3', 'TV6', 'COMP2', 'output','outputC']
-    
-    f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X', 'output','outputC']
-
-    f_list_cx = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'ZH79X', 'output','outputC']
-
-    col_filter = f_list_rx
-        
-    df = df.drop(columns=['TimeTicks','SeqClose'])
-    df=df[col_filter]
-        
-    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-    #df = df[(df['RSI9'] > 60)]  
-    #df = df[(df['RSI9'] < 40)]  
-    
-    X = df.drop(columns=['output', 'outputC']).values
-    y = df['output'].values
-
-    return X, y
-
 def main():
+    
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',
+            'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
-                          
-            'data/NewModel_3070_oos.csv',   
-            'data/NewModel_3070.csv',  #3
-            'data/NewModel_ALL_oos.csv',   
-            'data/NewModel_ALL.csv',  #5
-
-            'data/NewModel_ALL_SPAN2.csv',   #6  
-            'data/NewModel_ALL_SPAN3.csv',   #7
-            'data/NewModel_ALL_SPAN6.csv',   #8
+            'data/Model_X_3070_oos.csv',  
+            'data/Model_X_3070.csv',  #3
     ]   
 
-    file_train = 3
-    file_oos = 2
-
-    X_data, y_data = process_data_file(datafile[file_train])
-    X_oos, y_oos = process_data_file(datafile[file_oos])
+    col_filter = feature_filter.lucky13_all         
+    #col_filter = feature_filter.model_x_3070_imp_full        
+    #col_filter = feature_filter.model_x_3070_imp_slim
     
-    X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X_data, y_data)
-    input_shape = (X_train.shape[1], 1)
-    #(14, 1)
-
-
-    model_new = MODEL_NEW()
-    history_out, y_pred = model_new.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 10 )
-
-    # Load best model and evaluate
-    best_model = tf.keras.models.load_model(model_new.checkpoint_model)
-    y_pred = best_model.predict(X_test)
-
-    oos_model = tf.keras.models.load_model(model_new.checkpoint_model)
-    y_pred_oos = oos_model.predict(X_oos)
+    model_cnn_sm = KMAX()
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
     
-    print("-----")
-    print(f"Train Shape {X_train.shape}")
-    print(f"Val Shape   {X_val.shape}")
-    print(f"Test Shape  {X_test.shape}")
-    print("-----")
-    print("Test Pred")
-    rmse, mse, mae, r2 = model_new.evaluate_model( y_test, y_pred)
-    
-    print("-----")
-    print(f"OOS Test Shape {X_oos.shape}")
-    print("-----")
-    print("OOS Pred")
-    rmse_oos, mse_oos, mae_oos, r2_oos = model_new.evaluate_model( y_oos, y_pred_oos)
+    history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
+    best_model = tf.keras.models.load_model(model_cnn_sm.checkpoint_model)
+    model_cnn_sm.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
 
-    model_file = f"model_new_{mse_oos}_{mae_oos}_{r2_oos}_model.keras"
-    oos_file_path = os.path.join(model_new.checkpoint_dir, model_file)
-    oos_model.save(oos_file_path)
-    
-    oos_model_plot_file = f"model_new_{mse_oos}_{mae_oos}_{r2_oos}_model.png"
-    oos_model_plot_path = os.path.join(model_new.checkpoint_dir, oos_model_plot_file)
-    
-    tf.keras.utils.plot_model(best_model, to_file=oos_model_plot_path, 
-        show_shapes=True, 
-        show_dtype=True,
-        show_layer_names=True,
-        expand_nested=True,
-        show_layer_activations=True,
-        show_trainable=True
-    )   
-    
             
 if __name__ == "__main__":
     main()

@@ -23,25 +23,19 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 from ml_model.data_func import split_three_ways
 from ml_model.k_model_base import K_MODEL_BASE
+import ml_model.feature_filter as feature_filter
+
 
 tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
 
-class MODEL_LUCKY13(K_MODEL_BASE):
+class KAN_13 (K_MODEL_BASE):
     def __init__(self, epochs=50, batch_size=32):
         
-        self.checkpoint_dir = 'checkpoints/'
-        self.trained_dir = 'trained_models/'
-       
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, 'model_lucky13.keras')
-        self.trained_model = os.path.join(self.trained_dir, 'model_lucky13.keras')
-        self.model_plot = os.path.join(self.checkpoint_dir, 'model_lucky13.png')
-
-        self.drop_out = 0.2
-        self.l2_reg = l2(0.01)
-        self.initializer = GlorotUniform(seed=42)
+        model_name = 'kan_13'
+        self.setup_model(model_name)
 
     def create_feature_model_h(self, inputs, output_dim):
 
@@ -295,103 +289,101 @@ class MODEL_LUCKY13(K_MODEL_BASE):
         
         self.model = Model(inputs, outputs)
         return self.model  
+
+
+
+    def create_model(self, input_shape ):
         
+        inputs = Input(shape=input_shape)
+        feature_outputs = []
+        feature_outputs1 = []
+        feature_outputs2 = []
+        
+        #concat_dims = 32
+        concat_dims = input_shape[0]
+        output_dim = 16
+        
+        model_a = self.create_feature_model_h(inputs, output_dim)
+        model_b = self.create_feature_model_x(inputs, output_dim)
+        model_c1 = self.create_feature_model_c1(inputs, output_dim)
+        model_c2 = self.create_feature_model_c2(inputs, output_dim)
+        
+        for i in range(input_shape[0]):
+            feature_input = inputs[:, i:i+1]
 
-def process_data_file(file_to_load):
-     #Lucky13  ALL Cols
-    f_13 = ['SDLR310','SDBB91','SDKC91','SDKC9','ROC','ATR54','ATR53','ATR52','ATR51','ATR5','ATR21','ATR2','RSI','STOK1','output','outputC']
+            #if ((i > 10) | (i==4)) : 
+            if (i > -1) : 
+                fa = self.create_feature_model_a((1,))
+                fax = fa(feature_input)
+                feature_outputs.append(fax)
+                
+                fm1 = self.create_feature_model_s((1,))
+                fm1x = fm1(feature_input)
+                feature_outputs1.append(fm1x)
+                
+                fm2 = self.create_feature_model_t((1,))
+                fm2x = fm2(feature_input)
+                feature_outputs2.append(fm2x)
+       
+        concatenated_outputs = Concatenate(axis=1)(feature_outputs)
+        concatenated_outputs1 = Concatenate(axis=1)(feature_outputs1)
+        concatenated_outputs2 = Concatenate(axis=1)(feature_outputs2)
+        
+        xa_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs)
+        xs_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs1)
+        xt_out = Dense(concat_dims, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(concatenated_outputs2)
+        
+        xa = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xa_out)
+        xs = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xs_out)
+        xt = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(xt_out)
 
-    f_list_f = ['SDBB91', 'COMP2', 'COMP3', 'ATR5', 'TV3', 'HourOfDay', 'TV1', 'ZH79X', 'SDKC29C', 
-        'ZL57X', 'COMP0', 'ATR2', 'TV6', 'RSI14', 'RSI9', 'ATR51' ,'output','outputC']   
+        xa1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xa')(xa)
+        x1 = Multiply()([xa1, xa])
+        xs1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xs')(xs)
+        x2 = Multiply()([xs1, xs])
+        xt1 = Dense(output_dim, activation='softmax', kernel_initializer=self.initializer, name='attention_xt')(xt)
+        x3 = Multiply()([xt1, xt])
 
-    f_list_r = ['RSI9', 'ATR2', 'ATR5', 'ATR51', 'RSI14', 'TV3', 'TV6', 'COMP2', 'SDKC29C', 'COMP3', 'output','outputC']
-    f_list_c = ['RSI9', 'ATR2', 'RSI14', 'TV6', 'TV1', 'ZL57X', 'COMP0', 'HourOfDay', 'SDBB91', 'ZH79X', 'output','outputC']
+        xc_ta = Multiply()([xt1, xa])
+        xc_sa = Multiply()([xs1, xa])
+        xc_ts = Multiply()([xt1, xs1])
 
-    f_list_uni = [
-                'RSI9', 'RSI14', 'COMP2', 'COMP1', 'COMP0', 'TV5', 'TV6', 
-                'RSI91', 'ROC9', 'COMP3', 'STOK5133', 'ROC7', 'STOK714Y', 
-                'ROC14', 'RSI141', 'ßTV2', 'TV3', 'ROC141', 'ROC91', 'TV1', 
-                'output','outputC']   
-
-    col_filter = f_list_f
-
-    print(f"Loading {file_to_load}" )
-    data = pd.read_csv(file_to_load)
-    df = data.drop(columns=['TimeTicks','SeqClose'])
-
-    df=df[col_filter]
+        #s_ave_output = Average()([xa, xs, xt, x1,x2,x3])
+        #s_ave_output = Average()([xa, xs, xt, x1,x2,x3])
+        s_ave_output = Average(name='final_average')([xa, xs, xt, x1,x2,x3, xc_ta, xc_sa, xc_ts])
+        x = s_ave_output
+        
+        #ave_output = Average()([model_a, model_b, s_ave_output])
+        #ave_output = Average()([model_a, model_b, model_c1, model_c2, s_ave_output])
+        #xa = Average()([model_a, model_b, model_c1, model_c2, ave_output])
+        
+        output = Dense(1, activation='linear')(x)
+        
+        self.model = Model(inputs=inputs, outputs=output)
+        return self.model
     
-    #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
-    #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
-    #df = df[(df['RSI9'] > 60)]  
-    #df = df[(df['RSI'] < 40)]  
-    
-    X = df.drop(columns=['output', 'outputC']).values
-    y = df['output'].values
 
-    return X, y
 
 def main():
-        
-    np.random.seed(42)
-    tf.random.set_seed(42)
     
     datafile = [ 
-            'data/NewModel_3070_oos.csv',   
-            'data/NewModel_3070.csv',  #1
-            'data/NewModel_ALL_oos.csv',   
-            'data/NewModel_ALL.csv',  #3
-            'data/NewModel_span3_3070_oos.csv',   
-            'data/NewModel_span3_3070.csv',  #5
-            
+            'data/Lucky13_3070_oos.csv',   
+            'data/Lucky13_3070.csv',  #1
+            'data/Model_X_3070_oos.csv',  
+            'data/Model_X_3070.csv',  #3
     ]   
 
-    file_train = 1
-    file_oos = 0
-
-    X, y = process_data_file(datafile[file_train])
-    X_oos, y_oos = process_data_file(datafile[file_oos])
+    col_filter = feature_filter.lucky13_all         
+    #col_filter = feature_filter.model_x_3070_imp_full        
+    #col_filter = feature_filter.model_x_3070_imp_slim
     
-
-    X_train, X_val, X_test, y_train, y_val, y_test = split_three_ways(X, y)
-    input_shape = (X_train.shape[1], 1)
-    #(14, 1)
-
-
-    model_lucky13 = MODEL_LUCKY13()
-    history_out, y_pred = model_lucky13.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 3 )
-
-    # Load best model and evaluate
-    best_model = tf.keras.models.load_model(model_lucky13.checkpoint_model)
-    y_pred = best_model.predict(X_test)
+    model = KAN_13()
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[1], datafile[0], col_filter)
     
-    print("-----")
-    print("Test Pred")
-    rmse, mse, mae, r2 = model_lucky13.evaluate_model( y_test, y_pred)
+    history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 10 )
+    best_model = tf.keras.models.load_model(model.checkpoint_model)
+    model.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
     
-    oos_model = tf.keras.models.load_model(model_lucky13.checkpoint_model)
-    X_oos = X
-    y_oos = y
-    
-    y_pred_oos = oos_model.predict(X_oos)
-    print("-----")
-    print("OOS Pred")
-    rmse_oos, mse_oos, mae_oos, r2_oos = model_lucky13.evaluate_model( y_oos, y_pred_oos)
-
-    model_file = f"model_lucky13_{mse_oos}_{mae_oos}_{r2_oos}_model.keras"
-    oos_file_path = os.path.join(model_lucky13.checkpoint_dir, model_file)
-    oos_model.save(oos_file_path)
-    
-    oos_model_plot_file = f"model_lucky13_{mse_oos}_{mae_oos}_{r2_oos}_model.png"
-    oos_model_plot_path = os.path.join(model_lucky13.checkpoint_dir, oos_model_plot_file)
-    tf.keras.utils.plot_model(best_model, to_file=oos_model_plot_path, 
-        show_shapes=True, 
-        show_dtype=True,
-        show_layer_names=True,
-        expand_nested=True,
-        show_layer_activations=True,
-        show_trainable=True
-    )   
     
             
 if __name__ == "__main__":
