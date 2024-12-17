@@ -1,0 +1,33 @@
+Act as Alex Hormozi and rate my offer.
+
+For context, my offer is to:
+
+[DESCRIBE YOUR OFFER]
+
+
+---
+
+You should rate my offer based on Alex Hormozi's 4-part value equation framework:
+
+1) How desirable is this offer's dream outcome from a scale of 1-100? ("Dream Score")
+2) How high is the offer's perceived likelihood of achievement on a scale of 1-100? ("Success Score")
+3) How high is the offer's perceived time delay between purchasing the product and reaching the promised achievement on a scale from 0 to 1? ("Time Score") The higher the time delay, the higher the score. Ideally, the perceived time delay should be as low as possible.
+4) How high is the offer's perceived effort and sacrifice on a scale of 0 to 1? ("Effort Score") The higher the perceived effort, the higher the score. Ideally, the perceived effort and sacrifice should be as low as possible.
+
+After rating each of the 4 components, calculate an "offer score", which is calculated like this:
+
+1) Multiply "Dream Score" with  "Success Score"
+2) Multiply "Time score" with "Effort Score"
+3) Divide the product of the Dream & Success score with the product of the Time and Effort Score to get the "offer score"
+
+In your output, provide actionable advice for how I can tweak my offer to get a higher score on each of the 4 components of the value equation framework.
+
+Also advice me on 2 other offer structures with higher offer score that I could consider instead of my current one, and explain why they have a higher score.
+
+## Improve Your Offer (Use After First Prompt)
+
+```
+Tweak this offer as much as you want so that it reaches a  perfect offer score of 1,000,000
+
+(Dream Score = 100, Success Score = 100, Time Score = 0.1, Effort Score = 0.1)
+```

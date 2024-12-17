@@ -39,6 +39,82 @@ class FFTLayer(Layer):
 
 
 
+class FFTOrRFTLayer(Layer):
+    def __init__(self, use_rft=True, return_magnitude=True, **kwargs):
+        """
+        A custom layer to perform either FFT (Fast Fourier Transform) or RFT (Real Fourier Transform)
+        on input tensors based on the configuration.
+
+        Args:
+            use_rft (bool): Whether to use Real Fourier Transform. If False, uses Fast Fourier Transform.
+            return_magnitude (bool): Whether to return the magnitude of the transform output.
+                                     If False, returns the full complex result.
+            **kwargs: Additional keyword arguments for the Layer base class.
+        """
+        super(FFTOrRFTLayer, self).__init__(**kwargs)
+        self.use_rft = use_rft
+        self.return_magnitude = return_magnitude
+
+    def call(self, inputs):
+        """
+        Forward pass of the FFTOrRFTLayer.
+
+        Args:
+            inputs (Tensor): The input tensor, expected to be real-valued for RFT.
+
+        Returns:
+            Tensor: Either the magnitude or full complex output of the transform.
+        """
+        # Validate input type and shape
+        if not tf.is_tensor(inputs):
+            raise ValueError("Input must be a TensorFlow tensor.")
+
+        # Ensure the inputs are in the required dtype for the transform
+        if self.use_rft:
+            real_inputs = tf.cast(inputs, tf.float32)
+            transform_output = tf.signal.rfft(real_inputs)
+        else:
+            complex_inputs = tf.cast(inputs, tf.complex64)
+            transform_output = tf.signal.fft(complex_inputs)
+
+        # Return either the magnitude or full complex result
+        if self.return_magnitude:
+            return tf.math.abs(transform_output)
+        return transform_output
+
+    def compute_output_shape(self, input_shape):
+        """
+        Compute the output shape of the layer.
+
+        Args:
+            input_shape (tuple): Shape of the input tensor.
+
+        Returns:
+            tuple: Shape of the output tensor.
+        """
+        if self.use_rft:
+            # RFFT output shape depends on input length along the last axis
+            last_dim = input_shape[-1]
+            rfft_output_dim = last_dim // 2 + 1
+            return input_shape[:-1] + (rfft_output_dim,)
+        return input_shape
+
+    def get_config(self):
+        """
+        Return the configuration of the layer for serialization.
+
+        Returns:
+            dict: Configuration dictionary.
+        """
+        config = super(FFTOrRFTLayer, self).get_config()
+        config.update({
+            'use_rft': self.use_rft,
+            'return_magnitude': self.return_magnitude
+        })
+        return config
+
+
+
 class K_MODEL_BASE:
 
 

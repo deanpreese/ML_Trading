@@ -65,11 +65,11 @@ model_x_3070_LT_50_50 =  ['TV4', 'SDBB9CL', 'TV1', 'COMP3', 'TV3', 'ZH79X', 'STO
 lucky13_all = [
                 'SDLR310','SDBB91',
                 'SDKC91','SDKC9',
-               'ROC',
-               'ATR54','ATR53',
-               'ATR52','ATR51','ATR5',
-               'ATR21',
-               'ATR2','RSI','STOK1'
+                'ROC',
+                'ATR54','ATR53',
+                'ATR52','ATR51','ATR5',
+                'ATR21',
+                'ATR2','RSI','STOK1'
                ]
 
 lucky_13_3070_RSI_LT_50 = ['ATR2', 'ROC', 'ATR21', 'SDKC9', 'SDBB91', 'RSI']

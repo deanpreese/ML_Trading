@@ -1,0 +1,31 @@
+I'd like you to develop a 1-month LinkedIn content plan for me with a balance of Growth, Knowledge, and Authority content.
+
+For context, [INSERT CONTEXT]
+
+I sell: [EXPLAIN WHAT YOU SELL]
+
+My target audience is: [INSERT YOUR TARGET AUDIENCE]
+
+Here are the content types explained:
+
+Growth content attracts new eyes and potential leads by providing value quickly. It solves common problems and provides 'hacks/tips'.
+
+Knowledge content teaches specialized information to build relationships and trust. It educates on specific topics relevant to ideal customers.
+
+Authority content proves expertise and ability to get results. It uses social proof like case studies, stats, testimonials.
+
+Now, do this:
+
+1) Research my target customer. Output a table with my target customers' top 10 desires related to my industry, top 10 dreams they want to achieve, their top 10 fears holding them back, and their top 10 frustrations with status quo. Provide all of these in a shared table
+
+2)  With those inputs, develop a month-long LinkedIn content plan for me with 10 posts per week, broken down as follows:
+
+3 Growth content ideas addressing common frustrations
+4 Knowledge content ideas addressing desires and dreams
+3 Authority content ideas addressing fears and providing social proof
+
+Make sure the content ideas speak directly to resolving the target audience’s pain points and helping them achieve their goals. Show how my product/service is the solution.
+
+The content ideas should bridge the target customers' desires, dreams, fears, and frustrations and the solution the user has
+
+For each week, provide a brief title and description for each post so I understand what it is about. Format it as a table with columns for Week 1, Week 2, Week 3, Week 4 and rows for each day."

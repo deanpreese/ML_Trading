@@ -232,7 +232,7 @@ class KMAX (K_MODEL_BASE):
         fc = 0.7 * concat_lin  + 0.15 * concat_sig +  0.15 * concat_tan  
         fc = Dense(32, activation='relu')(fc)
         fc = Dense(output_dim, activation='relu')(fc)
-        #x = fc  
+        x = fc  
         
         concat_filtered = xa + xs + xt  #oos 10 epoch 11.6   1.9  .37   .768   
         cf = 0.4 * fc + 0.6 * concat_filtered  #oos 10 epoch  11.68  1.9497  .36598   .7692
@@ -271,7 +271,7 @@ def main():
     model_cnn_sm = KMAX()
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
     
-    history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
+    history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 250 )
     best_model = tf.keras.models.load_model(model_cnn_sm.checkpoint_model)
     model_cnn_sm.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
 
