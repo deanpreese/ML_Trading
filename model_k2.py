@@ -26,12 +26,12 @@ from ml_model.k_model_base import FFTLayer, FFTOrRFTLayer , K_MODEL_BASE
 import ml_model.feature_filter as feature_filter
 
 
-#tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
 class K2 (K_MODEL_BASE):
-    def __init__(self, model_name='kmax'):
+    def __init__(self, model_name='k2'):
         
         model_name = model_name
         self.setup_model(model_name)
@@ -115,9 +115,8 @@ class K2 (K_MODEL_BASE):
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        inputs = FFTLayer()(inputs)
-        #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
-    
+        #inputs = FFTLayer()(inputs)
+        inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
         #model_h = self.create_feature_model_h(inputs, output_dim)        
         
         feature_outputs = []
@@ -154,7 +153,10 @@ class K2 (K_MODEL_BASE):
             fx3_out = fx3(feature_input)
             
             
-            x = Average()([fx1_out, fx2_out, fx3_out,rx1_out, rx2_out, rx3_out])
+            #x = Average()([fx1_out, fx2_out, fx3_out,rx1_out, rx2_out, rx3_out])
+            x = Average()([fx1_out, rx1_out])
+            
+            
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
@@ -175,18 +177,21 @@ class K2 (K_MODEL_BASE):
 def main():
     
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            'data/Model_X_3070_oos.csv',  
-            'data/Model_X_3070.csv',  #3
-    ]   
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/Model_X_3070_oos.csv',  
+                'data/Model_X_3070.csv',  #3
+                'data/Model_YD_3070_oos.csv',  
+                'data/Model_YD_3070.csv',  #5
+        ]
 
-    col_filter = feature_filter.lucky13_all         
+    #col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
-    
-    model = K2('k2_lucky13')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[1], datafile[0], col_filter)
+    col_filter = feature_filter.model_yd_columns
+        
+    model = K2('k2_model_yd_columns')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[5], datafile[4], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
     #best_model = tf.keras.models.load_model(model.checkpoint_model)

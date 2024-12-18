@@ -184,12 +184,12 @@ class K_MODEL_BASE:
         self.evaluate_model( y_test, y_pred_test, "Test")
         rmse_oos, mse_oos, mae_oos, r2_oos = self.evaluate_model( y_oos, y_pred_oos, "OOS")
 
-        model_file = f"model_{self.model_name}_{mse_oos}_{mae_oos}_{r2_oos}_model.keras"
-        oos_file_path = os.path.join(self.checkpoint_dir, model_file)
+        model_file = f"{self.model_name}_{mse_oos}_{mae_oos}_{r2_oos}.keras"
+        oos_file_path = os.path.join(self.trained_dir, model_file)
         best_model.save(oos_file_path)
         
-        oos_model_plot_file = f"model_{self.model_name}_{mse_oos}_{mae_oos}_{r2_oos}_model.png"
-        oos_model_plot_path = os.path.join(self.checkpoint_dir, oos_model_plot_file)
+        oos_model_plot_file = f"{self.model_name}_{mse_oos}_{mae_oos}_{r2_oos}.png"
+        oos_model_plot_path = os.path.join(self.trained_dir, oos_model_plot_file)
         
         tf.keras.utils.plot_model(best_model, to_file=oos_model_plot_path, 
             show_shapes=True, 

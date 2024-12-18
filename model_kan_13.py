@@ -32,9 +32,9 @@ tf.random.set_seed(42)
 
 
 class KAN_13 (K_MODEL_BASE):
-    def __init__(self, epochs=50, batch_size=32):
+    def __init__(self, model_name='kan_13'):
         
-        model_name = 'kan_13'
+        model_name = model_name
         self.setup_model(model_name)
 
     def create_feature_model_h(self, inputs, output_dim):
@@ -367,17 +367,17 @@ class KAN_13 (K_MODEL_BASE):
 def main():
     
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            'data/Model_X_3070_oos.csv',  
-            'data/Model_X_3070.csv',  #3
-    ]   
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/Model_X_3070_oos.csv',  
+                'data/Model_X_3070.csv',  #3
+        ]
 
     col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
     
-    model = KAN_13()
+    model = KAN_13('lucky_13_full')
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[1], datafile[0], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )

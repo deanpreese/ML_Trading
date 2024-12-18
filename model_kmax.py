@@ -30,9 +30,9 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 class KMAX (K_MODEL_BASE):
-    def __init__(self):
+    def __init__(self, model_name='kmax'):
         
-        model_name = 'kmax'
+        model_name = model_name
         self.setup_model(model_name)
         
     def create_feature_model_h(self, inputs, output_dim):

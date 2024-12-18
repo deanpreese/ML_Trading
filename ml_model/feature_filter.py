@@ -78,3 +78,4 @@ lucky13_3070_comp = ['SDKC9', 'ATR5', 'ROC', 'ATR2', 'SDBB91', 'ATR21', 'RSI']
 lucky13_3070_min = ['RSI', 'ATR2', 'ROC']
     
     
+    

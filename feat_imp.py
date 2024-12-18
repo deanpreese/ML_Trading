@@ -133,14 +133,20 @@ def run():
             'data/Lucky13_3070.csv',  #1
             'data/Model_X_3070_oos.csv',  
             'data/Model_X_3070.csv',  #3
+            'data/Model_YD_3070_oos.csv',  
+            'data/Model_YD_3070.csv',  #5
+     
     ] 
 
-    df = pd.read_csv(datafile[1])
+    df = pd.read_csv(datafile[5])
     #df = df.drop(columns=['SeqClose'])
     
     #df = df[((df['RSIRAW'] > 50))]  
-    #df = df[((df['RSIRAW'] > 0) & (df['RSIRAW'] < 30))]  
-    #df = df[((df['RSIRAW'] > 70) & (df['RSIRAW'] < 100))]  
+    #df = df[((df['RSIRAW'] > 70))]  
+    
+    
+    #df = df[((df['RSIRAW'] > 0) & (df['RSIRAW'] < 30))|   
+    #    ((df['RSIRAW'] > 70) & (df['RSIRAW'] < 100))]  
     
     #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))]  
     #df = df[((df['RSI'] > 70) & (df['RSI'] < 100))]  
@@ -148,8 +154,24 @@ def run():
     
     
     X = df
-    X = X.drop(columns=['output', 'outputC'])
+    X = X.drop(columns=['output', 'outputC', 'SeqClose', 'RSIRAW',])
     
+    model_yd_columns = [
+        'COMP2',
+        'COMP3',
+        'TV6',
+        'SDKC9',
+        'STO5135D',
+        'ZC79X',
+        'SDKC7CL',
+        'STO7143D',
+        'ATR2',
+        'SDBB9CU',
+        'SDKC7CU',
+        'TV3',
+        'TV4',
+        ]
+    X = df[model_yd_columns]
     
     lucky_13_columns = [
     "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
@@ -201,6 +223,9 @@ def run():
 
     if use_reg:
         importance_df_sorted_r, important_features_r, performance_df_r  = gen_results(models_r, X_train_r, y_train_r, X_test_r, y_test_r, X.columns, threshold)            
+
+
+    print(X.shape)
 
     if use_class:
         #print("Classifier Sorted Importance")
