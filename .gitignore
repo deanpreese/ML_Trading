@@ -25,7 +25,7 @@ darts_saved_models/
 darts_logs/
 logs/
 checkpoints/
-trained_models/
+#trained_models/
 
 # Mono auto generated files
 mono_crash.*

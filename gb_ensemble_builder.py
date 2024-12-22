@@ -236,11 +236,9 @@ def run():
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
                 'data/Model_X_3070.csv',  #3
-                'data/Model_YD_3070_oos.csv',  
-                'data/Model_YD_3070.csv',  #3
         ]   
 
-        df = pd.read_csv(datafile[3])
+        df = pd.read_csv(datafile[1])
         #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
         

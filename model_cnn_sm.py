@@ -104,19 +104,15 @@ def main():
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
-                'data/Model_X_3070.csv',  #3
-                'data/Model_YD_3070_oos.csv',  
-                'data/Model_YD_3070.csv',  #5
+                'data/Model_X_3070.csv',  #3       'data/Model_YD_3070.csv',  #5
         ]
 
     col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
     
-    col_filter = feature_filter.model_yd_columns
-    
-    model_cnn_sm = CNN_SM()
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[5], datafile[4], col_filter)
+    model_cnn_sm = CNN_SM('cnn_sm_luck13_all')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
     
     history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
     best_model = tf.keras.models.load_model(model_cnn_sm.checkpoint_model, custom_objects={"FFTLayer": FFTLayer})

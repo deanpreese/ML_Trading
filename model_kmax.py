@@ -268,7 +268,7 @@ def main():
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
     
-    model_cnn_sm = KMAX()
+    model_cnn_sm = KMAX('kmax_lucky13_all')
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
     
     history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 250 )

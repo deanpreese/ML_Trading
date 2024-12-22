@@ -69,19 +69,6 @@ class K2 (K_MODEL_BASE):
         return h
 
 
-    def create_feature_model_relu(self, input_shape):
-        
-        input = Input(shape=input_shape)
-        input_dim = input.shape[1]  
-        reshaped_inputs = Reshape((input_dim, 1))(input)
-        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
-        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
-        x = LSTM(32, return_sequences=False, activation='relu')(x)
-        smx_out = Dense(1, activation='relu')(x) 
-        subx_model = Model(input, smx_out)
-        return subx_model
-
-
     def create_feature_model_rx(self, input_shape):
         
         input = Input(shape=input_shape)
@@ -115,48 +102,23 @@ class K2 (K_MODEL_BASE):
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        #inputs = FFTLayer()(inputs)
-        inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
+        inputs = FFTLayer()(inputs)
+        #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
         #model_h = self.create_feature_model_h(inputs, output_dim)        
         
         feature_outputs = []
       
         for i in range(input_shape[0]):
             feature_input = inputs[:, i:i+1]
-
-            f1 = self.create_feature_model_relu((1,))
-            f1_out = f1(feature_input)
-
-            f2 = self.create_feature_model_relu((1,))
-            f2_out = f2(feature_input)
             
-            f3 = self.create_feature_model_relu((1,))
-            f3_out = f3(feature_input)
+            rx = self.create_feature_model_rx((1,))
+            rx_out = rx(feature_input)
             
-            rx1 = self.create_feature_model_rx((1,))
-            rx1_out = rx1(feature_input)
-
-            rx2 = self.create_feature_model_rx((1,))
+            rx2 = self.create_feature_model_rx2((1,))
             rx2_out = rx2(feature_input)
             
-            rx3 = self.create_feature_model_rx((1,))
-            rx3_out = rx3(feature_input)
-            
-            
-            fx1 = self.create_feature_model_rx2((1,))
-            fx1_out = fx1(feature_input)
-
-            fx2 = self.create_feature_model_rx2((1,))
-            fx2_out = fx2(feature_input)
-            
-            fx3 = self.create_feature_model_rx2((1,))
-            fx3_out = fx3(feature_input)
-            
-            
-            #x = Average()([fx1_out, fx2_out, fx3_out,rx1_out, rx2_out, rx3_out])
-            x = Average()([fx1_out, rx1_out])
-            
-            
+            x = Average()([rx2_out, rx_out])
+            #x = rx_out
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
@@ -181,17 +143,15 @@ def main():
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
                 'data/Model_X_3070.csv',  #3
-                'data/Model_YD_3070_oos.csv',  
-                'data/Model_YD_3070.csv',  #5
         ]
 
-    #col_filter = feature_filter.lucky13_all         
+    col_filter = feature_filter.lucky13_all         
+    #col_filter = feature_filter.lucky13_3070_comp
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
-    col_filter = feature_filter.model_yd_columns
         
-    model = K2('k2_model_yd_columns')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[5], datafile[4], col_filter)
+    model = K2('k2_lucky13_all_rx_ave_fft')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[1], datafile[0], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
     #best_model = tf.keras.models.load_model(model.checkpoint_model)
