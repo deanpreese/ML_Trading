@@ -102,7 +102,7 @@ class K2 (K_MODEL_BASE):
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        inputs = FFTLayer()(inputs)
+        #inputs = FFTLayer()(inputs)
         #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
         #model_h = self.create_feature_model_h(inputs, output_dim)        
         
@@ -117,8 +117,18 @@ class K2 (K_MODEL_BASE):
             rx2 = self.create_feature_model_rx2((1,))
             rx2_out = rx2(feature_input)
             
-            x = Average()([rx2_out, rx_out])
-            #x = rx_out
+            #rx_ave
+            #x = Average()([rx2_out, rx_out])
+            
+            #rx_ave 40rx2 + 60rx
+            #x = 0.4 * rx2_out + 0.6 * rx_out
+            
+            #rx_ave 20rx2 + 80rx
+            x = 0.2 * rx2_out + 0.8 * rx_out
+            
+            
+            # xxx out
+            #x = rx2_out
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
@@ -143,15 +153,29 @@ def main():
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
                 'data/Model_X_3070.csv',  #3
+                'data/The_13_R_3070_oos.csv',
+                'data/The_13_R_3070.csv' #5
+                
         ]
 
-    col_filter = feature_filter.lucky13_all         
+    model_13_r = [
+                'SDBB9L','SDBB9U',
+                'SDKC9U','SDKC9L',
+                'ROC',
+                'ATR54','ATR53','ATR52','ATR51',
+                'ATR5',
+                'ATR21',
+                'ATR2',
+                'RSI','STOK1']
+
+    col_filter = model_13_r
+    #col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.lucky13_3070_comp
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
-        
-    model = K2('k2_lucky13_all_rx_ave_fft')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[1], datafile[0], col_filter)
+         
+    model = K2('k2_13_r')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[5], datafile[4], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
     #best_model = tf.keras.models.load_model(model.checkpoint_model)
