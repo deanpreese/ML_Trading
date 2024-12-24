@@ -206,28 +206,6 @@ def run():
                 XGBRegressor(**mp.xgb_r_t)
                 ]
 
-        ens_13_50 = [
-                CatBoostClassifier(),
-                CatBoostClassifier(**mp.cat_c_set),
-                XGBClassifier(**mp.xgb_c_set),
-                ]
-
-
-        ens_yd = [
-                CatBoostClassifier(),
-                CatBoostClassifier(**mp.cat_c_New3070),
-                CatBoostClassifier(**mp.cat_c_lucky13),
-                CatBoostClassifier(**mp.cat_c_set),
-                #LGBMClassifier(),
-                #LGBMClassifier(**mp.lgb_c_L13EX),
-                #LGBMClassifier(**mp.lgb_c_New3070),
-                #LGBMClassifier(**mp.lgb_c_lucky13),
-                #LGBMClassifier(**mp.lgb_c_set),
-                #LGBMClassifier(**mp.lgb_c_t),
-                #XGBClassifier(**mp.xgb_c_set),
-                #XGBClassifier(**mp.xgb_c_t),
-                ]
-
 
 
         # ==========================================
@@ -236,24 +214,37 @@ def run():
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
                 'data/Model_X_3070.csv',  #3
+                'data/The_13_R_3070.csv' #4
         ]   
 
-        df = pd.read_csv(datafile[1])
-        #df = df[((df['RSI'] > 20) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 80)]  
+        df = pd.read_csv(datafile[4])
+        #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 100)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
         
         #df = df[(df['RSIRAW'] > 50)]  
-        #df = df[(df['RSIRAW'] < 50)]  
+        #df = df[(df['RSIRAW'] > 70)]  
         
 
         feat_data = 'xxx'
+
+        fd = [
+                'SDBB9L','SDBB9U',
+                'SDKC9U','SDKC9L',
+                'ROC',
+                #'ATR54','ATR53','ATR52','ATR51',
+                #'ATR5',
+                #'ATR21',
+                'ATR2',
+                'RSI','STOK1']
+        
+        feat_data = fd
         
         #feat_data = feature_filter.lucky13_3070_min       
-        feat_data = feature_filter.model_yd_columns
+        #feat_data = feature_filter.model_yd_columns
         split_test_size_value = 0.7          
         save_mlflow = False
         
-        p_df, experiment_id_parent = run_models(df, ens_yd, split_test_size_value, save_mlflow, feat_data)
+        p_df, experiment_id_parent = run_models(df, ens_m, split_test_size_value, save_mlflow, feat_data)
         
         print("")
         for run_uuid, input_features, e_perf, features_list, ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p  in p_df.values.tolist(): 
