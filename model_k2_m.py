@@ -162,7 +162,7 @@ def main():
     #col_filter = feature_filter.lucky13_3070_comp
     col_filter = feature_filter.model_m_1_alt
          
-    model = K2('k2_m1_alt_ave')
+    model = K2('k2_m_m1_alt_ave')
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
