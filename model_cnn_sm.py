@@ -87,7 +87,7 @@ class CNN_SM (K_MODEL_BASE):
     def create_model(self, input_shape):
         
         inputs = Input(shape=input_shape)
-        h = self.build_model_hy(inputs)
+        h = self.build_model_hy2(inputs)
 
         #hy2 = self.build_model_hy2(inputs)
         #h = Average()([hy2, hy])
@@ -104,15 +104,53 @@ def main():
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_X_3070_oos.csv',  
-                'data/Model_X_3070.csv',  #3       'data/Model_YD_3070.csv',  #5
-        ]
+                'data/Model_X_3070.csv',  #3
+                'data/The_13_X_3070_oos.csv',
+                'data/The_13_X_3070.csv' #5
+        ] 
 
-    col_filter = feature_filter.lucky13_all         
+    data_13_x = [
+        #"Year",  "Month",  "Day",  "DayOfWeek",    "HourOfDay",    "MinOfHour",    "SeqClose",
+        #"RSIRAW",
+        "SDBB9L",   
+        "SDBB9U",
+        #"SDKC9U", 
+        "SDKC9L",
+        #"SDBB14L",  
+        "SDBB14U",
+        #SDKC7U",   
+        #"SDKC7L",
+        #"ROC14",    
+        "ROC9",
+        #"ADX14",   
+        #"ADX9",
+        #"ATR9",     "ATR7",
+        #"ATR5", 
+        "ATR2",
+        #"RSI14",  
+        "RSI9",
+        "RSIH14",   
+        #"RSIH9",
+        #"RSIL14",   
+        #"RSIL9",
+        #"STOK721",  
+        "STOK513",
+        ]
+    
+    data_13_x_50 = ['RSI9', 'RSIL9', 'SDBB14U', 'RSIH9', 'ADX14', 
+                    'STOK721', 'STOK513', 
+                    #'RSI14', 'SDKC9L'
+                    ]
+    
+    
+    col_filter = data_13_x_50
+
+    #col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.model_x_3070_imp_full        
     #col_filter = feature_filter.model_x_3070_imp_slim
     
-    model_cnn_sm = CNN_SM('cnn_sm_luck13_all')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
+    model_cnn_sm = CNN_SM('cnn_sm_13_x_50_3070')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[5], datafile[4], col_filter)
     
     history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 1000 )
     best_model = tf.keras.models.load_model(model_cnn_sm.checkpoint_model, custom_objects={"FFTLayer": FFTLayer})

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Layer, Input, Conv1D, Average, Conv2D, LeakyReLU, Reshape, Concatenate, Multiply,LayerNormalization 
@@ -137,9 +138,19 @@ class K_MODEL_BASE:
     def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val, epochs ):
         
         self.create_model(input_shape )
+        
+        
 
         self.model.compile(optimizer=Adam(learning_rate=0.001), 
-                loss='mse', metrics=['mae', tf.keras.metrics.R2Score()])
+                loss='mse', 
+                metrics=[
+                      'mse',  # Mean Squared Error
+                      'mae',  # Mean Absolute Error
+                      tf.keras.metrics.RootMeanSquaredError(name='rmse'), # Root Mean Squared Error
+                      tf.keras.metrics.R2Score()
+                  ])
+
+                
         self.model.summary()
         
         tf.keras.utils.plot_model(self.model, to_file=self.model_plot, 

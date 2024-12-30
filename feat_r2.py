@@ -178,14 +178,13 @@ def evaluate_model( y_test, y_pred):
 def main():
     
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            'data/Model_X_ALL_oos.csv',   
-            'data/Model_X_ALL.csv',  #3
-            'data/Model_X_3070_oos.csv',  
-            'data/Model_X_3070.csv',  #5
-            
-    ]   
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/Model_X_3070_oos.csv',  
+                'data/Model_X_3070.csv',  #3
+                'data/The_13_X_3070_oos.csv',
+                'data/The_13_X_3070.csv' #5
+                ]   
 
     file_train = 3
 
@@ -201,7 +200,7 @@ def main():
     ]
     
     model_x_columns = [
-        "Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "SeqClose",
+        #"Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "SeqClose",
         "SDBB9", "SDBB91", "SDKC9", "SDKC91", "SDBB29", "SDBB291", "SDKC29", "SDKC291",
         "SDBB14CU", "SDBB14CL", "SDBB9CU", "SDBB9CL", "SDKC10CU", "SDKC10CL", "SDKC7CU",
         "SDKC7CL", "ROC14", "ROC9", "ROC7", "ATR14", "ATR9", "ATR5", "ATR2", "RSI14", 
@@ -210,7 +209,10 @@ def main():
         "COMP2", "COMP3"
     ]
     
+
+
     column_results = []
+    #column_list = data_13_x
     column_list = model_x_columns
     
     for i in range(len(column_list)):

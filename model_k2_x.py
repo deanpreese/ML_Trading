@@ -102,7 +102,7 @@ class K2 (K_MODEL_BASE):
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        #inputs = FFTLayer()(inputs)
+        inputs = FFTLayer()(inputs)
         #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
         #model_h = self.create_feature_model_h(inputs, output_dim)        
         
@@ -129,6 +129,8 @@ class K2 (K_MODEL_BASE):
             
             # xxx out
             #x = rx2_out
+            #x = rx_out
+            
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
@@ -136,7 +138,7 @@ class K2 (K_MODEL_BASE):
                    
         x = Concatenate(axis=1)(feature_outputs)
         
-        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
+        #x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         
         x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         #x = Average()([model_h,x])
@@ -151,48 +153,17 @@ def main():
     datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
-                'data/Model_X_3070_oos.csv',  
-                'data/Model_X_3070.csv',  #3
-                'data/The_13_X_3070_oos.csv',
-                'data/The_13_X_3070.csv' #5
+                'data/Model_M_1_3070_oos.csv', 
+                'data/Model_M_1_3070.csv' #3
         ] 
     
-    
-    data_13_x_50 = ['RSI9', 'RSIL9', 'SDBB14U', 'RSIH9', 'ADX14', 'STOK721', 'STOK513', 'RSI14', 'SDKC9L']
         
-    
-    data_13_x = [
-        #"Year",  "Month",  "Day",  "DayOfWeek",    "HourOfDay",    "MinOfHour",    "SeqClose",
-        #"RSIRAW",
-        "SDBB9L",    "SDBB9U",
-        "SDKC9U",    "SDKC9L",
-        "SDBB14L",    "SDBB14U",
-        "SDKC7U",     "SDKC7L",
-        "ROC14",    
-        "ROC9",
-        "ADX14",   
-        "ADX9",
-        "ATR9",     "ATR7",
-        "ATR5", 
-        "ATR2",
-        "RSI14",  
-        "RSI9",
-        "RSIH14",   
-        "RSIH9",
-        "RSIL14",   
-        "RSIL9",
-        "STOK721",  
-        "STOK513",
-        ]
-    
-    col_filter = data_13_x_50
     #col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.lucky13_3070_comp
-    #col_filter = feature_filter.model_x_3070_imp_full        
-    #col_filter = feature_filter.model_x_3070_imp_slim
+    col_filter = feature_filter.model_m_1_alt
          
-    model = K2('k2_13_x_min')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[5], datafile[4], col_filter)
+    model = K2('k2_m1_alt_ave')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
     #best_model = tf.keras.models.load_model(model.checkpoint_model)
