@@ -194,7 +194,7 @@ def run():
         #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 100)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
         
-        #df = df[(df['RSIRAW'] > 50)]  
+        #df = df[(df['output'] >= 0)]  
         #df = df[(df['RSIRAW'] > 70)]  
         
         feat_data = feature_filter.model_m_1_alt

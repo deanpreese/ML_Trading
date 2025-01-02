@@ -104,7 +104,7 @@ class K2 (K_MODEL_BASE):
 
         inputs = FFTLayer()(inputs)
         #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
-        #model_h = self.create_feature_model_h(inputs, output_dim)        
+        model_h = self.create_feature_model_h(inputs, output_dim)        
         
         feature_outputs = []
       
@@ -129,19 +129,22 @@ class K2 (K_MODEL_BASE):
             
             # xxx out
             #x = rx2_out
-            #x = rx_out
+            x = rx_out
             
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
-             
                    
         x = Concatenate(axis=1)(feature_outputs)
         
         #x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         
         x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
+        
+        #model hx
         #x = Average()([model_h,x])
+        
+        x = model_h
         
         output = Dense(1, activation='linear')(x)
         self.model = Model(inputs=inputs, outputs=output)
@@ -162,7 +165,7 @@ def main():
     #col_filter = feature_filter.lucky13_3070_comp
     col_filter = feature_filter.model_m_1_alt
          
-    model = K2('k2_m_m1_alt_ave')
+    model = K2('k2_m_m1_alt_h_fft')
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
