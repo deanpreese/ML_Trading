@@ -102,8 +102,8 @@ class K2 (K_MODEL_BASE):
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        inputs = FFTLayer()(inputs)
-        #inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
+        #inputs = FFTLayer()(inputs)
+        inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
         model_h = self.create_feature_model_h(inputs, output_dim)        
         
         feature_outputs = []
@@ -120,31 +120,28 @@ class K2 (K_MODEL_BASE):
             #rx_ave
             x = Average()([rx2_out, rx_out])
             
-            #rx_ave 40rx2 + 60rx
+            #40rx2_60rx
             #x = 0.4 * rx2_out + 0.6 * rx_out
             
-            #rx_ave 20rx2 + 80rx
+            #20rx2_80rx
             #x = 0.2 * rx2_out + 0.8 * rx_out
             
             
-            # xxx out
+            # xxx_out
             #x = rx2_out
-            x = rx_out
+            #x = rx_out
             
             
             feature_outputs.append(x)   
             #feature_outputs.append(f2_out)   
                    
         x = Concatenate(axis=1)(feature_outputs)
-        
-        #x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
-        
+        x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         
-        #model hx
-        #x = Average()([model_h,x])
-        
-        x = model_h
+        #model hx_ave
+        x = Average()([model_h,x])
+        #x = model_h
         
         output = Dense(1, activation='linear')(x)
         self.model = Model(inputs=inputs, outputs=output)
@@ -163,10 +160,17 @@ def main():
         
     #col_filter = feature_filter.lucky13_all         
     #col_filter = feature_filter.lucky13_3070_comp
-    col_filter = feature_filter.model_m_1_alt
+    #col_filter = feature_filter.model_m_1_all
+    #col_filter = feature_filter.model_m_1_alt
+    #col_filter = feature_filter.model_m_1_slim
+    #col_filter = feature_filter.model_m_1_slim_x
+    col_filter = feature_filter.model_m_1_r2
          
-    model = K2('k2_m_m1_alt_h_fft')
+    model = K2('k2_m_m1_r2_rft_rx_hx_ave')
     X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
+    
+    #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 100)]  
+        
     
     history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
     #best_model = tf.keras.models.load_model(model.checkpoint_model)

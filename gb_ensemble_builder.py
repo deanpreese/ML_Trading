@@ -193,17 +193,23 @@ def run():
         df = pd.read_csv(datafile[3])
         #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 100)]  
         #df = df[((df['RSI'] > 25) & (df['RSI'] < 40))|(df['RSI'] > 60) & (df['RSI'] < 75)] 
+        #df = df[(df['RSIRAW'] < 30)]  
         
-        #df = df[(df['output'] >= 0)]  
-        #df = df[(df['RSIRAW'] > 70)]  
+        #df = df[(df['Year'] > 2023)]  
+        #df = df[((df['ATR2'] > 38) & (df['ATR2'] < 75))]
+        #df = df[((df['ATR5'] > 30) & (df['ATR5'] < 85))]
         
-        feat_data = feature_filter.model_m_1_alt
-        #feat_data = feature_filter.lucky13_3070_min       
-        #feat_data = feature_filter.model_yd_columns
+        #col_filter = feature_filter.lucky13_all         
+        #col_filter = feature_filter.lucky13_3070_comp
+        #col_filter = feature_filter.model_m_1_all
+        #col_filter = feature_filter.model_m_1_alt
+        #col_filter = feature_filter.model_m_1_slim_x
+        col_filter = feature_filter.model_m_1_r2
+                
         split_test_size_value = 0.7          
         save_mlflow = False
         
-        p_df, experiment_id_parent = run_models(df, ens_x_1, split_test_size_value, save_mlflow, feat_data)
+        p_df, experiment_id_parent = run_models(df, ens_x_1, split_test_size_value, save_mlflow, col_filter)
         
         print("")
         for run_uuid, input_features, e_perf, features_list, ens_accuracy, ens_precision, ens_recall, win_p, loss_p, tn_p, tp_p, fn_p, fp_p  in p_df.values.tolist(): 

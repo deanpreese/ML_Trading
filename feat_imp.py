@@ -129,13 +129,8 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 def run():
 
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
             'data/Lucky13_3070.csv',  #1
-            'data/Model_X_3070_oos.csv',  
-            'data/Model_X_3070.csv',  #3        
-            'data/The_13_X_3070_oos.csv',
-            'data/The_13_X_3070.csv', #5
-            'data/Model_M_1_3070.csv' #6
+            'data/Model_M_1_3070.csv' #2
     ] 
 
     df = pd.read_csv(datafile[6])
@@ -170,18 +165,7 @@ def run():
     "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1"
     ]
     #X = df[lucky_13_columns]
-    
-    model_x_columns = [
-        "Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour", "RSIRAW", "SeqClose",
-        "SDBB9", "SDBB91", "SDKC9", "SDKC91", "SDBB29", "SDBB291", "SDKC29", "SDKC291",
-        "SDBB14CU", "SDBB14CL", "SDBB9CU", "SDBB9CL", "SDKC10CU", "SDKC10CL", "SDKC7CU",
-        "SDKC7CL", "ROC14", "ROC9", "ROC7", "ATR14", "ATR9", "ATR5", "ATR2", "RSI14", 
-        "RSI9", "ADX14", "ADX9", "STO5135K", "STO5135D", "STO7143K", "STO7143D", "TV1", 
-        "TV2", "TV3", "TV4", "TV5", "TV6", "ZH79X", "ZL79X", "ZC79X", "COMP0", "COMP1", 
-        "COMP2", "COMP3"
-    ]
-    #X = df[model_x_columns]
-    
+
 
     y = df['outputC'].values
     y2 = df['output'].values

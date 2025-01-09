@@ -138,8 +138,6 @@ class K_MODEL_BASE:
     def train_model(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val, epochs ):
         
         self.create_model(input_shape )
-        
-        
 
         self.model.compile(optimizer=Adam(learning_rate=0.001), 
                 loss='mse', 
