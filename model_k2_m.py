@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import itertools
 import joblib
 import pywt
 import matplotlib.pyplot as plt
@@ -48,9 +49,7 @@ class K2 (K_MODEL_BASE):
         """        
 
         h = Conv1D(filters=64, kernel_size=4, activation='relu', kernel_initializer=self.initializer)(inputs) 
-        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
         h = Conv1D(filters=32, kernel_size=3, activation='relu', kernel_initializer=self.initializer)(h)
-        #h = LSTM(32, kernel_regularizer=self.l2_reg, activation='relu', return_sequences=True, kernel_initializer=self.initializer)(h)
         h = Conv1D(filters=16, kernel_size=2, activation='relu', kernel_initializer=self.initializer)(h)
 
         attention_output = MultiHeadAttention(num_heads=4, key_dim=16)(h, h)
@@ -96,14 +95,48 @@ class K2 (K_MODEL_BASE):
         return subx_model
 
 
+
+
+    def create_feature_model_rx3(self, input_shape):
+        
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        smx_out = Dense(1, activation='linear')(x) 
+        subx_model = Model(input, smx_out)
+        return subx_model
+
+
+
+    def create_feature_model_rx4(self, input_shape):
+        
+        input = Input(shape=input_shape)
+        input_dim = input.shape[1]  
+        reshaped_inputs = Reshape((input_dim, 1))(input)
+        x = LSTM(32, return_sequences=True, activation='relu')(reshaped_inputs)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = Conv1D(filters=32, kernel_size=1, activation='relu', kernel_initializer=self.initializer)(x)
+        x = LSTM(32, return_sequences=False, activation='relu')(x)
+        smx_out = Dense(1, activation='linear')(x) 
+        subx_model = Model(input, smx_out)
+        return subx_model
+
+
    
-    def create_model(self, input_shape ):
+    def create_model_custom(self, input_shape, combo ):
         
         inputs = Input(shape=input_shape)
         output_dim = 16
 
-        #inputs = FFTLayer()(inputs)
-        inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
+        if combo[0] == 'fft':
+            inputs = FFTLayer()(inputs)
+            
+        if combo[0] == 'rft':
+            inputs = FFTOrRFTLayer(use_rft=True, return_magnitude=True, name="fft_or_rft_layer")(inputs)
+        
         model_h = self.create_feature_model_h(inputs, output_dim)        
         
         feature_outputs = []
@@ -111,25 +144,37 @@ class K2 (K_MODEL_BASE):
         for i in range(input_shape[0]):
             feature_input = inputs[:, i:i+1]
             
-            rx = self.create_feature_model_rx((1,))
-            rx_out = rx(feature_input)
+            rx_model = self.create_feature_model_rx((1,))
+            rx = rx_model(feature_input)
             
-            rx2 = self.create_feature_model_rx2((1,))
-            rx2_out = rx2(feature_input)
+            rx2_model = self.create_feature_model_rx2((1,))
+            rx2 = rx2_model(feature_input)
             
-            #rx_ave
-            x = Average()([rx2_out, rx_out])
+            rx3_model = self.create_feature_model_rx3((1,))
+            rx3 = rx3_model(feature_input)
             
-            #40rx2_60rx
-            #x = 0.4 * rx2_out + 0.6 * rx_out
-            
-            #20rx2_80rx
-            #x = 0.2 * rx2_out + 0.8 * rx_out
+            rx4_model = self.create_feature_model_rx4((1,))
+            rx4 = rx4_model(feature_input)
             
             
-            # xxx_out
-            #x = rx2_out
-            #x = rx_out
+            if combo[1] == "rx_ave":
+                x = Average()([rx, rx2])
+            
+            if combo[1] == "rx":
+                x = rx
+            
+            if combo[1] == "rx2":
+                x = rx2
+            
+            
+            if combo[1] == "rx3":
+                x = rx3
+            
+            if combo[1] == "rx4":
+                x = rx3
+            
+            if combo[1] == "rx_ave2":
+                x = Average()([rx3, rx4])
             
             
             feature_outputs.append(x)   
@@ -139,16 +184,19 @@ class K2 (K_MODEL_BASE):
         x = Dense(32, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         x = Dense(output_dim, activation='relu', kernel_regularizer=self.l2_reg,kernel_initializer=self.initializer)(x)
         
-        #model hx_ave
-        x = Average()([model_h,x])
-        #x = model_h
+        if combo[2] == "hx_ave":
+            x = Average()([model_h,x])
+            
+        if combo[2] == "h":    
+            x = model_h
         
         output = Dense(1, activation='linear')(x)
         self.model = Model(inputs=inputs, outputs=output)
         return self.model
     
 
-def main():
+
+def runner():
     
     datafile = [ 
                 'data/Lucky13_3070_oos.csv',   
@@ -163,21 +211,36 @@ def main():
     #col_filter = feature_filter.model_m_1_all
     #col_filter = feature_filter.model_m_1_alt
     #col_filter = feature_filter.model_m_1_slim
-    #col_filter = feature_filter.model_m_1_slim_x
-    col_filter = feature_filter.model_m_1_r2
-         
-    model = K2('k2_m_m1_r2_rft_rx_hx_ave')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
+    col_filter = feature_filter.model_m_1_slim_x
+    #col_filter = feature_filter.model_m_1_r2
     
-    #df = df[((df['RSI'] > 0) & (df['RSI'] < 30))|(df['RSI'] > 70) & (df['RSI'] < 100)]  
         
-    
-    history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
-    #best_model = tf.keras.models.load_model(model.checkpoint_model)
-    best_model = tf.keras.models.load_model(model.checkpoint_model, custom_objects={"FFTLayer": FFTLayer, "FFTOrRFTLayer": FFTOrRFTLayer})
-    
-    model.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
+    #data1 = ["none", "rft", "ftt"]
+    #data2 = ["rx_ave", "rx", "rx2", "rx3", "rx4", "rx_ave2"]
+    #data3 = ["x", "hx_ave", "h"]
 
+    data1 = ["rft", "ftt"]
+    data2 = ["rx_ave", ]
+    data3 = ["hx_ave"]
+
+
+    combinations = list(itertools.product(data1, data2, data3))
+
+    for combo in combinations:
+        
+        model_text = f"k2_m_m1_slim_x_{combo[0]}_{combo[1]}_{combo[2]}"
+        print(model_text)   
+        
+        model = K2(model_text)
+        
+        X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[3], datafile[2], col_filter)
+        
+        model.create_model_custom(input_shape, combo)
+        
+        history_out, y_pred = model.train_model_cc(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 5000 )
+        best_model = tf.keras.models.load_model(model.checkpoint_model, custom_objects={"FFTLayer": FFTLayer, "FFTOrRFTLayer": FFTOrRFTLayer})
+        
+        model.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)            
             
 if __name__ == "__main__":
-    main()
+    runner()

@@ -2,8 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import joblib
-import pywt
+#import joblib
+#import pywt
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from tensorflow.keras.layers import Lambda
@@ -258,22 +258,26 @@ class KMAX (K_MODEL_BASE):
 def main():
     
     datafile = [ 
-            'data/Lucky13_3070_oos.csv',   
-            'data/Lucky13_3070.csv',  #1
-            'data/Model_X_3070_oos.csv',  
-            'data/Model_X_3070.csv',  #3
-    ]   
+                'data/Lucky13_3070_oos.csv',   
+                'data/Lucky13_3070.csv',  #1
+                'data/Model_X_3070_oos.csv',  
+                'data/Model_X_3070.csv',  #3
+                'data/The_13_X_3070_oos.csv',
+                'data/The_13_X_3070.csv', #5,
+                'data/Model_3LB_ALL_oos.csv', #6
+                'data/Model_3LB_ALL.csv' #7
+                
+        ] 
+    
+    col_filter = ['SDKC9', 'ATR5', 'ROC', 'ATR2', 'SDBB91', 'ATR21', 'RSI',       
+                        'cv2', 'cv1', 'cv0', 'chv2', 'chv0', 'cv4', 'chv12', 'chv18', 'chv11']
 
-    col_filter = feature_filter.lucky13_all         
-    #col_filter = feature_filter.model_x_3070_imp_full        
-    #col_filter = feature_filter.model_x_3070_imp_slim
-    
-    model_cnn_sm = KMAX('kmax_lucky13_all')
-    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model_cnn_sm.process_data_split(datafile[1], datafile[0], col_filter)
-    
-    history_out, y_pred = model_cnn_sm.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 250 )
-    best_model = tf.keras.models.load_model(model_cnn_sm.checkpoint_model)
-    model_cnn_sm.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
+    model = KMAX('kmax_3lb_x')
+    X_train, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos, input_shape = model.process_data_split(datafile[7], datafile[6], col_filter)
+
+    history_out, y_pred = model.train_model(input_shape, X_train, X_test, y_train, y_test, X_val, y_val, 250 )
+    best_model = tf.keras.models.load_model(model.checkpoint_model)
+    model.evaluate_finished_model(best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos)
 
             
 if __name__ == "__main__":

@@ -1,7 +1,12 @@
+import os
+import json
+from datetime import datetime
+
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, Model
+
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import (
     classification_report,
@@ -11,57 +16,64 @@ from sklearn.metrics import (
     accuracy_score,
 )
 
-
-tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], "GPU")
 np.random.seed(42)
 tf.random.set_seed(42)
 
 # ============================================================
-# 1. CONFIG: paths to training+validation and OOS test files
+# 1. CONFIG
 # ============================================================
-
-# Set these to your actual filenames
-TRAIN_CSV_PATH = "data/Model_3LB_ALL.csv"   # train + validation
-TEST_CSV_PATH  = "data/Model_3LB_ALL_oos.csv"     # out-of-sample test
-
+TRAIN_CSV_PATH = "data/Model_3LB_ALL.csv"
+TEST_CSV_PATH  = "data/Model_3LB_ALL_oos.csv"
 
 TARGET_COL = "outputC"
-DROP_COLS = ["output", "outputC"]  # dropped from features
+DROP_COLS = ["output", "outputC"]
 
+TRAIN_SPLIT = 0.80
+THRESHOLD = 0.50
+
+EPOCHS = 200
+BATCH_SIZE = 64
+
+# Where to save artifacts
+RUNS_DIR = "runs"
+RUN_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
+RUN_DIR = os.path.join(RUNS_DIR, RUN_ID)
+os.makedirs(RUN_DIR, exist_ok=True)
+
+MODEL_PATH = os.path.join(RUN_DIR, "final_model.keras")
+METRICS_PATH = os.path.join(RUN_DIR, "metrics.json")
+HISTORY_PATH = os.path.join(RUN_DIR, "history.csv")
+CM_PATH = os.path.join(RUN_DIR, "confusion_matrix.csv")
+REPORT_PATH = os.path.join(RUN_DIR, "classification_report.txt")
+FEATURES_PATH = os.path.join(RUN_DIR, "feature_cols.json")
 
 # ============================================================
 # 2. Load data
 # ============================================================
-
 train_df = pd.read_csv(TRAIN_CSV_PATH)
 test_df  = pd.read_csv(TEST_CSV_PATH)
 
-# Feature columns come from training file
 feature_cols = [c for c in train_df.columns if c not in DROP_COLS]
 
-# Sanity check: test file must contain same feature columns
 missing_in_test = [c for c in feature_cols if c not in test_df.columns]
 if missing_in_test:
     raise ValueError(f"Test file is missing feature columns: {missing_in_test}")
 
-# Extract numpy arrays
 X_all = train_df[feature_cols].values.astype("float32")
-y_all = train_df[TARGET_COL].values.astype("float32")
+y_all = train_df[TARGET_COL].values.astype("int32")  # ensure integer classes
 
 X_test = test_df[feature_cols].values.astype("float32")
-y_test = test_df[TARGET_COL].values.astype("float32")
+y_test = test_df[TARGET_COL].values.astype("int32")
 
 n_samples = len(train_df)
 print(f"Total train+val samples: {n_samples}")
 print(f"OOS test samples:        {len(test_df)}")
 
-
 # ============================================================
 # 3. Chronological split: train / validation
 # ============================================================
-
-# No shuffling: respect temporal order
-train_end = int(0.8 * n_samples)  # 80% train, 20% validation (tune if you want)
+train_end = int(TRAIN_SPLIT * n_samples)
 
 X_train, y_train = X_all[:train_end], y_all[:train_end]
 X_val,   y_val   = X_all[train_end:], y_all[train_end:]
@@ -70,18 +82,17 @@ print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
 print(f"X_val   shape: {X_val.shape}, y_val   shape: {y_val.shape}")
 print(f"X_test  shape: {X_test.shape}, y_test  shape: {y_test.shape}")
 
-
 # ============================================================
 # 4. Class weights (for imbalance)
 # ============================================================
-
 classes, counts = np.unique(y_train, return_counts=True)
+
 class_weights = compute_class_weight(
     class_weight="balanced",
     classes=classes,
     y=y_train
 )
-class_weight_dict = {int(c): w for c, w in zip(classes, class_weights)}
+class_weight_dict = {int(c): float(w) for c, w in zip(classes, class_weights)}
 
 print("\nClass distribution (train):")
 for c, cnt, w in zip(classes, counts, class_weights):
@@ -89,27 +100,19 @@ for c, cnt, w in zip(classes, counts, class_weights):
 
 print("\nUsing class weights:", class_weight_dict)
 
-
 # ============================================================
-# 5. Model definition (Mixer-style binary classifier)
+# 5. Model definition
 # ============================================================
-
 def mixer_block(x, feature_dim, expansion_factor=4):
-    # Feature mixing
     y = layers.LayerNormalization()(x)
     y = layers.Dense(feature_dim * expansion_factor, activation="gelu")(y)
-    #y = layers.Dense(feature_dim * expansion_factor * 2 )(y)
-    y = layers.Dense(feature_dim)(y)
-    
-    x = layers.Add()([x, y])
-
-    # Channel mixing
-    y = layers.LayerNormalization()(x)
-    y = layers.Dense(feature_dim * expansion_factor, activation="gelu")(y)
-    #y = layers.Dense(feature_dim * expansion_factor * 2)(y)
     y = layers.Dense(feature_dim)(y)
     x = layers.Add()([x, y])
 
+    y = layers.LayerNormalization()(x)
+    y = layers.Dense(feature_dim * expansion_factor, activation="gelu")(y)
+    y = layers.Dense(feature_dim)(y)
+    x = layers.Add()([x, y])
     return x
 
 def build_binary_mixer(input_dim: int) -> Model:
@@ -119,8 +122,7 @@ def build_binary_mixer(input_dim: int) -> Model:
     x = norm
     z = norm
     y = norm
-    
-    # Mixer blocks
+
     for _ in range(3):
         x = mixer_block(x, feature_dim=input_dim, expansion_factor=4)
         y = mixer_block(y, feature_dim=input_dim, expansion_factor=2)
@@ -129,7 +131,7 @@ def build_binary_mixer(input_dim: int) -> Model:
     x = layers.Dense(128, activation="relu")(x)
     y = layers.Dense(128, activation="relu")(y)
     z = layers.Dense(128, activation="relu")(z)
-    
+
     x = layers.Average()([x, y, z])
     x = layers.Dropout(0.2)(x)
 
@@ -137,7 +139,6 @@ def build_binary_mixer(input_dim: int) -> Model:
     output = layers.Dense(1, activation="sigmoid", name="outputC")(x)
 
     model = Model(inputs=inputs, outputs=output)
-
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
         loss="binary_crossentropy",
@@ -149,7 +150,6 @@ def build_binary_mixer(input_dim: int) -> Model:
         ],
     )
     return model
-
 
 def get_callbacks():
     early_stop = tf.keras.callbacks.EarlyStopping(
@@ -168,81 +168,78 @@ def get_callbacks():
         min_lr=1e-6,
         verbose=1,
     )
+    
+    #checkpoint_dir = 'checkpoints/'
+    #trained_dir = 'trained_models/'
+    ##checkpoint_model = os.path.join(checkpoint_dir, f"model_{model_name}_classifier.keras")
+    #model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    #    checkpoint_model, monitor='val_loss', verbose=1,
+    #    save_best_only=True, save_weights_only=False, mode='min'
+    #    )
 
     return [early_stop, lr_reduce]
-
 
 # ============================================================
 # 6. Build, adapt normalizer, train
 # ============================================================
-
 input_dim = X_train.shape[1]
 model = build_binary_mixer(input_dim)
 model.summary()
 
-# Adapt the normalization layer on TRAIN ONLY
 normalizer = model.get_layer("normalizer")
 normalizer.adapt(X_train)
-
-callbacks = get_callbacks()
 
 history = model.fit(
     X_train,
     y_train,
     validation_data=(X_val, y_val),
-    epochs=200,
-    batch_size=64,
-    callbacks=callbacks,
+    epochs=EPOCHS,
+    batch_size=BATCH_SIZE,
+    callbacks=get_callbacks(),
     class_weight=class_weight_dict,
     verbose=2,
 )
 
+# Save training history
+hist_df = pd.DataFrame(history.history)
+hist_df.to_csv(HISTORY_PATH, index=False)
 
 # ============================================================
-# 7. Validation evaluation (sanity check)
+# 7. Validation evaluation
 # ============================================================
-
 print("\n======================")
 print("Validation evaluation")
 print("======================")
 val_results = model.evaluate(X_val, y_val, verbose=2)
-print(dict(zip(model.metrics_names, val_results)))
-
+val_metric_dict = dict(zip(model.metrics_names, [float(x) for x in val_results]))
+print(val_metric_dict)
 
 # ============================================================
-# 8. OOS Test evaluation – descriptive & extensive
+# 8. OOS Test evaluation
 # ============================================================
-
 print("\n=======================================")
 print("Out-of-sample (OOS) test set evaluation")
 print("=======================================")
 
-# Keras metrics
 test_results = model.evaluate(X_test, y_test, verbose=0)
-metric_dict = dict(zip(model.metrics_names, test_results))
+keras_metric_dict = dict(zip(model.metrics_names, [float(x) for x in test_results]))
 
 print("\nRaw Keras metrics on OOS:")
-for k, v in metric_dict.items():
+for k, v in keras_metric_dict.items():
     print(f"  {k}: {v:.6f}")
 
-# Predictions
 y_proba = model.predict(X_test, verbose=0).ravel()
-y_pred = (y_proba >= 0.5).astype(int)
+y_pred = (y_proba >= THRESHOLD).astype(int)
 
-# Basic stats
-base_pos_rate = y_test.mean()
-pred_pos_rate = y_pred.mean()
-
-print("\nLabel distribution on OOS:")
-print(f"  Actual positive rate:   {base_pos_rate:.4f}")
-print(f"  Predicted positive rate {pred_pos_rate:.4f} (threshold=0.5)")
-
-# Core metrics
-acc = accuracy_score(y_test, y_pred)
-auc = roc_auc_score(y_test, y_proba)
+acc = float(accuracy_score(y_test, y_pred))
+auc = float(roc_auc_score(y_test, y_proba)) if len(np.unique(y_test)) > 1 else float("nan")
 precision, recall, f1, _ = precision_recall_fscore_support(
     y_test, y_pred, average="binary", zero_division=0
 )
+precision, recall, f1 = float(precision), float(recall), float(f1)
+
+cm = confusion_matrix(y_test, y_pred)
+tn, fp, fn, tp = [int(x) for x in cm.ravel()]
 
 print("\nKey classification metrics on OOS:")
 print(f"  Accuracy:  {acc:.4f}")
@@ -251,74 +248,96 @@ print(f"  Precision: {precision:.4f}")
 print(f"  Recall:    {recall:.4f}")
 print(f"  F1-score:  {f1:.4f}")
 
-# Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
-tn, fp, fn, tp = cm.ravel()
-
-print("\nConfusion Matrix (OOS, threshold=0.5):")
+print("\nConfusion Matrix (OOS, threshold={:.2f}):".format(THRESHOLD))
 print("            Pred 0     Pred 1")
 print(f"Actual 0    {tn:7d}   {fp:7d}")
 print(f"Actual 1    {fn:7d}   {tp:7d}")
 
-# Detailed classification report
+report = classification_report(y_test, y_pred, digits=4, zero_division=0)
 print("\nDetailed classification report (OOS):")
-print(classification_report(y_test, y_pred, digits=4, zero_division=0))
+print(report)
 
-# A few example probabilities for manual spot-checking
-print("\nSample predictions (first 10 rows):")
-for i in range(min(10, len(y_test))):
-    print(
-        f"  idx={i:4d} | y_true={int(y_test[i])} | "
-        f"p_hat={y_proba[i]:.4f} | y_pred={int(y_pred[i])}"
-    )
+# ============================================================
+# 9. SAVE MODEL + METRICS ARTIFACTS
+# ============================================================
+# Save final model (includes the adapted Normalization layer)
+model.save(MODEL_PATH)
 
-print("\nDone.")
+# Save confusion matrix as CSV
+cm_df = pd.DataFrame(
+    cm,
+    index=["actual_0", "actual_1"],
+    columns=["pred_0", "pred_1"],
+)
+cm_df.to_csv(CM_PATH, index=True)
 
+# Save classification report text
+with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    f.write(report)
 
+# Save feature list
+with open(FEATURES_PATH, "w", encoding="utf-8") as f:
+    json.dump(feature_cols, f, indent=2)
 
+# Consolidated metrics JSON (single source of truth for your run)
+artifact = {
+    "run_id": RUN_ID,
+    "paths": {
+        "train_csv": TRAIN_CSV_PATH,
+        "test_csv": TEST_CSV_PATH,
+        "model": MODEL_PATH,
+        "metrics_json": METRICS_PATH,
+        "history_csv": HISTORY_PATH,
+        "confusion_matrix_csv": CM_PATH,
+        "classification_report_txt": REPORT_PATH,
+        "feature_cols_json": FEATURES_PATH,
+    },
+    "config": {
+        "target_col": TARGET_COL,
+        "drop_cols": DROP_COLS,
+        "train_split": TRAIN_SPLIT,
+        "threshold": THRESHOLD,
+        "epochs": EPOCHS,
+        "batch_size": BATCH_SIZE,
+        "seed": 42,
+    },
+    "shapes": {
+        "X_train": list(X_train.shape),
+        "X_val": list(X_val.shape),
+        "X_test": list(X_test.shape),
+    },
+    "class_distribution_train": {
+        str(int(c)): {"count": int(cnt), "weight": float(w)}
+        for c, cnt, w in zip(classes, counts, class_weights)
+    },
+    "val_metrics_keras": val_metric_dict,
+    "oos_metrics_keras": keras_metric_dict,
+    "oos_metrics_sklearn": {
+        "accuracy": acc,
+        "auc": auc,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "confusion_matrix": {
+            "tn": tn, "fp": fp, "fn": fn, "tp": tp
+        },
+        "actual_positive_rate": float(y_test.mean()),
+        "predicted_positive_rate": float(y_pred.mean()),
+    },
+    "history_last_epoch": {
+        k: float(v[-1]) for k, v in history.history.items()
+        if isinstance(v, (list, tuple)) and len(v) > 0
+    },
+}
 
+with open(METRICS_PATH, "w", encoding="utf-8") as f:
+    json.dump(artifact, f, indent=2)
 
-"""
-Raw Keras metrics on OOS:
-  loss: 0.522204
-  compile_metrics: 0.774186
-
-Label distribution on OOS:
-  Actual positive rate:   0.5446
-  Predicted positive rate 0.4835 (threshold=0.5)
-
-Key classification metrics on OOS:
-  Accuracy:  0.7742
-  AUC:       0.8293
-  Precision: 0.8297
-  Recall:    0.7366
-  F1-score:  0.7804
-
-Confusion Matrix (OOS, threshold=0.5):
-            Pred 0     Pred 1
-Actual 0       3393       749
-Actual 1       1305      3649
-
-Detailed classification report (OOS):
-              precision    recall  f1-score   support
-
-         0.0     0.7222    0.8192    0.7676      4142
-         1.0     0.8297    0.7366    0.7804      4954
-
-    accuracy                         0.7742      9096
-   macro avg     0.7760    0.7779    0.7740      9096
-weighted avg     0.7808    0.7742    0.7746      9096
-
-
-Sample predictions (first 10 rows):
-  idx=   0 | y_true=0 | p_hat=0.6058 | y_pred=1
-  idx=   1 | y_true=0 | p_hat=0.3140 | y_pred=0
-  idx=   2 | y_true=1 | p_hat=0.2189 | y_pred=0
-  idx=   3 | y_true=1 | p_hat=0.7329 | y_pred=1
-  idx=   4 | y_true=1 | p_hat=0.7495 | y_pred=1
-  idx=   5 | y_true=1 | p_hat=0.7663 | y_pred=1
-  idx=   6 | y_true=1 | p_hat=0.6813 | y_pred=1
-  idx=   7 | y_true=0 | p_hat=0.4325 | y_pred=0
-  idx=   8 | y_true=0 | p_hat=0.2782 | y_pred=0
-  idx=   9 | y_true=0 | p_hat=0.2679 | y_pred=0    
-"""
+print("\n=======================================")
+print("Saved run artifacts to:", RUN_DIR)
+print("Model:", MODEL_PATH)
+print("Metrics:", METRICS_PATH)
+print("History:", HISTORY_PATH)
+print("Confusion matrix:", CM_PATH)
+print("Report:", REPORT_PATH)
+print("Done.")

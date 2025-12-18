@@ -150,10 +150,11 @@ def main():
                 'data/Lucky13_3070_oos.csv',   
                 'data/Lucky13_3070.csv',  #1
                 'data/Model_M_1_3070_oos.csv', 
-                'data/Model_M_1_3070.csv' #3
+                'data/Model_M_1_3070.csv', #3
+                'data/Model_3LB_ALL.csv' #4
         ] 
     
-    file_train = 3
+    file_train = 4
 
 
     np.random.seed(42)
@@ -175,16 +176,22 @@ def main():
     "TV1", "TV2", "TV3", "TV4", "TV5", "TV6", "COMP0", "COMP1", "COMP2", "COMP3"
     ]
     
+     
+    three_lb_filter_x = ["HourOfDay","MinOfHour",
+                       "RSIRAW","SDLR310","SDBB91","SDKC91","SDKC9","ROC","ATR54","ATR53","ATR52",
+                       "ATR51","ATR5","ATR21","ATR2","STOK1",       
+                        'cv2', 'cv1', 'cv0', 'chv2', 'chv0', 'cv4', 'chv12', 'chv18', 'chv11']
+    
 
     column_results = []
     #column_list = data_13_x
-    column_list = model_m_1_all
+    column_list = three_lb_filter_x
     
     for i in range(len(column_list)):
         
         print(f"Loading {file_path}" )
         df = pd.read_csv(file_path)
-        y = df['output']
+        y = df['outputC']
         
         print(column_list[i])
         X = df[[column_list[i]]]

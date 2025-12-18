@@ -129,11 +129,12 @@ def gen_results(models, X_train, y_train, X_test, y_test, columns, threshold):
 def run():
 
     datafile = [ 
-            'data/Lucky13_3070.csv',  #1
-            'data/Model_M_1_3070.csv' #2
+            'data/Lucky13_3070.csv',  #0
+            'data/Model_M_1_3070.csv', #1
+            'data/Model_3LB_ALL.csv' #2
     ] 
 
-    df = pd.read_csv(datafile[6])
+    df = pd.read_csv(datafile[2])
 
     #df = df[((df['RSIRAW'] > 50))]  
     #df = df[((df['RSIRAW'] > 70))]  
@@ -154,18 +155,30 @@ def run():
     "TV1", "TV2", "TV3", "TV4", "TV5", "TV6", "COMP0", "COMP1", "COMP2", "COMP3"
     ]
 
-    X = df[model_m_1]
+    three_lb_filter = ["Year","Month","Day","DayOfWeek","HourOfDay","MinOfHour","SeqClose",
+                       "RSIRAW","SDLR310","SDBB91","SDKC91","SDKC9","ROC","ATR54","ATR53","ATR52",
+                       "ATR51","ATR5","ATR21","ATR2","RSI","STOK1",
+                       "dv0","dv1","dv2","dv3","dv4","dv5","dv6","dv7","dv8","dv9","dv10","dv11","dv12",
+                       "dv13","dv14","dv15","dv16","dv17","dv18","dv19","dv20","dv21","dv22","dv23",
+                       "cv0","cv1","cv2","cv3","cv4","cv5","cv6","cv7","cv8","cv9","cv10","cv11","cv12",
+                       "cv13","cv14","cv15","cv16","cv17","cv18","cv19","cv20","cv21","cv22","cv23",
+                       "chv0","chv1","chv2","chv3","chv4","chv5","chv6","chv7","chv8","chv9","chv10","chv11","chv12",
+                       "chv13","chv14","chv15","chv16","chv17","chv18","chv19","chv20","chv21","chv22","chv23"]
     
+    three_lb_filter_x = ["HourOfDay","MinOfHour",
+                       "RSIRAW","SDLR310","SDBB91","SDKC91","SDKC9","ROC","ATR54","ATR53","ATR52",
+                       "ATR51","ATR5","ATR21","ATR2","STOK1",       
+                        'cv2', 'cv1', 'cv0', 'chv2', 'chv0', 'cv4', 'chv12', 'chv18', 'chv11']
     
+    X = df[three_lb_filter_x]
+        
     #X = df[fd]
     #X = X.drop(columns=['output', 'outputC', 'SeqClose', 'RSIRAW',])
-    
     lucky_13_columns = [
     "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
     "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1"
     ]
     #X = df[lucky_13_columns]
-
 
     y = df['outputC'].values
     y2 = df['output'].values
@@ -193,7 +206,7 @@ def run():
     }
 
     use_class = True
-    use_reg = True
+    use_reg = False
     if use_class:
         importance_df_sorted_c, important_features_c, performance_df_c  = gen_results(models_c, X_train_c, y_train_c, X_test_c, y_test_c, X.columns, threshold)    
 

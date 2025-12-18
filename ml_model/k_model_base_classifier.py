@@ -1,4 +1,5 @@
 import os
+from xml.parsers.expat import model
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -15,109 +16,23 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.regularizers import l2
 from ml_model.model_stats import gen_reg_stats_x, gen_class_stats
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-
-from sklearn.metrics import confusion_matrix, accuracy_score
-
+from sklearn.utils.class_weight import compute_class_weight
 from ml_model.data_func import split_three_ways
+
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+    precision_recall_fscore_support,
+    accuracy_score,
+)
+
 
 #tf.config.set_visible_devices([], 'GPU')
 np.random.seed(42)
 tf.random.set_seed(42)
 
-class FFTLayer(Layer):
-    def call(self, inputs):
-        # Ensure the inputs are cast to complex64 for FFT
-        complex_inputs = tf.cast(inputs, tf.complex64)
-        # Perform FFT
-        fft_output = tf.signal.fft(complex_inputs)
-        # Return the magnitude (abs value) of the FFT result
-        return tf.math.abs(fft_output)
-    
-    def get_config(self):
-        # Return the layer configuration for serialization
-        config = super().get_config()
-        return config
-
-
-
-class FFTOrRFTLayer(Layer):
-    def __init__(self, use_rft=True, return_magnitude=True, **kwargs):
-        """
-        A custom layer to perform either FFT (Fast Fourier Transform) or RFT (Real Fourier Transform)
-        on input tensors based on the configuration.
-
-        Args:
-            use_rft (bool): Whether to use Real Fourier Transform. If False, uses Fast Fourier Transform.
-            return_magnitude (bool): Whether to return the magnitude of the transform output.
-                                     If False, returns the full complex result.
-            **kwargs: Additional keyword arguments for the Layer base class.
-        """
-        super(FFTOrRFTLayer, self).__init__(**kwargs)
-        self.use_rft = use_rft
-        self.return_magnitude = return_magnitude
-
-    def call(self, inputs):
-        """
-        Forward pass of the FFTOrRFTLayer.
-
-        Args:
-            inputs (Tensor): The input tensor, expected to be real-valued for RFT.
-
-        Returns:
-            Tensor: Either the magnitude or full complex output of the transform.
-        """
-        # Validate input type and shape
-        if not tf.is_tensor(inputs):
-            raise ValueError("Input must be a TensorFlow tensor.")
-
-        # Ensure the inputs are in the required dtype for the transform
-        if self.use_rft:
-            real_inputs = tf.cast(inputs, tf.float32)
-            transform_output = tf.signal.rfft(real_inputs)
-        else:
-            complex_inputs = tf.cast(inputs, tf.complex64)
-            transform_output = tf.signal.fft(complex_inputs)
-
-        # Return either the magnitude or full complex result
-        if self.return_magnitude:
-            return tf.math.abs(transform_output)
-        return transform_output
-
-    def compute_output_shape(self, input_shape):
-        """
-        Compute the output shape of the layer.
-
-        Args:
-            input_shape (tuple): Shape of the input tensor.
-
-        Returns:
-            tuple: Shape of the output tensor.
-        """
-        if self.use_rft:
-            # RFFT output shape depends on input length along the last axis
-            last_dim = input_shape[-1]
-            rfft_output_dim = last_dim // 2 + 1
-            return input_shape[:-1] + (rfft_output_dim,)
-        return input_shape
-
-    def get_config(self):
-        """
-        Return the configuration of the layer for serialization.
-
-        Returns:
-            dict: Configuration dictionary.
-        """
-        config = super(FFTOrRFTLayer, self).get_config()
-        config.update({
-            'use_rft': self.use_rft,
-            'return_magnitude': self.return_magnitude
-        })
-        return config
-
-
-
-class K_MODEL_BASE:
-
+class K_MODEL_BASE_CLASSIFIER:
 
     def setup_model(self, model_name):
 
@@ -126,9 +41,9 @@ class K_MODEL_BASE:
 
         self.model_name = model_name
 
-        self.checkpoint_model = os.path.join(self.checkpoint_dir, f"model_{model_name}.keras")
-        self.trained_model = os.path.join(self.trained_dir, f"model_{model_name}.keras")
-        self.model_plot = os.path.join(self.checkpoint_dir, f"model_{model_name}.png")
+        self.checkpoint_model = os.path.join(self.checkpoint_dir, f"classifier_{model_name}.keras")
+        self.trained_model = os.path.join(self.trained_dir, f"classifier_{model_name}.keras")
+        self.model_plot = os.path.join(self.checkpoint_dir, f"classifier_{model_name}.png")
 
         self.drop_out = 0.3
         self.l2_reg = l2(0.01)
@@ -142,16 +57,18 @@ class K_MODEL_BASE:
 
 
     def train_model_cc(self, input_shape, X_train, X_test, y_train, y_test,  X_val, y_val, epochs ):
-
-        self.model.compile(optimizer=Adam(learning_rate=0.001), 
-                loss='mse', 
-                metrics=[
-                      'mse',  # Mean Squared Error
-                      'mae',  # Mean Absolute Error
-                      tf.keras.metrics.RootMeanSquaredError(name='rmse'), # Root Mean Squared Error
-                      tf.keras.metrics.R2Score()
-                  ])
-
+        
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
+            loss="binary_crossentropy",
+            metrics=[
+                tf.keras.metrics.BinaryAccuracy(name="accuracy"),
+                tf.keras.metrics.AUC(name="auc"),
+                tf.keras.metrics.Precision(name="precision"),
+                tf.keras.metrics.Recall(name="recall"),
+            ],
+        )
+                
                 
         self.model.summary()
         
@@ -160,20 +77,33 @@ class K_MODEL_BASE:
             expand_nested=True, show_layer_activations=True, show_trainable=True
             )   
         
+       
         reduce_lr = ReduceLROnPlateau(
-            monitor="val_loss", factor=0.2, patience=5, verbose=1,
-            mode="min", min_delta=1e-6, cooldown=0, min_lr=0
+            monitor="val_loss", factor=0.2, 
+            patience=5, verbose=1, min_lr=1e-6,
             )
         
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, 
+                                       restore_best_weights=True, verbose=1)
+       
+        
         
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
             self.checkpoint_model, monitor='val_loss', verbose=1,
             save_best_only=True, save_weights_only=False, mode='min'
             )
         
+        classes, counts = np.unique(y_train, return_counts=True)
+        class_weights = compute_class_weight(
+            class_weight="balanced",
+            classes=classes,
+            y=y_train
+        )
+        class_weight_dict = {int(c): w for c, w in zip(classes, class_weights)}
+        
         history_out = self.model.fit(X_train, y_train, validation_data=(X_val, y_val), 
-            initial_epoch=0, epochs=epochs, verbose=1, batch_size=32, 
+            initial_epoch=0, epochs=epochs, verbose=1, batch_size=64,
+            class_weight=class_weight_dict, 
             callbacks=[early_stopping, reduce_lr, model_checkpoint]
             )      
         
@@ -181,7 +111,76 @@ class K_MODEL_BASE:
         return history_out, y_pred
 
 
-    def evaluate_finished_model(self, best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos): 
+    def evaluate_finished_model_c(self, best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos): 
+
+        # Keras metrics
+        test_results = self.model.evaluate(X_oos, y_oos, verbose=0)
+        metric_dict = dict(zip(self.model.metrics_names, test_results))
+
+        print("\nRaw Keras metrics on OOS:")
+        for k, v in metric_dict.items():
+            print(f"  {k}: {v:.6f}")
+
+        # Predictions
+        y_oos_proba = self.model.predict(X_oos, verbose=0).ravel()
+        y_oos_pred = (y_oos_proba >= 0.5).astype(int)
+
+        # Basic stats
+        base_pos_rate = y_test.mean()
+        pred_pos_rate = y_oos_pred.mean()
+
+        print("\nLabel distribution on OOS:")
+        print(f"  Actual positive rate:   {base_pos_rate:.4f}")
+        print(f"  Predicted positive rate {pred_pos_rate:.4f} (threshold=0.5)")
+
+        # Core metrics
+        acc = accuracy_score(y_oos, y_oos_pred)
+        auc = roc_auc_score(y_oos, y_oos_proba)
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            y_oos, y_oos_pred, average="binary", zero_division=0
+        )
+
+        print("\nKey classification metrics on OOS:")
+        print(f"  Accuracy:  {acc:.4f}")
+        print(f"  AUC:       {auc:.4f}")
+        print(f"  Precision: {precision:.4f}")
+        print(f"  Recall:    {recall:.4f}")
+        print(f"  F1-score:  {f1:.4f}")
+
+        # Confusion matrix
+        cm = confusion_matrix(y_oos, y_oos_pred)
+        tn, fp, fn, tp = cm.ravel()
+
+        print("\nConfusion Matrix (OOS, threshold=0.5):")
+        print("            Pred 0     Pred 1")
+        print(f"Actual 0    {tn:7d}   {fp:7d}")
+        print(f"Actual 1    {fn:7d}   {tp:7d}")
+
+        # Detailed classification report
+        print("\nDetailed classification report (OOS):")
+        print(classification_report(y_oos, y_oos_pred, digits=4, zero_division=0))
+
+
+        model_file = f"{self.model_name}_{acc}_{auc}_{recall}.keras"
+        oos_file_path = os.path.join(self.trained_dir, model_file)
+        best_model.save(oos_file_path)
+        
+        oos_model_plot_file = f"{self.model_name}{acc}_{auc}_{recall}.png"
+        oos_model_plot_path = os.path.join(self.trained_dir, oos_model_plot_file)
+        
+        tf.keras.utils.plot_model(best_model, to_file=oos_model_plot_path, 
+            show_shapes=True, 
+            show_dtype=True,
+            show_layer_names=True,
+            expand_nested=True,
+            show_layer_activations=True,
+            show_trainable=True
+        )           
+            
+
+
+
+    def evaluate_finished_model_r(self, best_model, X_val, X_test, y_train, y_val, y_test,  X_oos, y_oos): 
     
         y_pred_test = best_model.predict(X_test)
         y_pred_val = best_model.predict(X_val)
@@ -226,7 +225,18 @@ class K_MODEL_BASE:
         print(f"Total Wins: {correct}, Total Losses: {total-correct}, Win Percentage: {perf:.6f}")
         print(f"Accuracy Score: {directional_accuracy}")        
         print(f"Number of Samples: {total}")        
-        print(" ")        
+        print(" ")
+        
+        print(y_test)
+        
+        y_pred = (y_pred > 0).astype(int)
+        print(y_pred)
+
+        cm = confusion_matrix(y_test, y_pred)
+        print("Confusion matrix:\n", cm)
+        #print("\nClassification report:")
+        #print(classification_report(y_test, y_pred, digits=4))
+
         return rmse, mse, mae, r2
         
     
@@ -266,7 +276,7 @@ class K_MODEL_BASE:
         print(f"Loading {file_to_load}" )
         df = pd.read_csv(file_to_load)
         X=df[col_filter]
-        y = df['output'].values
+        y = df['outputC'].values
         return X, y        
 
 

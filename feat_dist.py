@@ -2,99 +2,170 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
-datafile = [ 
-        'data/Lucky13_3070.csv',  #0
-        'data/Model_M_1_3070.csv' #1
-] 
-   
+def pareto_cutoffs(data, print_rows=True):
+    
+    data = data.astype(np.float32)
+    data = data.values.flatten()
+    
+    
+    total_count = len(data)
+    if total_count == 0:
+        print("No valid data in column; cannot proceed.")
+        return None
 
-lucky_13_columns = [
-    "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
-    "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1", "output", "outputC"
-]
+    # --- 2. Build histogram (counts only) ---
+    hist_count, bin_edges = np.histogram(data, bins=100)
+    # hist_count[i] is how many data points fall in [bin_edges[i], bin_edges[i+1])
 
-model_m_1_columns = [
-#"Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour",
-#"SeqClose", "RSIRAW", 
-"SDBB9L", "SDBB9U", "SDKC7U", "SDKC7L",
-"ROC14", "ROC9", "ATR5", "ATR2", "RSI14", "RSI14Avg", "RSIH14", "RSIL14",
-"RSI9", "RSI9Avg", "RSIH9", "RSIL9", "STOK721", "STOK513", "STOK721D", "STOK513D",
-"TV1", "TV2", "TV3", "TV4", "TV5", "TV6", "COMP0", "COMP1", "COMP2", "COMP3"
-]
+    # --- 3. Cumulative counts ---
+    cumulative_counts = np.cumsum(hist_count)
+
+    # --- 4. Function for linear interpolation of cutoff values ---
+    def find_cutoff_value(cutoff_fraction):
+        """
+        cutoff_fraction: (e.g. 0.10 for 10%, 0.90 for 90%)
+        Returns the numeric value at which the cumulative distribution
+        crosses cutoff_fraction * total_count.
+        Uses linear interpolation in the bin where that fraction lies.
+        """
+
+        target_count = cutoff_fraction * total_count
+        # Find bin i where cumsum >= target_count
+        i = np.searchsorted(cumulative_counts, target_count, side="left")
+
+        # Edge cases
+        if i == 0:
+            # If the fraction is below or within the first bin
+            # we'll interpolate within bin 0, if it has any points
+            if hist_count[0] == 0:
+                # If the first bin is empty, just return its start
+                return bin_edges[0]
+        elif i >= len(hist_count):
+            # If we are beyond the last bin, just return the last edge
+            return bin_edges[-1]
+
+        # Values for bin i
+        c_prev = cumulative_counts[i - 1] if i > 0 else 0
+        in_bin = hist_count[i]
+        bin_start = bin_edges[i]
+        bin_end = bin_edges[i + 1]
+
+        if in_bin == 0:
+            # If this bin is empty, no interpolation possible; return start
+            return bin_start
+
+        needed_from_bin = target_count - c_prev
+        frac_in_bin = needed_from_bin / in_bin
+        cutoff_val = bin_start + frac_in_bin * (bin_end - bin_start)
+        return cutoff_val
+
+        # If total_count == 0, the entire function would be moot,
+        # but we've already handled that at the top.
+
+    # Compute 10% and 90% cutoffs
+    cutoff_10 = find_cutoff_value(0.10)
+    cutoff_90 = find_cutoff_value(0.90)
+
+    # --- 5. Mean and Standard Deviation / ±1σ and ±2σ ---
+    mean_val = np.mean(data)
+    std_val = np.std(data, ddof=1)  # sample std dev (N-1 in denominator)
+
+    std_2_above = mean_val + 2 * std_val
+    std_2_below = mean_val - 2 * std_val
+    std_x_above = mean_val + 3 * std_val
+    std_x_below = mean_val - 3 * std_val
+
+    # --- 6. Print histogram table ---
+    print(f"{'Bin':>4} | {'Range Start':>12} | {'Range End':>12} | {'Count':>8} "
+          f"| {'% of Total':>10} | {'Cumul.Count':>12} | {'Cumul.%':>9}")
+    print("-" * 79)
+
+    for i in range(len(hist_count)):
+        bin_start = bin_edges[i]
+        bin_end   = bin_edges[i + 1]
+        count     = hist_count[i]
+        cume      = cumulative_counts[i]
+
+        bin_pct = (count / total_count) * 100
+        cume_pct = (cume / total_count) * 100
+        print(f"{i:4d} | "
+              f"{bin_start:12.4f} | "
+              f"{bin_end:12.4f} | "
+              f"{count:8d} | "
+              f"{bin_pct:10.2f} | "
+              f"{cume:12d} | "
+              f"{cume_pct:9.2f}")
+
+    # Print summary
+    print("\n--- Summary ---")
+    print(f"Total count: {total_count}")
+    print(f"Min value:   {bin_edges[0]:.4f}")
+    print(f"Max value:   {bin_edges[-1]:.4f}")
+    print(f"Mean:        {mean_val:.4f}")
+    print(f"Std Dev:     {std_val:.4f}")
+
+    # Cutoff Values
+    print("\n--- Cutoff Values ---")
+    print(f"10% cutoff (cumulative) value: {cutoff_10:.4f}")
+    print(f"90% cutoff (cumulative) value: {cutoff_90:.4f}")
+
+    # ±1σ and ±2σ
+    print("\n--- ± Standard Deviations ---")
+    print(f"2σ below: {std_2_below:.4f}   2σ above: {std_2_above:.4f}")
+    print(f"Xσ below: {std_x_below:.4f}   Xσ above: {std_x_above:.4f}")
+
+    print(" ")
+
+    # Return values if further analysis is desired
+    return {
+        #"hist_count": hist_count,
+        #"bin_edges": bin_edges,
+        #"cumulative_counts": cumulative_counts,
+        "cutoff_10": cutoff_10,
+        "cutoff_90": cutoff_90,
+        "mean": mean_val,
+        "std_dev": std_val,
+        "std_2_below": std_2_below,
+        "std_2_above": std_2_above,
+        "std_x_below": std_x_below,
+        "std_x_above": std_x_above,
+    }
+
+
+if __name__ == "__main__":
+    # Example usage:
+
+
+    datafile = [ 
+            'data/Lucky13_3070.csv',  #0
+            'data/Model_M_1_3070.csv' #1
+    ] 
     
 
-data = pd.read_csv(datafile[1])
-#df = data[['ATR2',"ATR5"]]
-df = data [model_m_1_columns]
+    lucky_13_columns = [
+        "SDLR310", "SDBB91", "SDKC91", "SDKC9", "ROC", "ATR54", "ATR53", "ATR52", 
+        "ATR51", "ATR5", "ATR21", "ATR2", "RSI", "STOK1", "output", "outputC"
+    ]
 
-# Function to generate a formatted, readable text-based distribution summary with percentages and cumulative percentage
-def generate_readable_text_distribution_with_cumulative(df):
-    
-    distribution_texts = {}
-    distribution_bounds = {}
-    
-    distribution_bounds = f"\nBell Curve High and Low Boundaries \n"
+    model_m_1_columns = [
+    #"Year", "Month", "Day", "DayOfWeek", "HourOfDay", "MinOfHour",
+    #"SeqClose", "RSIRAW", 
+    "SDBB9L", "SDBB9U", "SDKC7U", "SDKC7L",
+    "ROC14", "ROC9", "ATR5", "ATR2", "RSI14", "RSI14Avg", "RSIH14", "RSIL14",
+    "RSI9", "RSI9Avg", "RSIH9", "RSIL9", "STOK721", "STOK513", "STOK721D", "STOK513D",
+    "TV1", "TV2", "TV3", "TV4", "TV5", "TV6", "COMP0", "COMP1", "COMP2", "COMP3"
+    ]
         
-    
-    for column in df.columns:
-        # Get min and max for the column
-        min_val = df[column].min()
-        max_val = df[column].max()
-        
-        # Generate 100 bins from min to max
-        bins = np.linspace(min_val, max_val, 101)  # 101 edges define 100 bins
-        
-        # Get counts per bin
-        counts, _ = np.histogram(df[column], bins=bins)
-        total_count = counts.sum()  # Total number of entries in the column
-        
-        # Initialize cumulative percentage
-        cumulative_percentage = 0
-        
-        # Generate a formatted text representation
-        distribution_text = f"\nDistribution of '{column}':\n"
-        distribution_text += "-" * 60 + "\n"
-        distribution_text += f"{'Range':<20}{'Count':<10}{'Percentage (%)':<15}{'Cumulative (%)':<15}\n"
-        distribution_text += "-" * 60 + "\n"
-        
-        lv_lower = 0
-        lv_upper = 0
-        
-        for i in range(len(counts)):
-            # Only display bins with non-zero counts for clarity
-            if counts[i] > 0:
-                lower_bound = bins[i]
-                upper_bound = bins[i + 1]
-                count = counts[i]
-                percentage = (count / total_count) * 100  # Calculate percentage
-                cumulative_percentage += percentage  # Update cumulative percentage
-                
-                if cumulative_percentage <= 10:
-                    lv_lower = upper_bound
-                
-                if cumulative_percentage <= 90:
-                    lv_upper = upper_bound
-                
-                distribution_text += f"[{lower_bound:.2f} - {upper_bound:.2f}): {count:<10}{percentage:<15.2f}{cumulative_percentage:<15.2f}\n"
-                
-                
-        distribution_bounds += f"{column}  {lv_lower:.2f}  {lv_upper:.2f} \n"        
-        
-        # Store the formatted text representation for this column
-        distribution_texts[column] = distribution_text
 
-    return distribution_texts, distribution_bounds
-
-# Generate formatted text-based distributions with cumulative percentages
-distribution_summaries, distribution_bounds  = generate_readable_text_distribution_with_cumulative(df)
-
-# Display the results
-#for column, summary in distribution_summaries.items():
-#    print(f" {summary}")
-#    print("-" * 60)
+    data = pd.read_csv(datafile[1])
+    df = data [['RSI9']]
     
-print(distribution_bounds) 
+    results = pareto_cutoffs(df, print_rows=True)
+
+    print(results)  
+
 
 """
 

@@ -11,17 +11,22 @@ datafile = [
     'data/Lucky13_ALL_oos.csv',  #4
     'data/Lucky13_ALL.csv',  #5
     'data/oos_o.csv',  #6
-    
+    'data/Model_3LB_ALL_oos.csv' #7
 ]
 
-df = pd.read_csv(datafile[6])
+df = pd.read_csv(datafile[7])
+
+three_lb_filter_x = ["HourOfDay","MinOfHour",
+                       "RSIRAW","SDLR310","SDBB91","SDKC91","SDKC9","ROC","ATR54","ATR53","ATR52",
+                       "ATR51","ATR5","ATR21","ATR2","STOK1",       
+                        'cv2', 'cv1', 'cv0', 'chv2', 'chv0', 'cv4', 'chv12', 'chv18', 'chv11']
 
 wavelet = "cmor1.5-1.0"
 #wavelet = "db6"
 
 # Perform the Discrete Wavelet Transform with 'dbN'
 wavelet = pywt.Wavelet('db6')
-coeffs = pywt.wavedec(df['actual'], wavelet, level=7)
+coeffs = pywt.wavedec(df['cv2'], wavelet, level=7)
 
 # Plotting the Wavelet Coefficients using imshow
 fig, axes = plt.subplots(len(coeffs), 1, figsize=(12, 7))
